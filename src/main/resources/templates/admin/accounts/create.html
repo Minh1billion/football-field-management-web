@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	th:replace="~{layout/admin :: layout(~{::content})}">
+<body>
+	<div th:fragment="content">
+		<h2 class="mb-4">➕ Tạo tài khoản mới</h2>
+
+		<form th:action="@{/admin/accounts/create}" method="post"
+			class="card p-4 shadow-sm">
+			<div class="mb-3">
+				<label class="form-label">Tên đăng nhập</label> <input type="text"
+					class="form-control" th:field="*{registerRequest.username}"
+					required>
+			</div>
+			<div class="mb-3">
+				<label class="form-label">Email</label> <input type="email"
+					class="form-control" th:field="*{registerRequest.email}" required>
+			</div>
+			<div class="mb-3">
+				<label class="form-label">Mật khẩu</label> <input type="password"
+					class="form-control" th:field="*{registerRequest.password}"
+					required>
+			</div>
+			<div class="mb-3">
+				<label class="form-label">Nhập lại mật khẩu</label> <input
+					type="password" class="form-control"
+					th:field="*{registerRequest.confirmPassword}" required>
+			</div>
+			<div class="mb-3">
+				<label for="role" class="form-label">Vai trò</label> <select
+					class="form-select" id="role" name="role">
+					<option th:each="r : ${roles}" th:if="${r.name() != 'USER'}"
+						th:value="${r}" th:text="${r}"></option>
+				</select>
+			</div>
+			<button type="submit" class="btn btn-success">💾 Tạo tài
+				khoản</button>
+			<a th:href="@{/admin/accounts}" class="btn btn-secondary">⬅ Quay
+				lại</a>
+		</form>
+	</div>
+</body>
+</html>

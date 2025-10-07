@@ -1,5 +1,7 @@
 package utescore.service;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -80,7 +82,34 @@ public class AccountService {
 
         return savedAccount;
     }
+    
+    public Account createAccountByRole(RegisterRequest registerRequest,String role) {
+        // Validate passwords match
+        if (!registerRequest.isPasswordMatching()) {
+            throw new IllegalArgumentException("Passwords do not match");
+        }
 
+        // Check if username already exists
+        if (accountRepository.existsByUsername(registerRequest.getUsername())) {
+            throw new IllegalArgumentException("Username already exists");
+        }
+
+        // Check if email already exists
+        if (accountRepository.existsByEmail(registerRequest.getEmail())) {
+            throw new IllegalArgumentException("Email already exists");
+        }
+
+        // Create account
+        Account account = new Account();
+        account.setUsername(registerRequest.getUsername());
+        account.setEmail(registerRequest.getEmail());
+        account.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
+        account.setRole(Account.Role.valueOf(role));
+        account.setIsActive(true);
+
+        Account savedAccount = accountRepository.save(account);
+        return savedAccount;
+    }
     public Optional<Account> findByUsername(String username) {
         return accountRepository.findByUsername(username);
     }
@@ -132,4 +161,29 @@ public class AccountService {
         account.setIsActive(false);
         return accountRepository.save(account);
     }
+
+	public Page<Account> findAll(Pageable pageable) {
+		return accountRepository.findAll(pageable);
+	}
+
+	public Account findById(Long id) {
+		return accountRepository.findById(id).orElse(null);
+	}
+
+	public void deleteById(Long id) {
+		accountRepository.deleteById(id);	
+	}
+
+	public Page<Account> findByEmailAndRole(String email, String role, Pageable pageable) {
+		Account.Role roleEnum = null;
+		if (role != null && !role.isEmpty()) {
+			try {
+				roleEnum = Account.Role.valueOf(role.toUpperCase());
+			} catch (IllegalArgumentException e) {
+				// If role is invalid, return empty page or handle as needed
+				throw new IllegalArgumentException("Invalid role: " + role);
+			}
+		}
+		return accountRepository.findByEmailContainingAndRole(email, roleEnum, pageable);
+	}
 }

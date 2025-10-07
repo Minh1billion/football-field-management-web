@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout/admin :: layout(~{::content})}">
+<body>
+<div th:fragment="content">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>👤 Chi tiết khách hàng</h2>
+        <div>
+            <a th:href="@{'/admin/customers/' + ${customer.id} + '/edit'}" class="btn btn-warning">✏️ Chỉnh sửa</a>
+            <a th:href="@{/admin/customers}" class="btn btn-secondary">⬅️ Quay lại</a>
+        </div>
+    </div>
+
+    <!-- Thông báo -->
+    <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+    <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+
+    <div class="row">
+        <!-- Thông tin cơ bản -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">📋 Thông tin cơ bản</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tr>
+                            <td><strong>ID:</strong></td>
+                            <td th:text="${customer.id}"></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Họ:</strong></td>
+                            <td th:text="${customer.firstName}"></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Tên:</strong></td>
+                            <td th:text="${customer.lastName}"></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Họ và tên:</strong></td>
+                            <td><strong th:text="${customer.fullName}"></strong></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Số điện thoại:</strong></td>
+                            <td th:text="${customer.phoneNumber ?: 'Chưa có'}"></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Ngày sinh:</strong></td>
+                            <td th:text="${customer.dateOfBirth != null ? #temporals.format(customer.dateOfBirth, 'dd/MM/yyyy') : 'Chưa có'}"></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Giới tính:</strong></td>
+                            <td>
+                                <span th:if="${customer.gender == T(utescore.entity.Customer.Gender).MALE}" class="badge bg-primary">Nam</span>
+                                <span th:if="${customer.gender == T(utescore.entity.Customer.Gender).FEMALE}" class="badge bg-info">Nữ</span>
+                                <span th:if="${customer.gender == T(utescore.entity.Customer.Gender).OTHER}" class="badge bg-secondary">Khác</span>
+                                <span th:if="${customer.gender == null}" class="text-muted">Chưa có</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Địa chỉ:</strong></td>
+                            <td th:text="${customer.address ?: 'Chưa có'}"></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Thông tin liên hệ khẩn cấp -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">🚨 Liên hệ khẩn cấp</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tr>
+                            <td><strong>Người liên hệ:</strong></td>
+                            <td th:text="${customer.emergencyContact ?: 'Chưa có'}"></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Số điện thoại:</strong></td>
+                            <td th:text="${customer.emergencyPhone ?: 'Chưa có'}"></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Thông tin hệ thống -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">⚙️ Thông tin hệ thống</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tr>
+                            <td><strong>Ngày tạo:</strong></td>
+                            <td th:text="${#temporals.format(customer.createdAt, 'dd/MM/yyyy HH:mm:ss')}"></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Cập nhật lần cuối:</strong></td>
+                            <td th:text="${#temporals.format(customer.updatedAt, 'dd/MM/yyyy HH:mm:ss')}"></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Thống kê hoạt động -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">📊 Thống kê hoạt động</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <div class="border rounded p-3">
+                                <h4 class="text-primary" th:text="${customer.bookings.size()}">0</h4>
+                                <p class="mb-0">Số lượt đặt sân</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="border rounded p-3">
+                                <h4 class="text-success" th:text="${customer.orders.size()}">0</h4>
+                                <p class="mb-0">Số đơn hàng</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="border rounded p-3">
+                                <h4 class="text-warning" th:text="${customer.reviews.size()}">0</h4>
+                                <p class="mb-0">Số đánh giá</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="border rounded p-3">
+                                <h4 class="text-info" th:text="${customer.loyalty != null ? 'Có' : 'Chưa có'}">Chưa có</h4>
+                                <p class="mb-0">Chương trình thành viên</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Nút hành động -->
+    <div class="mt-4 text-center">
+        <a th:href="@{'/admin/customers/' + ${customer.id} + '/edit'}" class="btn btn-warning me-2">✏️ Chỉnh sửa thông tin</a>
+        <form th:action="@{'/admin/customers/' + ${customer.id} + '/delete'}" method="post" class="d-inline">
+            <button type="submit" class="btn btn-danger"
+                    onclick="return confirm('Xác nhận xóa khách hàng này? Thao tác này không thể hoàn tác!')">🗑️ Xóa khách hàng</button>
+        </form>
+    </div>
+</div>
+</body>
+</html>

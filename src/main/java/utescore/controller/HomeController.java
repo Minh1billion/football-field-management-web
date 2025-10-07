@@ -19,18 +19,27 @@ public class HomeController {
         this.accountService = accountService;
         this.jwtService = jwtService;
     }
+    
+    @GetMapping("/admin/dashboard")
+    public String adminDashboard() {
+		return "admin/dashboard";
+	}
 
     @GetMapping({"/", "/home"})
     public String home(@CookieValue(value = "token", required = false) String token, Model model) {
         if (token != null) {
             try {
                 if (jwtService.isTokenValid(token)) {
+                	
                     String username = jwtService.extractUsername(token);
                     Account account = accountService.findByUsername(username).orElse(null);
+                    
                     if (account != null) {
                         model.addAttribute("account", account);
                         model.addAttribute("role", account.getRole().name());
-
+                        if (account.getRole().name().equals("ADMIN")) {
+                    		return "redirect:/admin/dashboard";
+                    	}
                         return "home/user-home";
                     }
                 }

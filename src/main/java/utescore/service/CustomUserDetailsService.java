@@ -24,14 +24,21 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        System.out.println("Loading user: " + username);
+
         Account account = accountRepository.findByUsernameOrEmail(username, username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+
+        System.out.println("Found account: " + account.getUsername());
+        System.out.println("Password from DB: " + account.getPassword());
+        System.out.println("Role: " + account.getRole().name());
+        System.out.println("Is Active: " + account.getIsActive());
 
         if (!account.getIsActive()) {
             throw new UsernameNotFoundException("Account is disabled: " + username);
         }
 
-        return User.builder()
+        UserDetails userDetails = User.builder()
                 .username(account.getUsername())
                 .password(account.getPassword())
                 .authorities(getAuthorities(account))
@@ -40,6 +47,10 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .credentialsExpired(false)
                 .disabled(!account.getIsActive())
                 .build();
+
+        System.out.println("UserDetails created with authorities: " + userDetails.getAuthorities());
+
+        return userDetails;
     }
 
     private Collection<? extends GrantedAuthority> getAuthorities(Account account) {

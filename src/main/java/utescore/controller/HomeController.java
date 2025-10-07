@@ -1,49 +1,44 @@
 package utescore.controller;
 
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import utescore.entity.Account;
 import utescore.service.AccountService;
+import utescore.service.JwtService;
 
 @Controller
 public class HomeController {
 
     private final AccountService accountService;
+    private final JwtService jwtService;
 
-    public HomeController(AccountService accountService) {
+    public HomeController(AccountService accountService, JwtService jwtService) {
         this.accountService = accountService;
+        this.jwtService = jwtService;
     }
 
     @GetMapping({"/", "/home"})
-    public String home(Model model) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        
-        if (authentication != null && authentication.isAuthenticated() && 
-            !authentication.getName().equals("anonymousUser")) {
-            
-            Account account = accountService.findByUsername(authentication.getName())
-                .orElse(null);
-                
-            if (account != null) {
-                model.addAttribute("account", account);
-                model.addAttribute("role", account.getRole().name());
-                
-                // Role-based content
-                switch (account.getRole()) {
-                    case ADMIN:
-                        return "home/admin-home";
-                    case MANAGER:
-                        return "home/manager-home";
-                    case USER:
-                    default:
+    public String home(@CookieValue(value = "token", required = false) String token, Model model) {
+        if (token != null) {
+            try {
+                if (jwtService.isTokenValid(token)) {
+                    String username = jwtService.extractUsername(token);
+                    Account account = accountService.findByUsername(username).orElse(null);
+                    if (account != null) {
+                        model.addAttribute("account", account);
+                        model.addAttribute("role", account.getRole().name());
+
                         return "home/user-home";
+                    }
                 }
+            } catch (Exception e) {
+
             }
         }
-        
         return "home/public-home";
     }
+
 }

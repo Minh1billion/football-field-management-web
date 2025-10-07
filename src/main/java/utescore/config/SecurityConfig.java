@@ -63,7 +63,7 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authz -> authz
                         // Public endpoints
-                        .requestMatchers("/", "/home", "/login", "/register", "/signup", "/error").permitAll()
+                        .requestMatchers("/", "/home", "/auth/**", "/error").permitAll()
                         .requestMatchers("/css/**", "/js/**", "/images/**", "/favicon.ico", "/webjars/**").permitAll()
                         .requestMatchers("/api/public/**").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
@@ -88,17 +88,17 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form
-                        .loginPage("/login")
-                        .loginProcessingUrl("/perform-login")
-                        .usernameParameter("username")
+                        .loginPage("/auth/login")
+                        .loginProcessingUrl("/auth/perform-login")
+                        .usernameParameter("usernameOrEmail")
                         .passwordParameter("password")
-                        .successHandler(successHandler)
-                        .failureHandler(failureHandler)
+                        .defaultSuccessUrl("/home", true)
+                        .failureUrl("/auth/login?error=true")
                         .permitAll()
                 )
                 .logout(logout -> logout
-                        .logoutUrl("/logout") // không cần AntPathRequestMatcher nữa
-                        .logoutSuccessUrl("/login?logout")
+                        .logoutUrl("/logout")
+                        .logoutSuccessUrl("/auth/login?logout")
                         .invalidateHttpSession(true)
                         .deleteCookies("JSESSIONID")
                         .clearAuthentication(true)
@@ -121,9 +121,9 @@ public class SecurityConfig {
                         .rememberMeParameter("remember-me")
                 )
                 .exceptionHandling(exceptions -> exceptions
-                        .accessDeniedPage("/access-denied")
+                        .accessDeniedPage("/auth/login?error=access_denied")
                         .authenticationEntryPoint((request, response, authException) ->
-                                response.sendRedirect("/login?error=access_denied"))
+                                response.sendRedirect("/auth/login?error=access_denied"))
                 )
                 .headers(headers -> headers
                         .frameOptions(frame -> frame.disable())

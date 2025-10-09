@@ -20,10 +20,6 @@ public class HomeController {
         this.jwtService = jwtService;
     }
     
-    @GetMapping("/admin/dashboard")
-    public String adminDashboard() {
-		return "admin/dashboard";
-	}
 
     @GetMapping({"/", "/home"})
     public String home(@CookieValue(value = "token", required = false) String token, Model model) {

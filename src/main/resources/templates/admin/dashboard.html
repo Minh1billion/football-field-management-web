@@ -1,82 +1,88 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout/admin :: layout(~{::content})}">
 <head>
-    <meta charset="UTF-8">
-    <title>Dashboard</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <meta charset="UTF-8">
+  <title>Dashboard</title>
 </head>
 <body>
 <div th:fragment="content">
-
-    <h2 class="mb-4">📊 Thống kê tổng quan</h2>
-
-    <!-- Thống kê nhanh -->
-    <div class="row text-center mb-4">
-        <div class="col-md-4">
-            <div class="card shadow-sm border-0 bg-primary text-white">
-                <div class="card-body">
-                    <h5 class="card-title">Tổng số sân</h5>
-                    <h2 th:text="${totalFields}">12</h2>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="card shadow-sm border-0 bg-success text-white">
-                <div class="card-body">
-                    <h5 class="card-title">Doanh thu tháng này</h5>
-                    <h2 th:text="${revenueThisMonth}">45,000,000₫</h2>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="card shadow-sm border-0 bg-warning text-white">
-                <div class="card-body">
-                    <h5 class="card-title">Tổng lượt đặt</h5>
-                    <h2 th:text="${totalBookings}">128</h2>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Biểu đồ doanh thu -->
-    <div class="card shadow-sm border-0">
+  <h2 class="mb-4">📊 Tổng quan hệ thống</h2>
+  <div class="row text-center mb-4">
+    <div class="col-md-3">
+      <div class="card shadow-sm border-0 bg-primary text-white">
         <div class="card-body">
-            <h5 class="card-title mb-3">📈 Doanh thu theo tháng</h5>
-            <canvas id="revenueChart" height="100"></canvas>
+          <h5 class="card-title">👥 Tổng tài khoản</h5>
+          <h2 th:text="${totalAccounts ?: 0}">0</h2>
+          <small>Tất cả tài khoản trong hệ thống</small>
         </div>
+      </div>
     </div>
-
-    <script th:inline="javascript">
-        /*<![CDATA[*/
-        const labels = /*[[${monthLabels}]]*/ ["Tháng 1", "Tháng 2", "Tháng 3", "Tháng 4", "Tháng 5"];
-        const data = /*[[${monthlyRevenue}]]*/ [12000000, 18000000, 22000000, 15000000, 26000000];
-
-        new Chart(document.getElementById('revenueChart'), {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Doanh thu (VNĐ)',
-                    data: data,
-                    backgroundColor: 'rgba(54, 162, 235, 0.6)',
-                    borderRadius: 8
-                }]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    y: {
-                        ticks: {
-                            callback: value => value.toLocaleString('vi-VN') + '₫'
-                        }
-                    }
-                }
-            }
-        });
-        /*]]>*/
-    </script>
+    <div class="col-md-3">
+      <div class="card shadow-sm border-0 bg-success text-white">
+        <div class="card-body">
+          <h5 class="card-title">👤 Người dùng</h5>
+          <h2 th:text="${totalUsers ?: 0}">0</h2>
+          <small>Tài khoản USER</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card shadow-sm border-0 bg-warning text-white">
+        <div class="card-body">
+          <h5 class="card-title">👨‍💼 Quản lý</h5>
+          <h2 th:text="${totalManagers ?: 0}">0</h2>
+          <small>Tài khoản MANAGER</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card shadow-sm border-0 bg-danger text-white">
+        <div class="card-body">
+          <h5 class="card-title">👑 Quản trị</h5>
+          <h2 th:text="${totalAdmins ?: 0}">0</h2>
+          <small>Tài khoản ADMIN</small>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row text-center mb-4">
+    <div class="col-md-3">
+      <div class="card shadow-sm border-0 bg-info text-white">
+        <div class="card-body">
+          <h5 class="card-title">🏟️ Sân hoạt động</h5>
+          <h2 th:text="${totalFields ?: 0}">0</h2>
+          <small>Sân đang mở</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card shadow-sm border-0 bg-secondary text-white">
+        <div class="card-body">
+          <h5 class="card-title">🏢 Tổng dịch vụ</h5>
+          <h2 th:text="${totalServices ?: 0}">0</h2>
+          <small>Tất cả dịch vụ</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card shadow-sm border-0 bg-success text-white">
+        <div class="card-body">
+          <h5 class="card-title">✅ TK hoạt động</h5>
+          <h2 th:text="${activeAccounts ?: 0}">0</h2>
+          <small>Tài khoản đang hoạt động</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card shadow-sm border-0 bg-dark text-white">
+        <div class="card-body">
+          <h5 class="card-title">❌ TK bị khóa</h5>
+          <h2 th:text="${inactiveAccounts ?: 0}">0</h2>
+          <small>Tài khoản bị vô hiệu hóa</small>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 </body>
 </html>

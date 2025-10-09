@@ -36,7 +36,7 @@
                                     <td><strong>Giá:</strong></td>
                                     <td>
                                         <span class="text-success fw-bold" 
-                                              th:text="${#numbers.formatDecimal(service.price, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></span>
+                                              th:text="${service.price} + ' VNĐ'"></span>
                                     </td>
                                 </tr>
                                 <tr>
@@ -55,11 +55,11 @@
                                 </tr>
                                 <tr>
                                     <td><strong>Ngày tạo:</strong></td>
-                                    <td th:text="${#temporals.format(service.createdAt, 'dd/MM/yyyy HH:mm')}"></td>
+                                    <td th:text="${#temporals.format(service.createdAt, 'dd/MM/yyyy HH:mm:ss')}"></td>
                                 </tr>
                                 <tr th:if="${service.updatedAt != null}">
                                     <td><strong>Cập nhật lần cuối:</strong></td>
-                                    <td th:text="${#temporals.format(service.updatedAt, 'dd/MM/yyyy HH:mm')}"></td>
+                                    <td th:text="${#temporals.format(service.updatedAt, 'dd/MM/yyyy HH:mm:ss')}"></td>
                                 </tr>
                             </table>
                         </div>
@@ -92,7 +92,7 @@
                         </div>
                     </div>
 
-                    <!-- Thống kê sử dụng (có thể mở rộng sau) -->
+                    <!-- Thống kê sử dụng -->
                     <div class="row mt-3">
                         <div class="col-12">
                             <h6>Thống kê:</h6>
@@ -100,7 +100,7 @@
                                 <div class="col-md-4">
                                     <div class="card bg-primary text-white">
                                         <div class="card-body text-center">
-                                            <h5 th:text="${#lists.size(service.bookingServices)}">0</h5>
+                                            <h5 th:text="${bookingCount != null ? bookingCount : 0}">0</h5>
                                             <small>Lượt đặt</small>
                                         </div>
                                     </div>
@@ -108,7 +108,7 @@
                                 <div class="col-md-4">
                                     <div class="card bg-success text-white">
                                         <div class="card-body text-center">
-                                            <h5 th:text="${#lists.size(service.orderItems)}">0</h5>
+                                            <h5 th:text="${orderCount != null ? orderCount : 0}">0</h5>
                                             <small>Đơn hàng</small>
                                         </div>
                                     </div>

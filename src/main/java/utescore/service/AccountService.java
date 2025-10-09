@@ -1,5 +1,6 @@
 package utescore.service;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -12,6 +13,9 @@ import utescore.entity.Loyalty;
 import utescore.repository.AccountRepository;
 import utescore.repository.CustomerRepository;
 
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+
 import java.math.BigDecimal;
 import java.util.Optional;
 
@@ -22,6 +26,8 @@ public class AccountService {
     private final AccountRepository accountRepository;
     private final CustomerRepository customerRepository;
     private final PasswordEncoder passwordEncoder;
+    @Autowired
+    private LogService logService;
 
     public AccountService(AccountRepository accountRepository, 
                          CustomerRepository customerRepository,
@@ -68,6 +74,7 @@ public class AccountService {
         customer.setEmergencyContact(registerRequest.getEmergencyContact());
         customer.setEmergencyPhone(registerRequest.getEmergencyPhone());
         customer.setAccount(savedAccount);
+        customer.setCreatedAt(java.time.LocalDateTime.now());
 
         Customer savedCustomer = customerRepository.save(customer);
 
@@ -79,22 +86,22 @@ public class AccountService {
         loyalty.setTotalSpent(BigDecimal.ZERO);
         loyalty.setTotalBookings(0);
         savedCustomer.setLoyalty(loyalty);
-
+        
+        logService.logAction("New user registered: " + savedAccount.getUsername(), savedAccount);
+        
+        
         return savedAccount;
     }
     
     public Account createAccountByRole(RegisterRequest registerRequest,String role) {
-        // Validate passwords match
         if (!registerRequest.isPasswordMatching()) {
             throw new IllegalArgumentException("Passwords do not match");
         }
 
-        // Check if username already exists
         if (accountRepository.existsByUsername(registerRequest.getUsername())) {
             throw new IllegalArgumentException("Username already exists");
         }
 
-        // Check if email already exists
         if (accountRepository.existsByEmail(registerRequest.getEmail())) {
             throw new IllegalArgumentException("Email already exists");
         }
@@ -108,6 +115,14 @@ public class AccountService {
         account.setIsActive(true);
 
         Account savedAccount = accountRepository.save(account);
+        
+        logService.logAction(
+        	    "New user registered: " + savedAccount.getUsername() + " with " + role,
+        	    accountRepository.findByUsername(
+        	        SecurityContextHolder.getContext().getAuthentication().getName()
+        	    ).orElse(null)
+        	);
+        
         return savedAccount;
     }
     public Optional<Account> findByUsername(String username) {
@@ -180,10 +195,29 @@ public class AccountService {
 			try {
 				roleEnum = Account.Role.valueOf(role.toUpperCase());
 			} catch (IllegalArgumentException e) {
-				// If role is invalid, return empty page or handle as needed
 				throw new IllegalArgumentException("Invalid role: " + role);
 			}
 		}
 		return accountRepository.findByEmailContainingAndRole(email, roleEnum, pageable);
+	}
+
+	public long countAllAccounts() {
+		return accountRepository.count();
+	}
+
+	public long countByRole(String role) {
+		try {
+			return accountRepository.countByRole(Account.Role.valueOf(role));
+		} catch (IllegalArgumentException e) {
+			return 0;
+		}
+	}
+
+	public long countActiveAccounts() {
+		return accountRepository.countByIsActiveTrue();
+	}
+
+	public long countInactiveAccounts() {
+		return accountRepository.countByIsActiveFalse();
 	}
 }

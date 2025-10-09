@@ -5,19 +5,34 @@
     <h2 class="mb-4">✏️ Chỉnh sửa tài khoản</h2>
 
     <form th:action="@{'/admin/accounts/edit/' + ${account.id}}" method="post" th:object="${account}" class="card p-4 shadow-sm">
+        <!-- Hidden fields để preserve dữ liệu quan trọng -->
+        <input type="hidden" th:field="*{id}">
+        <input type="hidden" th:field="*{password}">
+        <input type="hidden" th:field="*{createdAt}">
+        <input type="hidden" th:field="*{updatedAt}">
+        
         <div class="mb-3">
             <label class="form-label">Tên đăng nhập</label>
             <input type="text" class="form-control" th:field="*{username}" readonly>
         </div>
         <div class="mb-3">
             <label class="form-label">Email</label>
-            <input type="email" class="form-control" th:field="*{email}">
+            <input type="email" class="form-control" th:field="*{email}" required>
         </div>
         <div class="mb-3">
             <label class="form-label">Vai trò</label>
-            <select class="form-select" th:field="*{role}">
-                <option th:each="r : ${roles}" th:value="${r}" th:text="${r}"></option>
+            <select class="form-select" th:field="*{role}" required>
+                <!-- Lọc các option dựa trên quyền hiện tại và loại tài khoản đang chỉnh sửa -->
+                <option th:each="r : ${roles}" 
+                        th:if="${!(r.toString() == 'USER' and (account.role.toString() == 'ADMIN' or account.role.toString() == 'MANAGER'))}" 
+                        th:value="${r}" 
+                        th:text="${r}">
+                </option>
             </select>
+            <small class="form-text text-muted" 
+                   th:if="${account.role.toString() == 'ADMIN' or account.role.toString() == 'MANAGER'}">
+                ⚠️ Không thể chuyển Admin/Manager về quyền User
+            </small>
         </div>
         <div class="mb-3">
             <label class="form-label">Trạng thái tài khoản</label>

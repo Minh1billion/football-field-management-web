@@ -53,11 +53,16 @@ public class ServiceService {
         serviceRepository.deleteById(id);
     }
 
-    public List<utescore.entity.Service> findAvailableServices() {
-        return serviceRepository.findByIsAvailableTrue();
+    // Dashboard statistics method
+    public long countAllServices() {
+        return serviceRepository.count();
     }
 
-    public List<utescore.entity.Service> findByServiceType(utescore.entity.Service.ServiceType serviceType) {
-        return serviceRepository.findByServiceType(serviceType);
+    public long countActiveFields() {
+        return serviceRepository.countByIsAvailableTrue();
+    }
+
+    public long countByServiceType(utescore.entity.Service.ServiceType serviceType) {
+        return serviceRepository.countByServiceType(serviceType);
     }
 }

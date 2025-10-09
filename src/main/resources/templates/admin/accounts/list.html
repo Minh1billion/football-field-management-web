@@ -4,7 +4,9 @@
 <div th:fragment="content">
     <h2 class="mb-3">👤 Quản lý tài khoản</h2>
 
-    <a th:href="@{/admin/accounts/create}" class="btn btn-primary mb-3">➕ Thêm tài khoản</a>
+    <!-- Chỉ hiển thị nút thêm tài khoản cho ADMIN và MANAGER -->
+    <a th:if="${currentUserRole == 'ADMIN' or currentUserRole == 'MANAGER'}" 
+       th:href="@{/admin/accounts/create}" class="btn btn-primary mb-3">➕ Thêm tài khoản</a>
 
     <!-- Form tìm kiếm -->
     <div class="card mb-3">
@@ -59,9 +61,16 @@
                 <span th:if="${!account.isActive}" class="badge bg-danger">❌ Bị khóa</span>
             </td>
             <td>
+                <!-- Nút xem - tất cả quyền đều có thể xem -->
                 <a th:href="@{'/admin/accounts/view/' + ${account.id}}" class="btn btn-info btn-sm">👁️</a>
-                <a th:href="@{'/admin/accounts/edit/' + ${account.id}}" class="btn btn-warning btn-sm">✏️</a>
-                <form th:action="@{'/admin/accounts/delete/' + ${account.id}}" method="post" class="d-inline">
+                
+                <!-- Nút chỉnh sửa - chỉ ADMIN và MANAGER -->
+                <a th:if="${currentUserRole == 'ADMIN' or currentUserRole == 'MANAGER'}" 
+                   th:href="@{'/admin/accounts/edit/' + ${account.id}}" class="btn btn-warning btn-sm">✏️</a>
+                
+                <!-- Nút xóa - chỉ ADMIN và MANAGER -->
+                <form th:if="${currentUserRole == 'ADMIN' or currentUserRole == 'MANAGER'}" 
+                      th:action="@{'/admin/accounts/delete/' + ${account.id}}" method="post" class="d-inline">
                     <button type="submit" class="btn btn-danger btn-sm"
                             onclick="return confirm('Xác nhận xóa tài khoản này?')">🗑️</button>
                 </form>

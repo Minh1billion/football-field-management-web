@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout/admin :: layout(~{::content})}">
+<body>
+<div th:fragment="content">
+    <h2 class="mb-3">✏️ Sửa trang phục thể thao</h2>
+
+    <a th:href="@{/admin/sportwears}" class="btn btn-secondary mb-3">⬅️ Quay lại danh sách</a>
+
+    <!-- Thông báo -->
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">📝 Cập nhật thông tin trang phục</h5>
+        </div>
+        <div class="card-body">
+            <form th:action="@{/admin/sportwears/edit/{id}(id=${sportWear.id})}" th:object="${sportWear}" method="post" enctype="multipart/form-data">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Tên trang phục <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="name" th:field="*{name}" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="brand" class="form-label">Thương hiệu</label>
+                            <input type="text" class="form-control" id="brand" th:field="*{brand}">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="wearType" class="form-label">Loại trang phục <span class="text-danger">*</span></label>
+                            <select class="form-select" id="wearType" th:field="*{wearType}" required>
+                                <option value="">-- Chọn loại --</option>
+                                <option th:each="type : ${wearTypes}" th:value="${type}" th:text="${type}"></option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="size" class="form-label">Kích thước <span class="text-danger">*</span></label>
+                            <select class="form-select" id="size" th:field="*{size}" required>
+                                <option value="">-- Chọn size --</option>
+                                <option th:each="sizeOption : ${sizes}" th:value="${sizeOption}" th:text="${sizeOption}"></option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="color" class="form-label">Màu sắc <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="color" th:field="*{color}" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="rentalPricePerDay" class="form-label">Giá thuê/ngày (VNĐ) <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="rentalPricePerDay" th:field="*{rentalPricePerDay}" 
+                                   min="0" step="1000" required>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="sellPrice" class="form-label">Giá bán (VNĐ) <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="sellPrice" th:field="*{sellPrice}" 
+                                   min="0" step="1000" required>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="stockQuantity" class="form-label">Số lượng tồn kho <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="stockQuantity" th:field="*{stockQuantity}" 
+                                   min="0" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="description" class="form-label">Mô tả</label>
+                    <textarea class="form-control" id="description" th:field="*{description}" rows="4"></textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Hình ảnh hiện tại</label>
+                    <div th:if="${sportWear.imageUrl}" class="mb-2">
+                        <img th:src="${sportWear.imageUrl}" alt="Hình ảnh hiện tại" class="img-thumbnail" style="max-width: 200px;">
+                    </div>
+                    <div th:unless="${sportWear.imageUrl}" class="text-muted">Chưa có hình ảnh</div>
+                    
+                    <label for="imageFile" class="form-label mt-2">Thay đổi hình ảnh</label>
+                    <input type="file" class="form-control" id="imageFile" name="imageFile" accept="image/*" onchange="previewImage(event)">
+                    <div class="form-text">Chọn file hình ảnh mới (JPG, PNG, GIF) - Để trống nếu không muốn thay đổi</div>
+                    
+                    <!-- Preview container for new image -->
+                    <div id="imagePreview" class="mt-3" style="display: none;">
+                        <label class="form-label">Xem trước ảnh mới:</label>
+                        <div>
+                            <img id="previewImg" src="" alt="Xem trước ảnh mới" class="img-thumbnail" style="max-width: 200px; max-height: 200px;">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="isAvailableForRent" 
+                                   th:field="*{isAvailableForRent}">
+                            <label class="form-check-label" for="isAvailableForRent">
+                                Có thể cho thuê
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="isAvailableForSale" 
+                                   th:field="*{isAvailableForSale}">
+                            <label class="form-check-label" for="isAvailableForSale">
+                                Có thể bán
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <a th:href="@{/admin/sportwears}" class="btn btn-secondary">❌ Hủy</a>
+                    <button type="submit" class="btn btn-primary">💾 Cập nhật trang phục</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function previewImage(event) {
+            const file = event.target.files[0];
+            const previewContainer = document.getElementById('imagePreview');
+            const previewImg = document.getElementById('previewImg');
+            
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImg.src = e.target.result;
+                    previewContainer.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            } else {
+                previewContainer.style.display = 'none';
+            }
+        }
+    </script>
+</div>
+</body>
+</html>

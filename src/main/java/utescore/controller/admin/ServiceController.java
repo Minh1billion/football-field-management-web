@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import utescore.entity.Service;
+import utescore.repository.BookingServiceRepository;
+import utescore.repository.OrderRepository;
 import utescore.service.CloudinaryService;
 import utescore.service.ServiceService;
 
@@ -22,11 +24,17 @@ public class ServiceController {
 
     @Autowired
     private CloudinaryService cloudinaryService;
+    
+    @Autowired
+    private BookingServiceRepository bookingServiceRepository;
+    
+    @Autowired
+    private OrderRepository orderRepository;
 
     @GetMapping
     public String listServices(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "5") int size,
             @RequestParam(required = false) String name,
             @RequestParam(required = false) String serviceType,
             Model model) {
@@ -38,7 +46,7 @@ public class ServiceController {
             try {
                 type = Service.ServiceType.valueOf(serviceType);
             } catch (IllegalArgumentException e) {
-                // Ignore invalid service type
+                
             }
         }
         
@@ -159,7 +167,19 @@ public class ServiceController {
         if (service == null) {
             return "redirect:/admin/services";
         }
+        
+        // Tính toán số liệu thống kê
+        long bookingCount = bookingServiceRepository.countByServiceId(id);
+        long orderCount = orderRepository.countByServiceId(id);
+        Long totalQuantityBooked = bookingServiceRepository.sumQuantityByServiceId(id);
+        if (totalQuantityBooked == null) {
+            totalQuantityBooked = 0L;
+        }
+        
         model.addAttribute("service", service);
+        model.addAttribute("bookingCount", bookingCount);
+        model.addAttribute("orderCount", orderCount);
+        model.addAttribute("totalQuantityBooked", totalQuantityBooked);
         return "admin/services/view";
     }
 }

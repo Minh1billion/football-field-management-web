@@ -19,11 +19,40 @@ public class CustomerService {
         return customerRepository.findAll(pageable);
     }
 
+    // Tìm kiếm với từ khóa
+    public Page<Customer> search(String searchTerm, Pageable pageable) {
+        if (searchTerm == null || searchTerm.trim().isEmpty()) {
+            return findAll(pageable);
+        }
+        return customerRepository.findBySearchTerm(searchTerm.trim(), pageable);
+    }
+
     public Optional<Customer> findById(Long id) {
         return customerRepository.findById(id);
     }
 
+    public Optional<Customer> findByPhoneNumber(String phoneNumber) {
+        return customerRepository.findByPhoneNumber(phoneNumber);
+    }
+
     public Customer save(Customer customer) {
+        // Validate số điện thoại không trùng lặp
+        if (customer.getPhoneNumber() != null && !customer.getPhoneNumber().trim().isEmpty()) {
+            if (customer.getId() == null) {
+                // Tạo mới - kiểm tra số điện thoại đã tồn tại
+                Optional<Customer> existing = customerRepository.findByPhoneNumber(customer.getPhoneNumber());
+                if (existing.isPresent()) {
+                    throw new RuntimeException("Số điện thoại đã được sử dụng bởi khách hàng khác");
+                }
+            } else {
+                // Cập nhật - kiểm tra số điện thoại trùng với khách hàng khác
+                Optional<Customer> existing = customerRepository.findByPhoneNumberAndIdNot(customer.getPhoneNumber(), customer.getId());
+                if (existing.isPresent()) {
+                    throw new RuntimeException("Số điện thoại đã được sử dụng bởi khách hàng khác");
+                }
+            }
+        }
+        
         return customerRepository.save(customer);
     }
 

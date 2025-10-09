@@ -23,4 +23,9 @@ public interface ServiceRepository extends JpaRepository<Service, Long> {
     List<Service> findByServiceType(Service.ServiceType serviceType);
     
     List<Service> findByServiceTypeAndIsAvailableTrue(Service.ServiceType serviceType);
+
+    // Thêm các method cho thống kê dashboard
+    long countByIsAvailableTrue();
+    
+    long countByServiceType(Service.ServiceType serviceType);
 }

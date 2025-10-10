@@ -4,7 +4,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
 import utescore.entity.Account;
 import utescore.service.AccountService;
 import utescore.service.JwtService;
@@ -28,14 +27,23 @@ public class HomeController {
                     String username = jwtService.extractUsername(token);
                     Account account = accountService.findByUsername(username).orElse(null);
                     if (account != null) {
-                        model.addAttribute("account", account);
-                        model.addAttribute("role", account.getRole().name());
-
-                        return "home/user-home";
+                        // Điều hướng theo vai trò
+                        switch (account.getRole()) {
+                            case MANAGER:
+                                return "redirect:/manager/fields";
+                            case ADMIN:
+                                // Nếu có dashboard admin, điều hướng vào đây
+                                return "redirect:/admin/dashboard";
+                            case USER:
+                            default:
+                                model.addAttribute("account", account);
+                                model.addAttribute("role", account.getRole().name());
+                                return "home/user-home";
+                        }
                     }
                 }
             } catch (Exception e) {
-
+                // bỏ qua, rơi xuống public-home
             }
         }
         return "home/public-home";

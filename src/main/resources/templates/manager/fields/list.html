@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Quản lý sân</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<div th:replace="~{manager/fragments/navbar :: navbar}"></div>
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3>Danh sách sân</h3>
+        <a href="/manager/fields/new" class="btn btn-primary">Thêm sân</a>
+    </div>
+
+    <form class="row g-3 mb-4" method="get" action="/manager/fields/available">
+        <div class="col-md-3">
+            <label class="form-label">Vị trí</label>
+            <select class="form-select" name="locationId">
+                <option th:value="${null}">-- Tất cả --</option>
+                <option th:each="l : ${locations}" th:value="${l.id}" th:text="${l.name}"></option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Bắt đầu</label>
+            <input type="datetime-local" class="form-control" name="start" required>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Kết thúc</label>
+            <input type="datetime-local" class="form-control" name="end" required>
+        </div>
+        <div class="col-md-3 align-self-end">
+            <button class="btn btn-outline-success w-100">Tra cứu sân trống</button>
+        </div>
+    </form>
+
+    <table class="table table-bordered">
+        <thead>
+        <tr>
+            <th>Tên</th><th>Loại sân</th><th>Mặt sân</th><th>Sức chứa</th><th>Giá/giờ</th><th>Vị trí</th><th>Trạng thái</th><th>Thao tác</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="f : ${fields}">
+            <td th:text="${f.name}"></td>
+            <td th:text="${f.fieldType}"></td>
+            <td th:text="${f.surfaceType}"></td>
+            <td th:text="${f.capacity}"></td>
+            <td th:text="${f.pricePerHour}"></td>
+            <td th:text="${f.location != null ? f.location.name : 'N/A'}"></td>
+            <td>
+                <span th:if="${f.isActive}" class="badge bg-success">Hoạt động</span>
+                <span th:unless="${f.isActive}" class="badge bg-secondary">Ngưng</span>
+            </td>
+            <td>
+                <a th:href="@{'/manager/fields/' + ${f.id} + '/edit'}" class="btn btn-sm btn-warning">Sửa</a>
+                <form th:action="@{'/manager/fields/' + ${f.id} + '/delete'}" method="post" class="d-inline">
+                    <button class="btn btn-sm btn-danger" onclick="return confirm('Xóa sân?')">Xóa</button>
+                </form>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+</body>
+</html>

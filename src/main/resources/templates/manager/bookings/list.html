@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Quản lý đặt sân</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<div th:replace="~{manager/fragments/navbar :: navbar}"></div>
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3>Danh sách đặt sân</h3>
+        <a href="/manager/bookings/new" class="btn btn-primary">Tạo đặt sân</a>
+    </div>
+
+    <table class="table table-bordered">
+        <thead><tr><th>Mã</th><th>Khách</th><th>Sân</th><th>Thời gian</th><th>Tổng</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+        <tbody>
+        <tr th:each="b : ${bookings}">
+            <td th:text="${b.bookingCode}"></td>
+            <td th:text="${b.customer != null ? b.customer.getFullName() : 'N/A'}"></td>
+            <td th:text="${b.field.name}"></td>
+            <td th:text="${#dates.format(b.startTime, 'yyyy-MM-dd HH:mm')} + ' - ' + ${#dates.format(b.endTime, 'yyyy-MM-dd HH:mm')}"></td>
+            <td th:text="${b.totalAmount}"></td>
+            <td th:text="${b.status}"></td>
+            <td>
+                <form th:action="@{'/manager/bookings/' + ${b.id} + '/confirm'}" method="post" class="d-inline" th:if="${b.status.name() == 'PENDING'}">
+                    <button class="btn btn-sm btn-success">Xác nhận</button>
+                </form>
+                <form th:action="@{'/manager/bookings/' + ${b.id} + '/cancel'}" method="post" class="d-inline" th:if="${b.status.name() != 'CANCELLED'}">
+                    <button class="btn btn-sm btn-danger">Hủy</button>
+                </form>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+</body>
+</html>

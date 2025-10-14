@@ -1,18 +1,15 @@
 package utescore.controller.admin;
 
 import lombok.RequiredArgsConstructor;
+
+import java.util.List;
+
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import utescore.entity.*;
 import utescore.service.*;
 
-import jakarta.servlet.http.HttpServletRequest;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
 
 @Controller
 @RequestMapping("/admin")
@@ -28,7 +25,7 @@ public class PaymentController {
     private final CustomerService customerService;
     private final BooKingService bookingService;
     
-    @GetMapping("/testpayment")
+    @GetMapping("/payment")
     public String testPayment(Model model) {
         List<Order> orders = orderService.getAllOrders();
         List<Payment> payments = paymentService.getAllPayments();

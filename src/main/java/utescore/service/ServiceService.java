@@ -53,7 +53,6 @@ public class ServiceService {
         serviceRepository.deleteById(id);
     }
 
-    // Dashboard statistics method
     public long countAllServices() {
         return serviceRepository.count();
     }

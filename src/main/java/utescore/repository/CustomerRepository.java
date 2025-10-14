@@ -7,9 +7,12 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import utescore.entity.Customer;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface CustomerRepository extends JpaRepository<Customer, Long> {
+	@Query("SELECT c FROM Customer c")
+	List<Customer> findAll();
     // Tìm kiếm theo số điện thoại
     Optional<Customer> findByPhoneNumber(String phoneNumber);
 

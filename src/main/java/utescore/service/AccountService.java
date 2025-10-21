@@ -92,8 +92,8 @@ public class AccountService {
         
         return savedAccount;
     }
-    
-    public Account createAccountByRole(RegisterRequest registerRequest,String role) {
+
+    public Account createAccountByRole(RegisterRequest registerRequest, String role) {
         if (!registerRequest.isPasswordMatching()) {
             throw new IllegalArgumentException("Passwords do not match");
         }
@@ -115,16 +115,22 @@ public class AccountService {
         account.setIsActive(true);
 
         Account savedAccount = accountRepository.save(account);
-        
+
+        String currentUser = null;
+        if (SecurityContextHolder.getContext().getAuthentication() != null) {
+            currentUser = SecurityContextHolder.getContext().getAuthentication().getName();
+        }
+
         logService.logAction(
-        	    "New user registered: " + savedAccount.getUsername() + " with " + role,
-        	    accountRepository.findByUsername(
-        	        SecurityContextHolder.getContext().getAuthentication().getName()
-        	    ).orElse(null)
-        	);
-        
+                "New user registered: " + savedAccount.getUsername() + " with " + role,
+                currentUser != null
+                        ? accountRepository.findByUsername(currentUser).orElse(null)
+                        : null
+        );
+
         return savedAccount;
     }
+
     public Optional<Account> findByUsername(String username) {
         return accountRepository.findByUsername(username);
     }

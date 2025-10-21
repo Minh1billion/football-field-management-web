@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/manager :: layout(~{::content})}">
+<head>
+    <title>Lịch bảo trì</title>
+</head>
+
+<body>
+<div th:fragment="content">
+    <div class="container mt-4">
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="text-primary">Lịch bảo trì sân</h2>
+        </div>
+
+        <!-- Form lên lịch bảo trì -->
+        <form class="row g-3 mb-4 p-3 border rounded shadow-sm bg-light"
+              method="post"
+              th:action="@{/manager/maintenances/schedule}">
+
+            <div class="col-md-2">
+                <label class="form-label fw-semibold">Sân</label>
+                <select class="form-select" name="fieldId" required>
+                    <option th:each="f : ${fields}" th:value="${f.id}" th:text="${f.name}"></option>
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label fw-semibold">Loại bảo trì</label>
+                <select class="form-select" name="type" required>
+                    <option th:each="t : ${types}" th:value="${t}" th:text="${t}"></option>
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label fw-semibold">Thời điểm</label>
+                <input type="datetime-local" class="form-control" name="scheduledDate" required>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label fw-semibold">Tiêu đề</label>
+                <input class="form-control" name="title" placeholder="VD: Bảo trì hệ thống chiếu sáng" required>
+            </div>
+
+            <div class="col-md-2 align-self-end">
+                <button class="btn btn-success w-100">📅 Lên lịch</button>
+            </div>
+
+            <div class="col-12">
+                <input class="form-control" name="description" placeholder="Mô tả (tùy chọn)">
+            </div>
+        </form>
+
+        <!-- Danh sách lịch bảo trì -->
+        <div class="table-responsive shadow-sm rounded">
+            <table class="table table-striped align-middle">
+                <thead class="table-primary">
+                <tr>
+                    <th>Sân</th>
+                    <th>Tiêu đề</th>
+                    <th>Loại</th>
+                    <th>Thời điểm</th>
+                    <th>Trạng thái</th>
+                    <th class="text-center">Thao tác</th>
+                </tr>
+                </thead>
+
+                <tbody>
+                <tr th:each="m : ${maintenances}">
+                    <td th:text="${m.field.name}"></td>
+                    <td th:text="${m.title}"></td>
+                    <td th:text="${m.type}"></td>
+                    <td th:text="${#dates.format(m.scheduledDate, 'yyyy-MM-dd HH:mm')}"></td>
+                    <td>
+                        <span th:text="${m.status}"
+                              th:classappend="${m.status.name() == 'PENDING' ? 'badge bg-warning text-dark' :
+                                               (m.status.name() == 'IN_PROGRESS' ? 'badge bg-info text-dark' :
+                                               (m.status.name() == 'COMPLETED' ? 'badge bg-success' :
+                                               'badge bg-secondary'))}">
+                        </span>
+                    </td>
+
+                    <td class="text-center">
+                        <!-- Form cập nhật trạng thái -->
+                        <form th:action="@{'/manager/maintenances/' + ${m.id} + '/status'}"
+                              method="post"
+                              class="d-inline">
+                            <select name="status" class="form-select form-select-sm d-inline w-auto me-1">
+                                <option th:each="s : ${statuses}"
+                                        th:value="${s}"
+                                        th:text="${s}"
+                                        th:selected="${m.status} == ${s}"></option>
+                            </select>
+                            <button class="btn btn-sm btn-success">💾 Lưu</button>
+                        </form>
+
+                        <!-- Form xóa lịch -->
+                        <form th:action="@{'/manager/maintenances/' + ${m.id} + '/delete'}"
+                              method="post"
+                              class="d-inline">
+                            <button class="btn btn-sm btn-danger"
+                                    onclick="return confirm('Bạn có chắc chắn muốn xóa lịch này không?');">
+                                🗑️ Xóa
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+
+                <tr th:if="${#lists.isEmpty(maintenances)}">
+                    <td colspan="6" class="text-center text-muted">
+                        Không có lịch bảo trì nào được tìm thấy.
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</body>
+</html>

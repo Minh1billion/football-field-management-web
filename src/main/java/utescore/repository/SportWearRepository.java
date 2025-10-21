@@ -10,18 +10,18 @@ import utescore.entity.SportWear;
 
 @Repository
 public interface SportWearRepository extends JpaRepository<SportWear, Long> {
-    
+
     @Query("SELECT s FROM SportWear s WHERE " +
-           "(:name IS NULL OR LOWER(s.name) LIKE LOWER(CONCAT('%', :name, '%'))) AND " +
-           "(:wearType IS NULL OR s.wearType = :wearType) AND " +
-           "(:size IS NULL OR s.size = :size)")
+            "(:name IS NULL OR LOWER(s.name) LIKE LOWER(CONCAT('%', :name, '%'))) AND " +
+            "(:wearType IS NULL OR s.wearType = :wearType) AND " +
+            "(:size IS NULL OR s.size = :size)")
     Page<SportWear> findByNameContainingAndWearTypeAndSize(
             @Param("name") String name,
             @Param("wearType") SportWear.WearType wearType,
             @Param("size") SportWear.Size size,
             Pageable pageable);
-            
+
     Page<SportWear> findByIsAvailableForRentTrue(Pageable pageable);
-    
+
     Page<SportWear> findByIsAvailableForSaleTrue(Pageable pageable);
 }

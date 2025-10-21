@@ -27,16 +27,22 @@ public class HomeController {
                     Account account = accountService.findByUsername(username).orElse(null);
 
                     if (account != null) {
-                        model.addAttribute("account", account);
-                        model.addAttribute("role", account.getRole().name());
-                        if (account.getRole().name().equals("ADMIN")) {
-                            return "redirect:/admin/dashboard";
+                        // Điều hướng theo vai trò người dùng
+                        switch (account.getRole()) {
+                            case MANAGER:
+                                return "redirect:/manager/dashboard";
+                            case ADMIN:
+                                return "redirect:/admin/dashboard";
+                            case USER:
+                            default:
+                                model.addAttribute("account", account);
+                                model.addAttribute("role", account.getRole().name());
+                                return "home/user-home";
                         }
-                        return "home/user-home";
                     }
                 }
             } catch (Exception e) {
-                // Ignored - fallback below
+                // Nếu có lỗi khi xác thực token, quay về trang public
             }
         }
         return "home/public-home";
@@ -44,6 +50,7 @@ public class HomeController {
 
     @GetMapping("/logout")
     public String logout(HttpServletResponse response) {
+        // Xóa cookie token
         Cookie cookie = new Cookie("token", null);
         cookie.setMaxAge(0);
         cookie.setPath("/");

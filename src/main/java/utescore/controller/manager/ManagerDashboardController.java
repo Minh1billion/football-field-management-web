@@ -1,5 +1,6 @@
-package utescore.controller.admin;
+package utescore.controller.manager;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -9,15 +10,16 @@ import utescore.service.AccountService;
 import utescore.service.ServiceService;
 
 @Controller
-@RequestMapping("/admin")
-public class DashboardController {
-    
+@RequestMapping("/manager")
+@RequiredArgsConstructor
+public class ManagerDashboardController {
+
     @Autowired
     private AccountService accountService;
-    
+
     @Autowired
     private ServiceService serviceService;
-    
+
     @GetMapping("/dashboard")
     public String dashboard(Model model) {
         try {
@@ -28,13 +30,13 @@ public class DashboardController {
             long totalAdmins = accountService.countByRole("ADMIN");
             long activeAccounts = accountService.countActiveAccounts();
             long inactiveAccounts = totalAccounts - activeAccounts;
-            
+
             // Lấy thống kê dịch vụ
             long totalServices = serviceService.countAllServices();
-            
+
             // Thống kê sân (tạm thời để 0, sẽ implement sau)
             long totalFields = 0;
-            
+
             // Thêm dữ liệu vào model
             model.addAttribute("totalAccounts", totalAccounts);
             model.addAttribute("totalUsers", totalUsers);
@@ -44,7 +46,7 @@ public class DashboardController {
             model.addAttribute("inactiveAccounts", inactiveAccounts);
             model.addAttribute("totalServices", totalServices);
             model.addAttribute("totalFields", totalFields);
-            
+
         } catch (Exception e) {
             // Nếu có lỗi, set giá trị mặc định
             model.addAttribute("totalAccounts", 0L);
@@ -56,7 +58,7 @@ public class DashboardController {
             model.addAttribute("totalServices", 0L);
             model.addAttribute("totalFields", 0L);
         }
-        
-        return "admin/dashboard";
+
+        return "manager/dashboard";
     }
 }

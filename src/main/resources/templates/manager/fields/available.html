@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/manager :: layout(~{::content})}">
+<head>
+    <title>Sân trống</title>
+</head>
+
+<body>
+<div th:fragment="content">
+    <div class="container mt-4">
+        <h3 class="mb-4 text-primary fw-bold">🏟️ Danh sách sân trống</h3>
+
+        <form class="row g-3 mb-4 card p-3 shadow-sm border-0" method="get" th:action="@{/manager/fields/available}">
+            <div class="col-md-3">
+                <label class="form-label fw-semibold">Vị trí</label>
+                <select class="form-select" name="locationId">
+                    <option th:value="${null}">-- Tất cả --</option>
+                    <option th:each="l : ${locations}"
+                            th:value="${l.id}"
+                            th:text="${l.name}"
+                            th:selected="${selectedLocationId != null and selectedLocationId == l.id}">
+                    </option>
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label fw-semibold">Bắt đầu</label>
+                <input type="datetime-local"
+                       class="form-control"
+                       name="start"
+                       th:value="${#dates.format(start, 'yyyy-MM-dd\'T\'HH:mm')}"
+                       required>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label fw-semibold">Kết thúc</label>
+                <input type="datetime-local"
+                       class="form-control"
+                       name="end"
+                       th:value="${#dates.format(end, 'yyyy-MM-dd\'T\'HH:mm')}"
+                       required>
+            </div>
+
+            <div class="col-md-3 align-self-end">
+                <button class="btn btn-success w-100 fw-semibold">🔍 Tra cứu lại</button>
+            </div>
+        </form>
+
+        <div class="table-responsive shadow-sm rounded">
+            <table class="table table-striped align-middle">
+                <thead class="table-primary">
+                <tr>
+                    <th>Tên sân</th>
+                    <th>Loại sân</th>
+                    <th>Mặt sân</th>
+                    <th>Giá / giờ</th>
+                    <th>Vị trí</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="f : ${availableFields}">
+                    <td th:text="${f.name}"></td>
+                    <td th:text="${f.fieldType}"></td>
+                    <td th:text="${f.surfaceType}"></td>
+                    <td th:text="${#numbers.formatDecimal(f.pricePerHour, 0, 'COMMA', 0, 'POINT')} + ' đ'"></td>
+                    <td th:text="${f.location != null ? f.location.name : 'N/A'}"></td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(availableFields)}">
+                    <td colspan="5" class="text-center text-muted">
+                        Không có sân trống trong thời gian đã chọn.
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</body>
+</html>

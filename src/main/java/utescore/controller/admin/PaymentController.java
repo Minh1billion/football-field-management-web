@@ -41,7 +41,7 @@ public class PaymentController {
         model.addAttribute("customers", customers);
         model.addAttribute("bookings", bookings);
         
-        return "admin/thanhtoan/Payment";
+        return "admin/transactions/payment";
     }
     
    

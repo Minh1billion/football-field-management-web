@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org"
-      th:replace="layout/manager :: layout(~{::section})">
+      th:replace="~{layout/manager :: layout(content=~{::section})}">
+<head>
+    <title>Báo cáo</title>
+</head>
 <section>
     <div class="container">
         <h2 class="mb-4">📊 Báo cáo</h2>
@@ -37,6 +40,9 @@
                                 <td th:text="${e.key}"></td>
                                 <td th:text="${#numbers.formatDecimal(e.value,0,'COMMA',0,'POINT')}"></td>
                             </tr>
+                            <tr th:if="${#maps.isEmpty(revByMonth)}">
+                                <td colspan="2" class="text-center text-muted">Chưa có dữ liệu</td>
+                            </tr>
                             </tbody>
                         </table>
                     </div>
@@ -46,7 +52,8 @@
                 <div class="card">
                     <div class="card-header">Tổng doanh thu (khoảng lọc)</div>
                     <div class="card-body">
-                        <h3 class="text-success" th:text="${#numbers.formatDecimal(totalRevenue,0,'COMMA',0,'POINT')}"></h3>
+                        <h3 class="text-success"
+                            th:text="${totalRevenue != null ? #numbers.formatDecimal(totalRevenue,0,'COMMA',0,'POINT') : '0'}"></h3>
                         <div class="text-muted">
                             [[${#temporals.format(rangeStart,'dd/MM/yyyy')}]] - [[${#temporals.format(rangeEnd,'dd/MM/yyyy')}]]
                         </div>
@@ -67,7 +74,9 @@
                                 <td th:text="${e.key}"></td>
                                 <td th:text="${#numbers.formatDecimal(e.value,0,'COMMA',0,'POINT')}"></td>
                             </tr>
-                            <tr th:if="${#maps.isEmpty(revenueByField)}"><td colspan="2" class="text-center text-muted">Chưa có dữ liệu</td></tr>
+                            <tr th:if="${#maps.isEmpty(revenueByField)}">
+                                <td colspan="2" class="text-center text-muted">Chưa có dữ liệu</td>
+                            </tr>
                             </tbody>
                         </table>
                     </div>
@@ -84,7 +93,9 @@
                                 <td th:text="${e.key}"></td>
                                 <td th:text="${e.value}"></td>
                             </tr>
-                            <tr th:if="${#maps.isEmpty(bookingStats)}"><td colspan="2" class="text-center text-muted">Chưa có dữ liệu</td></tr>
+                            <tr th:if="${#maps.isEmpty(bookingStats)}">
+                                <td colspan="2" class="text-center text-muted">Chưa có dữ liệu</td>
+                            </tr>
                             </tbody>
                         </table>
                     </div>

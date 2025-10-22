@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/user :: layout(~{::content})}">
+<body>
+<div th:fragment="content" class="container mt-4">
+    <h3>🔍 Chi tiết đặt sân</h3>
+
+    <div th:if="${booking}">
+        <p><strong>Mã đặt:</strong> <span th:text="${booking.bookingCode}"></span></p>
+        <p><strong>Tên sân:</strong> <span th:text="${booking.fieldName}"></span></p>
+        <p><strong>Ngày đặt:</strong> <span th:text="${#temporals.format(booking.bookingTime, 'dd/MM/yyyy')}"></span></p>
+        <p><strong>Thời gian:</strong>
+            <span th:text="${#temporals.format(booking.startTime, 'HH:mm')}"></span> -
+            <span th:text="${#temporals.format(booking.endTime, 'HH:mm')}"></span>
+        </p>
+        <p><strong>Tổng tiền:</strong>
+            <span th:text="${#numbers.formatDecimal(booking.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></span>
+        </p>
+        <p><strong>Trạng thái:</strong> <span th:text="${booking.status}"></span></p>
+        <p><strong>Thanh toán:</strong> <span th:text="${booking.paymentMethod}"></span></p>
+    </div>
+
+    <a th:href="@{/user/bookings}" class="btn btn-secondary mt-3">⬅ Quay lại danh sách</a>
+</div>
+</body>
+</html>

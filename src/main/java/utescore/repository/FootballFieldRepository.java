@@ -8,4 +8,5 @@ import java.util.List;
 public interface FootballFieldRepository extends JpaRepository<FootballField, Long> {
     List<FootballField> findByLocation_Id(Long locationId);
     List<FootballField> findByIsActiveTrue();
+    long countByManagerId(Long managerId);
 }

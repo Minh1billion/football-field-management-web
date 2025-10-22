@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/user :: layout(~{::content})}">
+<head>
+    <meta charset="UTF-8">
+    <title>Trang chủ người dùng</title>
+</head>
+
+<body>
+<div th:fragment="content">
+    <div class="container text-center mt-5">
+        <h2 class="mb-4 fw-bold text-success">Chào mừng đến với ⚽ UTEScore</h2>
+        <p class="lead text-muted">Hãy chọn chức năng bạn muốn sử dụng bên dưới:</p>
+
+        <div class="d-flex justify-content-center gap-3 mt-4">
+            <a th:href="@{/user/bookings}" class="btn btn-primary btn-lg px-4">Đặt sân</a>
+            <a th:href="@{/user/orders}" class="btn btn-outline-success btn-lg px-4">Xem đơn hàng</a>
+        </div>
+    </div>
+</div>
+</body>
+</html>

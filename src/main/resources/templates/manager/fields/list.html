@@ -21,7 +21,8 @@
                 <tr>
                     <th>Mã sân</th>
                     <th>Tên sân</th>
-                    <th>Địa chỉ</th>
+                    <th>Địa điểm</th>
+                    <th>Loại sân</th>
                     <th>Giá / giờ</th>
                     <th>Trạng thái</th>
                     <th class="text-center">Hành động</th>
@@ -29,28 +30,36 @@
                 </thead>
                 <tbody>
                 <tr th:each="field : ${fields}">
-                    <td th:text="${field.id}"></td>
-                    <td th:text="${field.name}"></td>
-                    <td th:text="${field.address}"></td>
-                    <td th:text="${#numbers.formatDecimal(field.pricePerHour, 0, 'COMMA', 0, 'POINT')} + ' đ'"></td>
+                    <td th:text="${field.id}">1</td>
+                    <td th:text="${field.name}">Sân A</td>
                     <td>
-                            <span th:text="${field.active ? 'Đang hoạt động' : 'Tạm ngưng'}"
-                                  th:classappend="${field.active ? 'badge bg-success' : 'badge bg-secondary'}">
-                            </span>
+                        <span th:if="${field.location != null}" th:text="${field.location.name}">Location</span>
+                        <span th:if="${field.location == null}">N/A</span>
+                    </td>
+                    <td th:text="${field.fieldType}">Type</td>
+                    <td>
+                        <span th:text="${#numbers.formatDecimal(field.pricePerHour, 0, 'COMMA', 0, 'POINT')}">100000</span> đ
+                    </td>
+                    <td>
+                        <span th:if="${field.isActive}" class="badge bg-success">Đang hoạt động</span>
+                        <span th:unless="${field.isActive}" class="badge bg-secondary">Tạm ngưng</span>
                     </td>
                     <td class="text-center">
-                        <a th:href="@{'/manager/fields/edit/' + ${field.id}}" class="btn btn-sm btn-warning me-1">
+                        <a th:href="@{/manager/fields/{id}/edit(id=${field.id})}" class="btn btn-sm btn-warning me-1">
                             ✏️ Sửa
                         </a>
-                        <a th:href="@{'/manager/fields/delete/' + ${field.id}}"
-                           class="btn btn-sm btn-danger"
-                           onclick="return confirm('Bạn có chắc chắn muốn xóa sân này không?');">
-                            🗑️ Xóa
-                        </a>
+                        <form th:action="@{/manager/fields/{id}/delete(id=${field.id})}"
+                              method="post"
+                              style="display: inline;">
+                            <button type="submit" class="btn btn-sm btn-danger"
+                                    onclick="return confirm('Bạn có chắc chắn muốn xóa sân này không?');">
+                                🗑️ Xóa
+                            </button>
+                        </form>
                     </td>
                 </tr>
-                <tr th:if="${#lists.isEmpty(fields)}">
-                    <td colspan="6" class="text-center text-muted">
+                <tr th:if="${fields == null || #lists.isEmpty(fields)}">
+                    <td colspan="7" class="text-center text-muted">
                         Không có sân nào được tìm thấy.
                     </td>
                 </tr>

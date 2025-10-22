@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/user :: layout(~{::content})}">
+<body>
+<div th:fragment="content">
+    <div class="container mt-4">
+        <h3 class="mb-3">📅 Kiểm tra sân khả dụng</h3>
+
+        <form class="row mb-3">
+            <div class="col-md-4">
+                <select name="locationId" class="form-select">
+                    <option value="">Tất cả địa điểm</option>
+                    <option th:each="l : ${locations}" th:value="${l.id}" th:text="${l.name}"></option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <input type="date" name="date" th:value="${selectedDate}" class="form-control">
+            </div>
+            <div class="col-md-4">
+                <button class="btn btn-success w-100">Tìm sân</button>
+            </div>
+        </form>
+
+        <table class="table table-hover">
+            <thead class="table-success">
+            <tr>
+                <th>Tên sân</th>
+                <th>Loại sân</th>
+                <th>Sức chứa</th>
+                <th>Giá/giờ</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="f : ${fields}">
+                <td th:text="${f.name}">Sân A1</td>
+                <td th:text="${f.fieldType}">5 người</td>
+                <td th:text="${f.capacity}">10</td>
+                <td th:text="${f.pricePerHour} + ' VNĐ'">---</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+</body>
+</html>

@@ -34,7 +34,7 @@ public class FootballField {
     private FieldType fieldType;
 
     @Column(nullable = false)
-    private Integer capacity; // Maximum number of players
+    private Integer capacity;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -67,6 +67,8 @@ public class FootballField {
     @JoinColumn(name = "location_id")
     @ToString.Exclude
     private Location location;
+
+    private Long managerId;
 
     @OneToMany(mappedBy = "field", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @ToString.Exclude

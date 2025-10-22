@@ -1,8 +1,10 @@
 package utescore.controller;
 
 import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.CookieValue;
@@ -34,10 +36,11 @@ public class HomeController {
                             case ADMIN:
                                 return "redirect:/admin/dashboard";
                             case USER:
+                                return "redirect:/user/user-home";
                             default:
                                 model.addAttribute("account", account);
                                 model.addAttribute("role", account.getRole().name());
-                                return "home/user-home";
+                                return "home/public-home";
                         }
                     }
                 }
@@ -49,14 +52,20 @@ public class HomeController {
     }
 
     @GetMapping("/logout")
-    public String logout(HttpServletResponse response) {
+    public String logout(HttpServletResponse response, HttpServletRequest request) {
         // Xóa cookie token
         Cookie cookie = new Cookie("token", null);
         cookie.setMaxAge(0);
         cookie.setPath("/");
+        cookie.setHttpOnly(true);
+        cookie.setSecure(false);
         response.addCookie(cookie);
 
-        return "redirect:/home/public-home";
+        // Xóa session và SecurityContext
+        request.getSession().invalidate();
+        SecurityContextHolder.clearContext();
+
+        return "redirect:/home";
     }
 
     @GetMapping("/home/public-home")

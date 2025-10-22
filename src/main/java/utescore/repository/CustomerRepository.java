@@ -26,4 +26,7 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
     // Kiểm tra số điện thoại đã tồn tại (trừ ID hiện tại)
     @Query("SELECT c FROM Customer c WHERE c.phoneNumber = :phoneNumber AND c.id != :id")
     Optional<Customer> findByPhoneNumberAndIdNot(@Param("phoneNumber") String phoneNumber, @Param("id") Long id);
+
+    // Tìm id theo tên người dùng của tài khoản khách hàng
+    Customer findByAccount_Username(String username);
 }

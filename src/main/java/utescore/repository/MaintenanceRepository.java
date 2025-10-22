@@ -19,4 +19,12 @@ public interface MaintenanceRepository extends JpaRepository<Maintenance, Long> 
     List<Maintenance> findPlannedInRange(@Param("fieldId") Long fieldId,
                                          @Param("start") LocalDateTime start,
                                          @Param("end") LocalDateTime end);
+
+    long countByField_ManagerIdAndScheduledDateBetween(Long managerId, LocalDateTime start, LocalDateTime end);
+    @Query("""
+    select count(distinct m.field.id) from Maintenance m
+    where m.field.managerId = :managerId
+      and m.status = utescore.entity.Maintenance.MaintenanceStatus.IN_PROGRESS
+    """)
+    long countActiveMaintenanceFieldsByManagerUsername(@Param("managerId") Long managerId);
 }

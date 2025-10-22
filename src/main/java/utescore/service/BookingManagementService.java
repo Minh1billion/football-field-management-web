@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
 import utescore.dto.BookingRequestDTO;
 import utescore.entity.*;
+import utescore.entity.BookingService;
 import utescore.repository.*;
 
 import java.math.BigDecimal;
@@ -54,7 +55,7 @@ public class BookingManagementService {
             for (Long sid : req.getServiceIds()) {
                 utescore.entity.Service s = serviceRepo.findById(sid).orElse(null);
                 if (s != null && Boolean.TRUE.equals(s.getIsAvailable())) {
-                    BookingService bs = new BookingService();
+                    utescore.entity.BookingService bs = new BookingService();
                     bs.setBooking(saved);
                     bs.setService(s);
                     bs.setQuantity(1);

@@ -5,6 +5,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import utescore.dto.FootballFieldDTO;
 import utescore.entity.FootballField;
 import utescore.entity.Location;
 import utescore.service.FieldManagementService;
@@ -63,7 +64,7 @@ public class ManagerFieldController {
                                   @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
                                   @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end,
                                   Model model) {
-        List<FootballField> avail = fieldService.findAvailableFields(locationId, start, end);
+        List<FootballFieldDTO> avail = fieldService.findAvailableFields(locationId, start, end);
         model.addAttribute("availableFields", avail);
         model.addAttribute("locations", fieldService.listLocations());
         model.addAttribute("start", start);

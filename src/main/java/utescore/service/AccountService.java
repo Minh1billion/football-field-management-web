@@ -17,6 +17,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Service
@@ -94,38 +95,63 @@ public class AccountService {
     }
 
     public Account createAccountByRole(RegisterRequest registerRequest, String role) {
+        // Validate password
         if (!registerRequest.isPasswordMatching()) {
             throw new IllegalArgumentException("Passwords do not match");
         }
 
+        // Check username/email existence
         if (accountRepository.existsByUsername(registerRequest.getUsername())) {
             throw new IllegalArgumentException("Username already exists");
         }
-
         if (accountRepository.existsByEmail(registerRequest.getEmail())) {
             throw new IllegalArgumentException("Email already exists");
         }
 
-        // Create account
+        // Create new account
         Account account = new Account();
         account.setUsername(registerRequest.getUsername());
         account.setEmail(registerRequest.getEmail());
         account.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
-        account.setRole(Account.Role.valueOf(role));
+        account.setRole(Account.Role.valueOf(role.toUpperCase()));
         account.setIsActive(true);
 
         Account savedAccount = accountRepository.save(account);
 
-        String currentUser = null;
-        if (SecurityContextHolder.getContext().getAuthentication() != null) {
-            currentUser = SecurityContextHolder.getContext().getAuthentication().getName();
+        // Nếu là USER thì tạo luôn Customer + Loyalty
+        if (role.equalsIgnoreCase("USER")) {
+            Customer customer = new Customer();
+            customer.setFirstName(registerRequest.getFirstName());
+            customer.setLastName(registerRequest.getLastName());
+            customer.setPhoneNumber(registerRequest.getPhoneNumber());
+            customer.setDateOfBirth(registerRequest.getDateOfBirth());
+            customer.setGender(registerRequest.getGender());
+            customer.setAddress(registerRequest.getAddress());
+            customer.setEmergencyContact(registerRequest.getEmergencyContact());
+            customer.setEmergencyPhone(registerRequest.getEmergencyPhone());
+            customer.setAccount(savedAccount);
+            customer.setCreatedAt(LocalDateTime.now());
+
+            // Loyalty mặc định
+            Loyalty loyalty = new Loyalty();
+            loyalty.setCustomer(customer);
+            loyalty.setPoints(0);
+            loyalty.setTier(Loyalty.MembershipTier.BRONZE);
+            loyalty.setTotalSpent(BigDecimal.ZERO);
+            loyalty.setTotalBookings(0);
+            customer.setLoyalty(loyalty);
+
+            customerRepository.save(customer);
         }
 
+        // Ghi log
+        String currentUser = SecurityContextHolder.getContext().getAuthentication() != null
+                ? SecurityContextHolder.getContext().getAuthentication().getName()
+                : null;
+
         logService.logAction(
-                "New user registered: " + savedAccount.getUsername() + " with " + role,
-                currentUser != null
-                        ? accountRepository.findByUsername(currentUser).orElse(null)
-                        : null
+                "New account created: " + savedAccount.getUsername() + " (" + role + ")",
+                currentUser != null ? accountRepository.findByUsername(currentUser).orElse(null) : null
         );
 
         return savedAccount;

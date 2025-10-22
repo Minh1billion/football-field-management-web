@@ -2,8 +2,10 @@ package utescore.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
+import utescore.entity.Account;
 import utescore.entity.FootballField;
 import utescore.entity.Maintenance;
+import utescore.repository.AccountRepository;
 import utescore.repository.FootballFieldRepository;
 import utescore.repository.MaintenanceRepository;
 
@@ -17,6 +19,7 @@ public class MaintenanceManagementService {
 
     private final MaintenanceRepository maintenanceRepo;
     private final FootballFieldRepository fieldRepo;
+    private final AccountRepository accountRepo;
 
     public List<Maintenance> listAll() {
         return maintenanceRepo.findAll();
@@ -47,6 +50,17 @@ public class MaintenanceManagementService {
             m.setCompletedDate(java.time.LocalDateTime.now());
         }
         return maintenanceRepo.save(m);
+    }
+
+    public long countUpcomingMaintenanceByManager(String username, LocalDateTime now, LocalDateTime end) {
+        Account manager = accountRepo.findByUsername(username)
+                        .orElseThrow(() -> new RuntimeException("Manager not found"));
+        return maintenanceRepo.countByField_ManagerIdAndScheduledDateBetween(manager.getId(), now, end);
+    }
+
+    public long countActiveMaintenanceFieldsByManager(String username) {
+        Account manager = accountRepo.findByUsername(username).orElseThrow(() -> new RuntimeException("Manager not found"));
+        return maintenanceRepo.countActiveMaintenanceFieldsByManagerUsername(manager.getId());
     }
 
     public void delete(Long id) {

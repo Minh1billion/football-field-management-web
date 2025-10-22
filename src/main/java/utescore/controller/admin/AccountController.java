@@ -82,6 +82,11 @@ public class AccountController {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
             return "redirect:/admin/accounts/create";
         }
+        catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Đã xảy ra lỗi khi tạo tài khoản!");
+            return "redirect:/admin/accounts/create";
+        }
+        
         return "redirect:/admin/accounts";
     }
 

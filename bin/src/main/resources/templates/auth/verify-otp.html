@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify OTP - UTE Score</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card mt-5">
+                <div class="card-body">
+                    <h2 class="card-title text-center mb-4">Verify OTP</h2>
+                    <p class="text-center text-muted">Please enter the OTP sent to your email</p>
+
+                    <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+                    <div th:if="${message}" class="alert alert-success" th:text="${message}"></div>
+
+                    <form th:action="@{/auth/verify-otp}" th:object="${otpRequest}" method="post">
+                        <!-- Hidden email field -->
+                        <input type="hidden" th:field="*{email}">
+
+                        <div class="mb-3">
+                            <label for="otp" class="form-label">OTP Code</label>
+                            <input type="text" class="form-control text-center" id="otp"
+                                   th:field="*{otp}" maxlength="6"
+                                   placeholder="Enter 6-digit OTP"
+                                   style="font-size: 1.5rem; letter-spacing: 0.5rem;"
+                                   required>
+                            <div th:if="${#fields.hasErrors('otp')}" class="text-danger" th:errors="*{otp}"></div>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">Verify OTP</button>
+                        </div>
+                    </form>
+
+                    <div class="text-center mt-3">
+                        <button type="button" class="btn btn-link" onclick="resendOtp()" id="resendBtn">
+                            Didn't receive OTP? Resend
+                        </button>
+                        <div id="countdown" class="text-muted small" style="display: none;">
+                            Resend available in <span id="timer">60</span> seconds
+                        </div>
+                    </div>
+
+                    <div class="text-center mt-3">
+                        <a th:href="@{/auth/register}" class="btn btn-outline-secondary">Back to Register</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let countdownTimer = null;
+
+    function resendOtp() {
+        const resendBtn = document.getElementById('resendBtn');
+        const countdown = document.getElementById('countdown');
+
+        // Disable resend button and show countdown
+        resendBtn.style.display = 'none';
+        countdown.style.display = 'block';
+
+        fetch('/auth/resend-otp', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    const alert = document.createElement('div');
+                    alert.className = 'alert alert-success alert-dismissible fade show';
+                    alert.innerHTML = data.message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+                    document.querySelector('.card-body').insertBefore(alert, document.querySelector('form'));
+                    setTimeout(() => { alert.remove(); }, 3000);
+                } else if (data.error) {
+                    alert(data.error);
+                }
+            }).catch(error => {
+            console.error('Error:', error);
+            alert('Error resending OTP');
+        });
+
+        startCountdown(60);
+    }
+
+    function startCountdown(seconds) {
+        const timer = document.getElementById('timer');
+        const resendBtn = document.getElementById('resendBtn');
+        const countdown = document.getElementById('countdown');
+        let timeLeft = seconds;
+
+        countdownTimer = setInterval(() => {
+            timer.textContent = timeLeft;
+            timeLeft--;
+            if (timeLeft < 0) {
+                clearInterval(countdownTimer);
+                countdown.style.display = 'none';
+                resendBtn.style.display = 'block';
+            }
+        }, 1000);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('otp').focus();
+    });
+</script>
+</body>
+</html>

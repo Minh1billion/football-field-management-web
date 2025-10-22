@@ -9,11 +9,12 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+import jakarta.servlet.http.Cookie;
 import utescore.service.CustomUserDetailsService;
 
 @Configuration
@@ -54,7 +55,7 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authz -> authz
                         // Public endpoints
-                        .requestMatchers("/", "/home", "/auth/**", "api/auth/**", "/error").permitAll()
+                        .requestMatchers("/", "/home","/home/public-home","/maintenance", "/auth/**", "api/auth/**", "/error").permitAll()
                         .requestMatchers("/css/**", "/js/**", "/images/**", "/favicon.ico", "/webjars/**").permitAll()
                         .requestMatchers("/api/public/**").permitAll()
 
@@ -76,7 +77,18 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())
-                .logout(logout -> logout.logoutSuccessUrl("/home/public-home"))
+                    .logout(logout -> logout
+                    .logoutUrl("/logout")
+                    .logoutSuccessUrl("/home/public-home")
+                    .addLogoutHandler((request, response, authentication) -> {
+                        Cookie cookie = new Cookie("token", null);
+                        cookie.setMaxAge(0);
+                        cookie.setPath("/");
+                        response.addCookie(cookie);
+                    })
+                    .invalidateHttpSession(true)
+                    .clearAuthentication(true)
+                )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout/admin :: layout(~{::content})}">
+<body>
+<div th:fragment="content">
+    <h2 class="mb-3">👁️ Chi tiết dịch vụ</h2>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Thông tin chi tiết</h5>
+                    <div>
+                        <a th:href="@{/admin/services/edit/{id}(id=${service.id})}" class="btn btn-warning btn-sm">✏️ Chỉnh sửa</a>
+                        <a th:href="@{/admin/services}" class="btn btn-secondary btn-sm">🔙 Quay lại</a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>ID:</strong></td>
+                                    <td th:text="${service.id}"></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Tên dịch vụ:</strong></td>
+                                    <td th:text="${service.name}"></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Loại dịch vụ:</strong></td>
+                                    <td>
+                                        <span class="badge bg-info" th:text="${service.serviceType}"></span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Giá:</strong></td>
+                                    <td>
+                                        <span class="text-success fw-bold" 
+                                              th:text="${service.price} + ' VNĐ'"></span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Số lượng tồn kho:</strong></td>
+                                    <td>
+                                        <span th:text="${service.stockQuantity}" 
+                                              th:classappend="${service.stockQuantity > 0 ? 'text-success' : 'text-warning'}"></span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Trạng thái:</strong></td>
+                                    <td>
+                                        <span th:if="${service.isAvailable}" class="badge bg-success">Hoạt động</span>
+                                        <span th:unless="${service.isAvailable}" class="badge bg-danger">Tạm dừng</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Ngày tạo:</strong></td>
+                                    <td th:text="${#temporals.format(service.createdAt, 'dd/MM/yyyy HH:mm:ss')}"></td>
+                                </tr>
+                                <tr th:if="${service.updatedAt != null}">
+                                    <td><strong>Cập nhật lần cuối:</strong></td>
+                                    <td th:text="${#temporals.format(service.updatedAt, 'dd/MM/yyyy HH:mm:ss')}"></td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <!-- Hình ảnh dịch vụ -->
+                            <div th:if="${service.imageUrl != null and service.imageUrl != ''}">
+                                <h6>Hình ảnh dịch vụ:</h6>
+                                <img th:src="${service.imageUrl}" alt="Service Image" 
+                                     class="img-fluid rounded border" 
+                                     style="max-width: 100%; max-height: 300px; object-fit: cover;">
+                            </div>
+                            <div th:unless="${service.imageUrl != null and service.imageUrl != ''}" 
+                                 class="text-center text-muted">
+                                <div class="border rounded p-4" style="height: 200px; display: flex; align-items: center; justify-content: center;">
+                                    <span>📷 Chưa có hình ảnh</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mô tả -->
+                    <div class="row mt-3" th:if="${service.description != null and service.description != ''}">
+                        <div class="col-12">
+                            <h6>Mô tả:</h6>
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <p class="mb-0" th:text="${service.description}"></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Thống kê sử dụng -->
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <h6>Thống kê:</h6>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="card bg-primary text-white">
+                                        <div class="card-body text-center">
+                                            <h5 th:text="${bookingCount != null ? bookingCount : 0}">0</h5>
+                                            <small>Lượt đặt</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card bg-success text-white">
+                                        <div class="card-body text-center">
+                                            <h5 th:text="${orderCount != null ? orderCount : 0}">0</h5>
+                                            <small>Đơn hàng</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card bg-info text-white">
+                                        <div class="card-body text-center">
+                                            <h5 th:text="${service.stockQuantity > 0 ? 'Còn hàng' : 'Hết hàng'}">-</h5>
+                                            <small>Tình trạng kho</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Nút hành động -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-center gap-2">
+                                <form th:action="@{/admin/services/toggle-availability/{id}(id=${service.id})}" 
+                                      method="post" style="display: inline;">
+                                    <button type="submit" class="btn btn-outline-primary">
+                                        <span th:if="${service.isAvailable}">⏸️ Tạm dừng dịch vụ</span>
+                                        <span th:unless="${service.isAvailable}">▶️ Kích hoạt dịch vụ</span>
+                                    </button>
+                                </form>
+                                <form th:action="@{/admin/services/delete/{id}(id=${service.id})}" 
+                                      method="post" style="display: inline;"
+                                      onsubmit="return confirm('Bạn có chắc chắn muốn xóa dịch vụ này?')">
+                                    <button type="submit" class="btn btn-outline-danger">🗑️ Xóa dịch vụ</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

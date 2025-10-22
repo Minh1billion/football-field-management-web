@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/manager :: layout(~{::content})}">
+<head>
+    <title>Tạo đặt sân</title>
+</head>
+
+<body>
+<div th:fragment="content">
+    <div class="container mt-4">
+        <h3 class="mb-4 text-primary fw-bold">📝 Tạo đặt sân</h3>
+
+        <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+
+        <form th:action="@{/manager/bookings/create}" method="post" class="card shadow-sm p-4 border-0">
+            <div class="row g-3">
+
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Sân</label>
+                    <select name="fieldId" class="form-select" required>
+                        <option th:each="f : ${fields}"
+                                th:value="${f.id}"
+                                th:text="${f.name}">
+                        </option>
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Khách hàng</label>
+                    <select name="customerId" class="form-select" required>
+                        <option th:each="c : ${customers}"
+                                th:value="${c.id}"
+                                th:text="${c.fullName}">
+                        </option>
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Bắt đầu</label>
+                    <input type="datetime-local" class="form-control" name="startTime" required>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Kết thúc</label>
+                    <input type="datetime-local" class="form-control" name="endTime" required>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Dịch vụ kèm theo</label>
+                    <select name="serviceIds" class="form-select" multiple size="5">
+                        <option th:each="s : ${services}"
+                                th:value="${s.id}"
+                                th:text="${s.name + ' - ' + #numbers.formatDecimal(s.price, 0, 'COMMA', 0, 'POINT')} + ' đ'">
+                        </option>
+                    </select>
+                    <small class="text-muted">Giữ Ctrl/Cmd để chọn nhiều</small>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Thuê đồ thể thao</label>
+                    <select name="sportWearIds" class="form-select" multiple size="5">
+                        <option th:each="w : ${sportWears}"
+                                th:value="${w.id}"
+                                th:text="${w.name + ' - ' + #numbers.formatDecimal(w.rentalPricePerDay, 0, 'COMMA', 0, 'POINT')} + ' đ/ngày'">
+                        </option>
+                    </select>
+                    <small class="text-muted">Giữ Ctrl/Cmd để chọn nhiều</small>
+                </div>
+
+            </div>
+
+            <div class="mt-4 d-flex justify-content-end gap-2">
+                <button class="btn btn-primary">💾 Tạo đặt sân</button>
+                <a th:href="@{/manager/bookings}" class="btn btn-secondary">↩️ Hủy</a>
+            </div>
+        </form>
+    </div>
+</div>
+</body>
+</html>

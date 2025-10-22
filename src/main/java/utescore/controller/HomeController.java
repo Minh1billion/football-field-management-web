@@ -48,19 +48,15 @@ public class HomeController {
         return "home/public-home";
     }
 
-    @GetMapping("/logout")
-    public String logout(HttpServletResponse response) {
-        // Xóa cookie token
-        Cookie cookie = new Cookie("token", null);
-        cookie.setMaxAge(0);
-        cookie.setPath("/");
-        response.addCookie(cookie);
-
-        return "redirect:/home/public-home";
-    }
-
     @GetMapping("/home/public-home")
     public String publicHome() {
         return "home/public-home";
     }
+    
+
+    @GetMapping("/maintenance")
+    public String showMaintenancePage() {
+         return "home/maintenance";
+    }
+
 }

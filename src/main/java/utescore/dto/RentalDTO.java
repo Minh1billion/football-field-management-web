@@ -1,15 +1,13 @@
 package utescore.dto;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
+import java.math.BigDecimal;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class RentalDTO {
-    private Long id;
+    private Long sportWearId;
     private String name;
-    private String size;
-    private Long price;
+    private BigDecimal rentalPricePerDay;
+    private int quantity;
+    private int rentalDays;
 }

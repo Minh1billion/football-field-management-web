@@ -2,78 +2,82 @@
 <html xmlns:th="http://www.thymeleaf.org"
       th:replace="~{layout/manager :: layout(~{::content})}">
 <head>
-    <title>Thông tin sân</title>
+    <title>Thêm sân bóng mới</title>
 </head>
 
 <body>
 <div th:fragment="content">
     <div class="container mt-4">
-        <h3 class="mb-4 text-primary fw-bold">Thông tin sân</h3>
+        <h2 class="text-primary mb-4">Thêm sân bóng</h2>
 
-        <form th:action="@{/manager/fields/save}" method="post" class="card shadow-sm p-4 border-0">
-            <input type="hidden" name="id" th:value="${field.id}">
+        <form th:action="@{/manager/fields/save}" th:object="${footballField}" method="post">
 
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label class="form-label fw-semibold">Tên sân</label>
-                    <input class="form-control" name="name" th:value="${field.name}" required>
-                </div>
-
-                <div class="col-md-3 mb-3">
-                    <label class="form-label fw-semibold">Loại sân</label>
-                    <select class="form-select" name="fieldType" required>
-                        <option th:each="t : ${fieldTypes}" th:value="${t}" th:text="${t}"
-                                th:selected="${field.fieldType} == ${t}"></option>
-                    </select>
-                </div>
-
-                <div class="col-md-3 mb-3">
-                    <label class="form-label fw-semibold">Mặt sân</label>
-                    <select class="form-select" name="surfaceType" required>
-                        <option th:each="s : ${surfaceTypes}" th:value="${s}" th:text="${s}"
-                                th:selected="${field.surfaceType} == ${s}"></option>
-                    </select>
-                </div>
-
-                <div class="col-md-3 mb-3">
-                    <label class="form-label fw-semibold">Sức chứa</label>
-                    <input type="number" min="0" class="form-control" name="capacity"
-                           th:value="${field.capacity}" required>
-                </div>
-
-                <div class="col-md-3 mb-3">
-                    <label class="form-label fw-semibold">Giá / giờ</label>
-                    <input type="number" step="0.01" class="form-control" name="pricePerHour"
-                           th:value="${field.pricePerHour}" required>
-                </div>
-
-                <div class="col-md-3 mb-3">
-                    <label class="form-label fw-semibold">Vị trí</label>
-                    <select class="form-select" name="locationId">
-                        <option th:value="${null}">-- Chưa gán --</option>
-                        <option th:each="l : ${locations}" th:value="${l.id}" th:text="${l.name}"
-                                th:selected="${field.location != null and field.location.id == l.id}"></option>
-                    </select>
-                </div>
-
-                <div class="col-md-3 mb-3">
-                    <label class="form-label fw-semibold">Trạng thái</label>
-                    <select class="form-select" name="isActive">
-                        <option th:value="true" th:selected="${field.isActive}">Hoạt động</option>
-                        <option th:value="false" th:selected="${!field.isActive}">Ngưng</option>
-                    </select>
-                </div>
-            </div>
-
+            <!-- Tên sân -->
             <div class="mb-3">
-                <label class="form-label fw-semibold">Mô tả</label>
-                <textarea class="form-control" name="description" rows="3"
-                          th:text="${field.description}"></textarea>
+                <label class="form-label">Tên sân</label>
+                <input type="text" class="form-control" th:field="*{name}" placeholder="Nhập tên sân" required>
             </div>
 
-            <div class="d-flex justify-content-end gap-2">
-                <button type="submit" class="btn btn-primary">💾 Lưu</button>
-                <a th:href="@{/manager/fields}" class="btn btn-secondary">↩️ Hủy</a>
+            <!-- Loại sân -->
+            <div class="mb-3">
+                <label class="form-label">Loại sân</label>
+                <select class="form-select" th:field="*{fieldType}">
+                    <option value="" disabled selected>-- Chọn loại sân --</option>
+                    <option th:each="type : ${fieldTypes}"
+                            th:value="${type}"
+                            th:text="${type}">
+                    </option>
+                </select>
+            </div>
+
+            <!-- Mặt sân -->
+            <div class="mb-3">
+                <label class="form-label">Mặt sân</label>
+                <select class="form-select" th:field="*{surfaceType}">
+                    <option value="" disabled selected>-- Chọn mặt sân --</option>
+                    <option th:each="s : ${surfaceTypes}"
+                            th:value="${s}"
+                            th:text="${s}">
+                    </option>
+                </select>
+            </div>
+
+            <!-- Sức chứa -->
+            <div class="mb-3">
+                <label class="form-label">Sức chứa (người)</label>
+                <input type="number" class="form-control" th:field="*{capacity}" min="1" required>
+            </div>
+
+            <!-- Giá thuê -->
+            <div class="mb-3">
+                <label class="form-label">Giá thuê (VNĐ/giờ)</label>
+                <input type="number" step="0.01" class="form-control" th:field="*{pricePerHour}" required>
+            </div>
+
+            <!-- Địa điểm -->
+            <div class="mb-3">
+                <label class="form-label">Địa điểm</label>
+                <select class="form-select" th:field="*{locationId}">
+                    <option value="" disabled selected>-- Chọn địa điểm --</option>
+                    <option th:each="loc : ${locations}"
+                            th:value="${loc.id}"
+                            th:text="${loc.name}">
+                    </option>
+                </select>
+            </div>
+
+            <!-- Trạng thái -->
+            <div class="mb-3">
+                <label class="form-label">Trạng thái</label>
+                <select class="form-select" th:field="*{isActive}">
+                    <option th:value="true">Đang hoạt động</option>
+                    <option th:value="false">Tạm ngừng</option>
+                </select>
+            </div>
+
+            <div class="d-flex justify-content-end mt-3">
+                <button type="submit" class="btn btn-primary">Lưu</button>
+                <a th:href="@{/manager/fields}" class="btn btn-secondary ms-2">Hủy</a>
             </div>
         </form>
     </div>

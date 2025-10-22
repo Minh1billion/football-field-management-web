@@ -29,7 +29,7 @@ public class ManagerFieldController {
 
     @GetMapping("/new")
     public String createForm(Model model) {
-        model.addAttribute("field", new FootballField());
+        model.addAttribute("footballField", new FootballFieldDTO());
         model.addAttribute("locations", fieldService.listLocations());
         model.addAttribute("fieldTypes", utescore.entity.FootballField.FieldType.values());
         model.addAttribute("surfaceTypes", utescore.entity.FootballField.SurfaceType.values());

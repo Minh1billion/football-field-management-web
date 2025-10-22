@@ -31,22 +31,24 @@
                 <tr th:each="field : ${fields}">
                     <td th:text="${field.id}"></td>
                     <td th:text="${field.name}"></td>
-                    <td th:text="${field.address}"></td>
+                    <!-- Sửa: address nằm trong location, cần null-check -->
+                    <td th:text="${field.location != null ? field.location.address : ''}"></td>
                     <td th:text="${#numbers.formatDecimal(field.pricePerHour, 0, 'COMMA', 0, 'POINT')} + ' đ'"></td>
                     <td>
-                            <span th:text="${field.active ? 'Đang hoạt động' : 'Tạm ngưng'}"
-                                  th:classappend="${field.active ? 'badge bg-success' : 'badge bg-secondary'}">
-                            </span>
+                        <span th:text="${field.isActive} ? 'Đang hoạt động' : 'Tạm ngưng'"
+                              th:classappend="${field.isActive} ? 'badge bg-success' : 'badge bg-secondary'">
+                        </span>
                     </td>
                     <td class="text-center">
-                        <a th:href="@{'/manager/fields/edit/' + ${field.id}}" class="btn btn-sm btn-warning me-1">
+                        <!-- Sửa đường dẫn Edit: /manager/fields/{id}/edit -->
+                        <a th:href="@{|/manager/fields/${field.id}/edit|}" class="btn btn-sm btn-warning me-1">
                             ✏️ Sửa
                         </a>
-                        <a th:href="@{'/manager/fields/delete/' + ${field.id}}"
-                           class="btn btn-sm btn-danger"
-                           onclick="return confirm('Bạn có chắc chắn muốn xóa sân này không?');">
-                            🗑️ Xóa
-                        </a>
+                        <!-- Sửa Delete: phải dùng POST /manager/fields/{id}/delete -->
+                        <form th:action="@{|/manager/fields/${field.id}/delete|}" method="post" class="d-inline"
+                              onsubmit="return confirm('Bạn có chắc chắn muốn xóa sân này không?');">
+                            <button type="submit" class="btn btn-sm btn-danger">🗑️ Xóa</button>
+                        </form>
                     </td>
                 </tr>
                 <tr th:if="${#lists.isEmpty(fields)}">

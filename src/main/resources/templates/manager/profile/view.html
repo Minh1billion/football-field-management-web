@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="layout/manager :: layout(~{::section})">
+<section>
+    <div class="container">
+        <h2 class="mb-3">👤 Hồ sơ Manager</h2>
+        <div class="card mb-4">
+            <div class="card-body">
+                <p><b>Tên đăng nhập:</b> <span th:text="${account != null ? account.username : 'N/A'}"></span></p>
+                <form class="row g-2" method="post" th:action="@{/manager/profile/update-email}">
+                    <div class="col-md-6">
+                        <label class="form-label">Email</label>
+                        <input class="form-control" type="email" name="email" th:value="${account != null ? account.email : ''}" required>
+                    </div>
+                    <div class="col-md-6 align-self-end">
+                        <button class="btn btn-primary">Cập nhật email</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">Đổi mật khẩu</div>
+            <div class="card-body">
+                <form class="row g-2" method="post" th:action="@{/manager/profile/change-password}">
+                    <div class="col-md-6">
+                        <label class="form-label">Mật khẩu mới</label>
+                        <input class="form-control" type="password" name="newPassword" minlength="6" required>
+                    </div>
+                    <div class="col-md-6 align-self-end">
+                        <button class="btn btn-warning">Đổi mật khẩu</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+</html>

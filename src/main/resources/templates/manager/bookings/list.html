@@ -34,26 +34,41 @@
                 <tr th:each="b : ${bookings}">
                     <td th:text="${b.bookingCode}"></td>
                     <td th:text="${b.customer != null ? b.customer.fullName : 'N/A'}"></td>
-                    <td th:text="${b.field.name}"></td>
-                    <td th:text="${#dates.format(b.startTime, 'yyyy-MM-dd HH:mm')} + ' - ' + ${#dates.format(b.endTime, 'yyyy-MM-dd HH:mm')}"></td>
+                    <td th:text="${b.field != null ? b.field.name : 'N/A'}"></td>
+
+                    <!-- Dùng #temporals cho LocalDateTime và viết trong 1 biểu thức -->
+                    <td th:text="${b.startTime != null && b.endTime != null
+                                   ? #temporals.format(b.startTime, 'yyyy-MM-dd HH:mm') + ' - ' + #temporals.format(b.endTime, 'yyyy-MM-dd HH:mm')
+                                   : ''}"></td>
+
                     <td th:text="${#numbers.formatDecimal(b.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' đ'"></td>
 
                     <td>
-                        <span th:text="${b.status}"
-                              th:classappend="${b.status.name() == 'PENDING' ? 'badge bg-warning text-dark' :
-                                               (b.status.name() == 'CONFIRMED' ? 'badge bg-success' :
-                                               (b.status.name() == 'CANCELLED' ? 'badge bg-danger' : 'badge bg-secondary'))}">
+                        <span class="badge"
+                              th:text="${b.status}"
+                              th:classappend="${
+                                  b.status.name() == 'PENDING'    ? ' bg-warning text-dark' :
+                                  (b.status.name() == 'CONFIRMED' ? ' bg-success' :
+                                  (b.status.name() == 'CANCELLED' ? ' bg-danger' : ' bg-secondary'))
+                              }">
                         </span>
                     </td>
 
                     <td class="text-center">
-                        <form th:action="@{'/manager/bookings/' + ${b.id} + '/confirm'}" method="post" class="d-inline"
-                              th:if="${b.status.name() == 'PENDING'}">
-                            <button class="btn btn-sm btn-success">✅ Xác nhận</button>
+                        <!-- Xác nhận: chỉ khi PENDING -->
+                        <form th:if="${b.status.name() == 'PENDING'}"
+                              th:action="@{|/manager/bookings/${b.id}/confirm|}"
+                              method="post"
+                              class="d-inline">
+                            <button class="btn btn-sm btn-primary">✅ Xác nhận</button>
                         </form>
 
-                        <form th:action="@{'/manager/bookings/' + ${b.id} + '/cancel'}" method="post" class="d-inline"
-                              th:if="${b.status.name() != 'CANCELLED'}">
+                        <!-- Hủy: cho PENDING hoặc CONFIRMED -->
+                        <form th:if="${b.status.name() == 'PENDING' or b.status.name() == 'CONFIRMED'}"
+                              th:action="@{|/manager/bookings/${b.id}/cancel|}"
+                              method="post"
+                              class="d-inline"
+                              onsubmit="return confirm('Bạn có chắc chắn muốn hủy đặt sân này không?');">
                             <button class="btn btn-sm btn-danger">❌ Hủy</button>
                         </form>
                     </td>

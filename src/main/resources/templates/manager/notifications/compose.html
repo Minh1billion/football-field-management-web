@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="layout/manager :: layout(~{::section})">
+<section>
+    <div class="container">
+        <h2 class="mb-3">✉️ Gửi thông báo</h2>
+        <form class="card p-3" th:action="@{/manager/notifications/send/all}" method="post">
+            <div class="mb-3">
+                <label class="form-label">Tiêu đề</label>
+                <input class="form-control" type="text" name="title" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Nội dung</label>
+                <textarea class="form-control" rows="4" name="message" required></textarea>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Loại</label>
+                <select class="form-select" name="type">
+                    <option value="GENERAL">GENERAL</option>
+                    <option value="BOOKING_CONFIRMATION">BOOKING_CONFIRMATION</option>
+                    <option value="BOOKING_REMINDER">BOOKING_REMINDER</option>
+                    <option value="PROMOTION">PROMOTION</option>
+                </select>
+            </div>
+            <div class="text-end">
+                <button class="btn btn-primary">Gửi đến tất cả USER</button>
+            </div>
+        </form>
+    </div>
+</section>
+</html>

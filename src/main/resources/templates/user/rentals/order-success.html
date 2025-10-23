@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/user :: layout(~{::content})}">
+<head>
+  <meta charset="UTF-8">
+  <title>Đặt Hàng Thành Công</title>
+</head>
+<body>
+<div th:fragment="content">
+  <div class="container mt-5 mb-5">
+    <div class="row justify-content-center">
+      <div class="col-lg-6">
+        <div class="card shadow-lg border-0">
+          <div class="card-body text-center p-5">
+            <!-- Icon thành công -->
+            <div class="mb-4">
+              <i class="bi bi-check-circle-fill text-success" style="font-size: 5rem;"></i>
+            </div>
+
+            <h2 class="text-success mb-3">Đặt Hàng Thành Công!</h2>
+            <p class="text-muted mb-4">
+              Cảm ơn bạn đã đặt hàng. Đơn hàng của bạn đã được ghi nhận và đang được xử lý.
+            </p>
+
+            <div class="alert alert-info">
+              <h5 class="mb-2">Mã Đơn Hàng</h5>
+              <h3 class="text-primary mb-0">
+                #<span th:text="${orderId}">12345</span>
+              </h3>
+            </div>
+
+            <p class="mb-4">
+              <small class="text-muted">
+                Chúng tôi đã gửi email xác nhận đến địa chỉ email của bạn.<br>
+                Vui lòng kiểm tra email để biết thêm chi tiết.
+              </small>
+            </p>
+
+            <hr class="my-4">
+
+            <div class="d-grid gap-2">
+              <a th:href="@{/user/rental-orders/{id}(id=${orderId})}"
+                 class="btn btn-primary btn-lg">
+                <i class="bi bi-eye"></i> Xem Chi Tiết Đơn Hàng
+              </a>
+              <a th:href="@{/user/rental-orders}"
+                 class="btn btn-outline-secondary">
+                <i class="bi bi-list-ul"></i> Xem Danh Sách Đơn Hàng
+              </a>
+              <a th:href="@{/user/rentals}"
+                 class="btn btn-outline-primary">
+                <i class="bi bi-arrow-left"></i> Tiếp Tục Thuê Đồ
+              </a>
+            </div>
+
+            <div class="mt-4 p-3 bg-light rounded">
+              <h6 class="mb-2">📞 Cần Hỗ Trợ?</h6>
+              <p class="mb-0">
+                <small>
+                  Liên hệ: <strong>1900-xxxx</strong> hoặc
+                  <a href="mailto:support@utescore.com">support@utescore.com</a>
+                </small>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

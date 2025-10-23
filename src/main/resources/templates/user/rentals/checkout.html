@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/user :: layout(~{::content})}">
+<head>
+  <meta charset="UTF-8">
+  <title>Thanh Toán</title>
+</head>
+<body>
+<div th:fragment="content">
+  <div class="container mt-5 mb-5">
+    <h2 class="mb-4">
+      <i class="bi bi-credit-card text-success"></i> Thanh Toán Đơn Hàng
+    </h2>
+
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+      <i class="bi bi-exclamation-circle"></i> <span th:text="${errorMessage}"></span>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <form th:action="@{/user/rentals/process-checkout}" method="post">
+      <div class="row">
+        <!-- Thông tin đơn hàng -->
+        <div class="col-lg-8">
+          <!-- Thông tin giao hàng -->
+          <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white">
+              <h5 class="mb-0"><i class="bi bi-truck"></i> Thông Tin Giao Hàng</h5>
+            </div>
+            <div class="card-body">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label for="customerName" class="form-label">Họ và Tên <span class="text-danger">*</span></label>
+                  <input type="text"
+                         class="form-control"
+                         id="customerName"
+                         name="customerName"
+                         th:value="${account?.getCustomer()?.getFullName()}"
+                         required>
+                </div>
+                <div class="col-md-6">
+                  <label for="customerPhone" class="form-label">Số Điện Thoại <span class="text-danger">*</span></label>
+                  <input type="tel"
+                         class="form-control"
+                         id="customerPhone"
+                         name="customerPhone"
+                         th:value="${account?.getCustomer()?.getPhoneNumber()}"
+                         pattern="[0-9]{10,11}"
+                         required>
+                </div>
+                <div class="col-12">
+                  <label for="customerAddress" class="form-label">Địa Chỉ Nhận Hàng <span class="text-danger">*</span></label>
+                  <textarea class="form-control"
+                            id="customerAddress"
+                            name="customerAddress"
+                            rows="3"
+                            th:text="${account?.getCustomer()?.getAddress()}"
+                            required></textarea>
+                </div>
+                <div class="col-12">
+                  <label for="notes" class="form-label">Ghi Chú (Tùy chọn)</label>
+                  <textarea class="form-control"
+                            id="notes"
+                            name="notes"
+                            rows="2"
+                            placeholder="Ghi chú thêm về đơn hàng..."></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Chi tiết đơn hàng -->
+          <div class="card shadow-sm mb-4">
+            <div class="card-header bg-info text-white">
+              <h5 class="mb-0"><i class="bi bi-list-check"></i> Chi Tiết Đơn Hàng</h5>
+            </div>
+            <div class="card-body p-0">
+              <table class="table table-hover mb-0">
+                <thead class="table-light">
+                <tr>
+                  <th>Sản Phẩm</th>
+                  <th class="text-center">SL</th>
+                  <th class="text-center">Số Ngày</th>
+                  <th class="text-end">Đơn Giá</th>
+                  <th class="text-end">Thành Tiền</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="item : ${cartDTO.items}">
+                  <td>
+                    <strong th:text="${item.name}"></strong><br>
+                    <small class="text-muted" th:text="'Mã: ' + ${item.sportWearId}"></small>
+                  </td>
+                  <td class="text-center" th:text="${item.quantity}"></td>
+                  <td class="text-center" th:text="${item.rentalDays} + ' ngày'"></td>
+                  <td class="text-end" th:text="${#numbers.formatDecimal(item.rentalPricePerDay, 0, 'POINT', 0, 'COMMA')} + '₫'"></td>
+                  <td class="text-end fw-bold"
+                      th:text="${#numbers.formatDecimal(item.rentalPricePerDay * item.quantity * item.rentalDays, 0, 'POINT', 0, 'COMMA')} + '₫'"></td>
+                </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Phương thức thanh toán -->
+          <div class="card shadow-sm mb-4">
+            <div class="card-header bg-warning">
+              <h5 class="mb-0"><i class="bi bi-wallet2"></i> Phương Thức Thanh Toán</h5>
+            </div>
+            <div class="card-body">
+              <div class="form-check mb-3">
+                <input class="form-check-input"
+                       type="radio"
+                       name="paymentMethod"
+                       id="paymentCOD"
+                       value="COD"
+                       checked>
+                <label class="form-check-label" for="paymentCOD">
+                  <i class="bi bi-cash-coin text-success"></i>
+                  <strong>Thanh toán khi nhận hàng (COD)</strong><br>
+                  <small class="text-muted">Thanh toán bằng tiền mặt khi nhận hàng</small>
+                </label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input"
+                       type="radio"
+                       name="paymentMethod"
+                       id="paymentVNPay"
+                       value="VNPAY">
+                <label class="form-check-label" for="paymentVNPay">
+                  <i class="bi bi-credit-card text-primary"></i>
+                  <strong>Thanh toán qua VNPay</strong><br>
+                  <small class="text-muted">Thanh toán online qua cổng VNPay (ATM/Visa/MasterCard)</small>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tóm tắt đơn hàng -->
+        <div class="col-lg-4">
+          <div class="card shadow-sm border-success sticky-top" style="top: 20px;">
+            <div class="card-header bg-success text-white">
+              <h5 class="mb-0"><i class="bi bi-calculator"></i> Tóm Tắt Đơn Hàng</h5>
+            </div>
+            <div class="card-body">
+              <div class="d-flex justify-content-between mb-2">
+                <span>Tạm tính:</span>
+                <span th:text="${#numbers.formatDecimal(cartDTO.totalPrice, 0, 'POINT', 0, 'COMMA')} + '₫'"></span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <span>Phí vận chuyển:</span>
+                <span class="text-success">Miễn phí</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <span>Giảm giá:</span>
+                <span>0₫</span>
+              </div>
+              <hr>
+              <div class="d-flex justify-content-between mb-3">
+                <h5>Tổng cộng:</h5>
+                <h5 class="text-danger fw-bold"
+                    th:text="${#numbers.formatDecimal(cartDTO.totalPrice, 0, 'POINT', 0, 'COMMA')} + '₫'"></h5>
+              </div>
+
+              <button type="submit" class="btn btn-success w-100 btn-lg mb-2">
+                <i class="bi bi-check-circle"></i> Xác Nhận Đặt Hàng
+              </button>
+              <a th:href="@{/user/rentals/cart}" class="btn btn-outline-secondary w-100">
+                <i class="bi bi-arrow-left"></i> Quay Lại Giỏ Hàng
+              </a>
+
+              <div class="alert alert-info mt-3 mb-0">
+                <small>
+                  <i class="bi bi-info-circle"></i>
+                  Bằng việc đặt hàng, bạn đồng ý với
+                  <a href="#">Điều khoản dịch vụ</a> của chúng tôi.
+                </small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+</body>
+</html>

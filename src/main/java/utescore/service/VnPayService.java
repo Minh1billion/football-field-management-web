@@ -31,23 +31,22 @@ public class VnPayService {
         vnpParams.put("vnp_Version", vnpVersion);
         vnpParams.put("vnp_Command", vnpCommand);
         vnpParams.put("vnp_TmnCode", vnPayConfig.getTmnCode());
-        vnpParams.put("vnp_Amount", String.valueOf(total * 100)); // VNPay tính theo đơn vị xu
+        vnpParams.put("vnp_Amount", String.valueOf(total * 100));
         vnpParams.put("vnp_CurrCode", "VND");
         vnpParams.put("vnp_TxnRef", vnpTxnRef);
         vnpParams.put("vnp_OrderInfo", orderInfo);
         vnpParams.put("vnp_OrderType", orderType);
         vnpParams.put("vnp_Locale", "vn");
-        vnpParams.put("vnp_ReturnUrl", urlReturn + "/admin/payment/callback");
+        // SỬA ĐÂY: callback về /user/rentals/payment/callback
+        vnpParams.put("vnp_ReturnUrl", urlReturn + "/user/rentals/payment/callback");
         vnpParams.put("vnp_IpAddr", vnpIpAddr);
 
-        // Thời gian tạo & hết hạn
         Calendar cld = Calendar.getInstance(TimeZone.getTimeZone("Etc/GMT+7"));
         SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
         vnpParams.put("vnp_CreateDate", formatter.format(cld.getTime()));
         cld.add(Calendar.MINUTE, 15);
         vnpParams.put("vnp_ExpireDate", formatter.format(cld.getTime()));
 
-        // Build hash data
         List<String> fieldNames = new ArrayList<>(vnpParams.keySet());
         Collections.sort(fieldNames);
         StringBuilder hashData = new StringBuilder();
@@ -116,18 +115,18 @@ public class VnPayService {
         }
 
         if (vnpSecureHash == null || vnpSecureHash.isEmpty()) {
-            return -2; // Thiếu hash
+            return -2;
         }
 
         String signValue = VnPayConfig.hmacSHA512(vnPayConfig.getHashSecret(), hashData.toString());
         if (!signValue.equals(vnpSecureHash)) {
-            return -1; // Sai chữ ký
+            return -1;
         }
 
         if ("00".equals(vnpTransactionStatus)) {
-            return 1; // Thanh toán thành công
+            return 1;
         } else {
-            return 0; // Giao dịch bị hủy hoặc thất bại
+            return 0;
         }
     }
 }

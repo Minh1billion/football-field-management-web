@@ -3,26 +3,31 @@ package utescore.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import utescore.dto.CartDTO;
 import utescore.dto.RentalDTO;
-import utescore.entity.Booking;
+import utescore.entity.*;
 import utescore.entity.BookingService;
-import utescore.entity.BookingSportWear;
-import utescore.entity.SportWear;
-import utescore.repository.BookingRepository;
-import utescore.repository.RentalRepository;
+import utescore.entity.RentalOrder;
+import utescore.repository.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class RentalService {
     private final RentalRepository rentalRepository;
     private final BookingRepository bookingRepository;
+    private final SportWearRepository sportWearRepository;
+    private final AccountRepository accountRepository;
+    private final RentalOrderRepository rentalOrderRepository;
+    private final RentalOrderDetailRepository rentalOrderDetailRepository;
     private final SportWearService sportWearService;
     private final ServiceService serviceService;
 
@@ -113,6 +118,58 @@ public class RentalService {
         return item.getRentalPricePerDay()
                 .multiply(BigDecimal.valueOf(item.getRentalDays()))
                 .multiply(BigDecimal.valueOf(item.getQuantity()));
+    }
+
+    @Transactional
+    public Long createRentalOrder(CartDTO cartDTO, String username, String customerName,
+                                  String customerPhone, String customerAddress, String notes,
+                                  String paymentMethod) {
+        // Lấy thông tin account
+        Account account = accountRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản"));
+
+        // Tạo đơn hàng thuê (RentalOrder)
+        RentalOrder rentalOrder = new RentalOrder();
+        rentalOrder.setAccount(account);
+        rentalOrder.setCustomerName(customerName);
+        rentalOrder.setCustomerPhone(customerPhone);
+        rentalOrder.setCustomerAddress(customerAddress);
+        rentalOrder.setNotes(notes);
+        rentalOrder.setTotalAmount(cartDTO.getTotalPrice().doubleValue());
+        rentalOrder.setPaymentMethod(paymentMethod);
+        rentalOrder.setPaymentStatus(paymentMethod.equals("VNPAY") ? "PAID" : "UNPAID");
+        rentalOrder.setOrderStatus("PENDING"); // Đang chờ xử lý
+        rentalOrder.setOrderDate(LocalDateTime.now());
+
+        rentalOrder = rentalOrderRepository.save(rentalOrder);
+
+        // Tạo chi tiết đơn hàng (RentalOrderDetail)
+        for (var cartItem : cartDTO.getItems()) {
+            SportWear sportWear = sportWearRepository.findById(cartItem.getSportWearId())
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm ID: " + cartItem.getSportWearId()));
+
+            // Kiểm tra tồn kho
+            if (cartItem.getQuantity() > sportWear.getStockQuantity()) {
+                throw new RuntimeException("Sản phẩm " + sportWear.getName() +
+                        " không đủ số lượng trong kho");
+            }
+
+            RentalOrderDetail detail = new RentalOrderDetail();
+            detail.setRentalOrder(rentalOrder);
+            detail.setSportWear(sportWear);
+            detail.setQuantity(cartItem.getQuantity());
+            detail.setRentalDays(cartItem.getRentalDays());
+            detail.setRentalPricePerDay(cartItem.getRentalPricePerDay().doubleValue());
+            detail.setSubTotal(cartItem.getRentalPricePerDay().doubleValue() * cartItem.getRentalDays() * cartItem.getQuantity());
+
+            rentalOrderDetailRepository.save(detail);
+
+            // Giảm số lượng tồn kho
+            sportWear.setStockQuantity(sportWear.getStockQuantity() - cartItem.getQuantity());
+            sportWearRepository.save(sportWear);
+        }
+
+        return rentalOrder.getId();
     }
 
     public void addSportWearToBooking(long bookingId, List<RentalDTO> rentals) {

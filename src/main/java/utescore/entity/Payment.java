@@ -54,8 +54,13 @@ public class Payment {
     @ToString.Exclude
     private Order order;
 
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "rental_order_id", unique = true)
+    @ToString.Exclude
+    private RentalOrder rentalOrder;
+
     public enum PaymentMethod {
-        CASH, CREDIT_CARD, DEBIT_CARD, BANK_TRANSFER, E_WALLET, PAYPAL
+        CASH, COD, VNPAY
     }
 
     public enum PaymentStatus {

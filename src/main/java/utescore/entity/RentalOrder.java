@@ -1,9 +1,7 @@
 package utescore.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -22,31 +20,17 @@ public class RentalOrder {
     @JoinColumn(name = "account_id")
     private Account account;
 
-    @Column(name = "customer_name")
     private String customerName;
-
-    @Column(name = "customer_phone")
     private String customerPhone;
 
-    @Column(name = "customer_address", columnDefinition = "TEXT")
+    @Column(columnDefinition = "TEXT")
     private String customerAddress;
 
-    @Column(name = "notes", columnDefinition = "TEXT")
-    private String notes;
+    @OneToOne(mappedBy = "rentalOrder", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private Payment payment;
 
-    @Column(name = "total_amount")
-    private Double totalAmount;
-
-    @Column(name = "payment_method")
-    private String paymentMethod; // COD, VNPAY
-
-    @Column(name = "payment_status")
-    private String paymentStatus; // PAID, UNPAID
-
-    @Column(name = "order_status")
-    private String orderStatus; // PENDING, CONFIRMED, SHIPPING, DELIVERED, CANCELLED
-
-    @Column(name = "order_date")
     private LocalDateTime orderDate;
 
     @OneToMany(mappedBy = "rentalOrder", cascade = CascadeType.ALL)

@@ -37,7 +37,6 @@ public class VnPayService {
         vnpParams.put("vnp_OrderInfo", orderInfo);
         vnpParams.put("vnp_OrderType", orderType);
         vnpParams.put("vnp_Locale", "vn");
-        // SỬA ĐÂY: callback về /user/rentals/payment/callback
         vnpParams.put("vnp_ReturnUrl", urlReturn + "/user/rentals/payment/callback");
         vnpParams.put("vnp_IpAddr", vnpIpAddr);
 

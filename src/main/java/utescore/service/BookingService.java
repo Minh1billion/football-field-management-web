@@ -30,10 +30,8 @@ public class BookingService {
 	private final CustomerRepository customerRepo;
 	private final FieldAvailabilityRepository availabilityRepo;
 	private final MaintenanceRepository maintenanceRepo;
-	private final SportWearRepository sportWearRepo;
-	private final BookingSportWearRepository bookingSportWearRepo;
-	private final ServiceRepository serviceRepository;
-	private final BookingServiceRepository bookingServiceRepository;
+	private final ServiceRepository serviceRepo;
+	private final PaymentRepository paymentRepo;
 
 	public long countUpcomingBookings(String username) {
 		return bookingRepo.countUpcomingBookings(username, LocalDateTime.now());
@@ -184,7 +182,7 @@ public class BookingService {
 			for (RentalDTO serviceDTO : dto.getServices()) {
 				// Chỉ xử lý những service có quantity > 0
 				if (serviceDTO.getQuantity() > 0) {
-					utescore.entity.Service service = serviceRepository.findById(serviceDTO.getServiceId())
+					utescore.entity.Service service = serviceRepo.findById(serviceDTO.getServiceId())
 							.orElseThrow(() -> new RuntimeException("Service not found: " + serviceDTO.getServiceId()));
 
 					// Tạo BookingService entity
@@ -207,6 +205,27 @@ public class BookingService {
 			booking.setTotalAmount(totalPrice.add(serviceTotal));
 			bookingRepo.save(booking);
 		}
+
+		Payment payment = new Payment();
+		payment.setBooking(booking);
+		String method = dto.getPaymentMethod();
+		if (method == null || method.isBlank()) {
+			method = "CASH"; // default
+		}
+		method = method.toUpperCase().replace("-", "_");
+
+		Payment.PaymentMethod paymentMethod;
+		try {
+			paymentMethod = Payment.PaymentMethod.valueOf(method);
+		} catch (IllegalArgumentException e) {
+			throw new RuntimeException("Phương thức thanh toán không hợp lệ: " + dto.getPaymentMethod());
+		}
+		payment.setPaymentMethod(paymentMethod);
+		payment.setCreatedAt(LocalDateTime.now());
+		payment.setAmount(totalPrice);
+		payment.setStatus(Payment.PaymentStatus.PENDING);
+		payment.setNotes(dto.getNotes());
+		payment.setPaymentCode(paymentMethod.name() + "-" + LocalDateTime.now().toString());
 
 		return convertToDTO(booking);
 	}

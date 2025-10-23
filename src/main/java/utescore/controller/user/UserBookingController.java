@@ -41,7 +41,13 @@ public class UserBookingController {
                                   @RequestParam(required = false) Long fieldId,
                                   @RequestParam(required = false) String date,
                                   Model model) {
-        LocalDate selectedDate = (date != null) ? LocalDate.parse(date) : LocalDate.now();
+        LocalDate selectedDate;
+
+        if (date == null || date.equals("null") || date.isBlank()) {
+            selectedDate = LocalDate.now();
+        } else {
+            selectedDate = LocalDate.parse(date);
+        }
 
         List<LocationDTO> locations = fieldService.getAllLocations();
         List<FootballFieldDTO> allFields = fieldService.listAll();
@@ -112,7 +118,7 @@ public class UserBookingController {
                               Authentication authentication,
                               RedirectAttributes redirectAttributes) {
         try {
-            bookingService.createBooking(bookingDTO, authentication.getName());
+            bookingDTO = bookingService.createBooking(bookingDTO, authentication.getName());
 
             redirectAttributes.addFlashAttribute("successMessage", "Đặt sân thành công!");
             return "redirect:/user/bookings";

@@ -1,7 +1,6 @@
 package utescore.controller.user;
 
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -29,6 +28,7 @@ public class UserRentalController {
     private final SportWearService sportWearService;
     private final VnPayService vnPayService;
     private final AccountService accountService;
+    private final PaymentService paymentService;
 
     @ModelAttribute("cartDTO")
     public CartDTO cartDTO() {
@@ -39,7 +39,6 @@ public class UserRentalController {
     public String rentalSportWearsList(Model model, Pageable pageable) {
         model.addAttribute("sportWears", rentalService.getAvailableSportWears(pageable));
         model.addAttribute("myBookings", bookingService.getMyBooking());
-
         return "user/rentals/list";
     }
 
@@ -54,7 +53,6 @@ public class UserRentalController {
                             @RequestParam("rentalDays") int rentalDays,
                             @ModelAttribute("cartDTO") CartDTO cartDTO,
                             RedirectAttributes redirectAttributes) {
-
         return rentalService.addToCart(cartDTO, sportWearId, quantity, rentalDays, redirectAttributes);
     }
 
@@ -69,7 +67,6 @@ public class UserRentalController {
                              @RequestParam("quantity") int[] quantities,
                              @RequestParam("rentalDays") int[] rentalDays,
                              @ModelAttribute("cartDTO") CartDTO cartDTO) {
-
         for (int i = 0; i < sportWearIds.length; i++) {
             rentalService.updateCartItem(cartDTO, sportWearIds[i], quantities[i], rentalDays[i]);
         }
@@ -77,11 +74,10 @@ public class UserRentalController {
         return "redirect:/user/rentals/cart";
     }
 
-    @GetMapping("/remove/{id}")  // Thay đổi từ @PostMapping sang @GetMapping
+    @GetMapping("/remove/{id}")
     public String removeFromCart(@PathVariable("id") Long sportWearId,
                                  @ModelAttribute("cartDTO") CartDTO cartDTO,
                                  RedirectAttributes redirectAttributes) {
-
         boolean removed = cartDTO.getItems().removeIf(
                 item -> item.getSportWearId() != null && item.getSportWearId().equals(sportWearId)
         );
@@ -92,7 +88,6 @@ public class UserRentalController {
         } else {
             redirectAttributes.addFlashAttribute("errorMessage", "Không tìm thấy sản phẩm trong giỏ thuê!");
         }
-
         return "redirect:/user/rentals/cart";
     }
 
@@ -100,13 +95,11 @@ public class UserRentalController {
     public String checkout(@ModelAttribute("cartDTO") CartDTO cartDTO,
                            Model model,
                            RedirectAttributes redirectAttributes) {
-        // Kiểm tra giỏ hàng rỗng
         if (cartDTO == null || cartDTO.getItems() == null || cartDTO.getItems().isEmpty()) {
             redirectAttributes.addFlashAttribute("errorMessage", "Giỏ hàng của bạn đang trống!");
             return "redirect:/user/rentals";
         }
 
-        // Kiểm tra tồn kho cho tất cả items
         for (var item : cartDTO.getItems()) {
             SportWear wear = sportWearService.findById(item.getSportWearId());
             if (wear == null) {
@@ -121,7 +114,6 @@ public class UserRentalController {
             }
         }
 
-        // Lấy thông tin user
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         Account account = accountService.findByUsername(username).orElse(null);
 
@@ -141,23 +133,23 @@ public class UserRentalController {
                                   HttpServletRequest request,
                                   RedirectAttributes redirectAttributes,
                                   SessionStatus sessionStatus) {
-
         try {
-            // Kiểm tra giỏ hàng
             if (cartDTO == null || cartDTO.getItems() == null || cartDTO.getItems().isEmpty()) {
                 redirectAttributes.addFlashAttribute("errorMessage", "Giỏ hàng của bạn đang trống!");
                 return "redirect:/user/rentals";
             }
 
-            // Lưu thông tin khách hàng vào session để dùng sau khi thanh toán
-            request.getSession().setAttribute("checkoutCustomerName", customerName);
-            request.getSession().setAttribute("checkoutCustomerPhone", customerPhone);
-            request.getSession().setAttribute("checkoutCustomerAddress", customerAddress);
-            request.getSession().setAttribute("checkoutNotes", notes);
+            String username = SecurityContextHolder.getContext().getAuthentication().getName();
 
-            // Xử lý theo phương thức thanh toán
             if ("VNPAY".equals(paymentMethod)) {
-                // Thanh toán qua VNPay
+                // Lưu thông tin vào session để dùng sau callback
+                request.getSession().setAttribute("checkoutCartDTO", cartDTO);
+                request.getSession().setAttribute("checkoutCustomerName", customerName);
+                request.getSession().setAttribute("checkoutCustomerPhone", customerPhone);
+                request.getSession().setAttribute("checkoutCustomerAddress", customerAddress);
+                request.getSession().setAttribute("checkoutNotes", notes);
+                request.getSession().setAttribute("checkoutUsername", username);
+
                 String baseUrl = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort();
                 String orderInfo = "Thanh toan don hang thue do the thao";
                 int totalAmount = cartDTO.getTotalPrice().intValue();
@@ -166,21 +158,11 @@ public class UserRentalController {
                 return "redirect:" + vnpayUrl;
 
             } else if ("COD".equals(paymentMethod)) {
-                // Thanh toán khi nhận hàng
-                String username = SecurityContextHolder.getContext().getAuthentication().getName();
-
-                // Tạo đơn thuê
                 Long rentalOrderId = rentalService.createRentalOrder(
-                        cartDTO,
-                        username,
-                        customerName,
-                        customerPhone,
-                        customerAddress,
-                        notes,
-                        "COD"
+                        cartDTO, username, customerName, customerPhone,
+                        customerAddress, notes, "COD"
                 );
 
-                // Xóa giỏ hàng
                 sessionStatus.setComplete();
 
                 redirectAttributes.addFlashAttribute("successMessage",
@@ -198,43 +180,51 @@ public class UserRentalController {
         }
     }
 
-    // CALLBACK TỪ VNPAY
     @GetMapping("/payment/callback")
     public String paymentCallback(HttpServletRequest request,
-                                  @ModelAttribute("cartDTO") CartDTO cartDTO,
                                   RedirectAttributes redirectAttributes,
                                   SessionStatus sessionStatus) {
         try {
             int paymentStatus = vnPayService.orderReturn(request);
 
             if (paymentStatus == 1) {
-                // Thanh toán thành công
-                String username = SecurityContextHolder.getContext().getAuthentication().getName();
-
                 // Lấy thông tin từ session
+                CartDTO cartDTO = (CartDTO) request.getSession().getAttribute("checkoutCartDTO");
+                String username = (String) request.getSession().getAttribute("checkoutUsername");
                 String customerName = (String) request.getSession().getAttribute("checkoutCustomerName");
                 String customerPhone = (String) request.getSession().getAttribute("checkoutCustomerPhone");
                 String customerAddress = (String) request.getSession().getAttribute("checkoutCustomerAddress");
                 String notes = (String) request.getSession().getAttribute("checkoutNotes");
 
+                if (cartDTO == null || username == null) {
+                    redirectAttributes.addFlashAttribute("errorMessage", "Phiên làm việc đã hết hạn!");
+                    return "redirect:/user/rentals";
+                }
+
+                // Lấy thông tin từ VNPay
+                String vnpTxnRef = request.getParameter("vnp_TxnRef");
+                String vnpTransactionNo = request.getParameter("vnp_TransactionNo");
+
                 // Tạo đơn thuê
                 Long rentalOrderId = rentalService.createRentalOrder(
-                        cartDTO,
-                        username,
-                        customerName,
-                        customerPhone,
-                        customerAddress,
-                        notes,
-                        "VNPAY"
+                        cartDTO, username, customerName, customerPhone,
+                        customerAddress, notes, "VNPAY"
+                );
+
+                // Cập nhật payment với transactionId từ VNPay
+                paymentService.updatePaymentByRentalOrderId(
+                        rentalOrderId,
+                        vnpTransactionNo != null ? vnpTransactionNo : vnpTxnRef
                 );
 
                 // Xóa thông tin checkout trong session
+                request.getSession().removeAttribute("checkoutCartDTO");
+                request.getSession().removeAttribute("checkoutUsername");
                 request.getSession().removeAttribute("checkoutCustomerName");
                 request.getSession().removeAttribute("checkoutCustomerPhone");
                 request.getSession().removeAttribute("checkoutCustomerAddress");
                 request.getSession().removeAttribute("checkoutNotes");
 
-                // Xóa giỏ hàng
                 sessionStatus.setComplete();
 
                 redirectAttributes.addFlashAttribute("successMessage",
@@ -247,6 +237,7 @@ public class UserRentalController {
             }
 
         } catch (Exception e) {
+            e.printStackTrace();
             redirectAttributes.addFlashAttribute("errorMessage", "Có lỗi xảy ra: " + e.getMessage());
             return "redirect:/user/rentals/checkout";
         }
@@ -254,7 +245,6 @@ public class UserRentalController {
 
     @GetMapping("/order-success/{orderId}")
     public String orderSuccess(@PathVariable Long orderId, Model model) {
-        // Lấy thông tin đơn hàng để hiển thị
         model.addAttribute("orderId", orderId);
         return "user/rentals/order-success";
     }
@@ -265,16 +255,13 @@ public class UserRentalController {
                                @RequestParam("quantity") int quantity,
                                @RequestParam("bookingId") long bookingId,
                                RedirectAttributes redirectAttributes) {
-
         try {
-            // Validate quantity
             if (quantity <= 0) {
                 redirectAttributes.addFlashAttribute("errorMessage", "Số lượng phải lớn hơn 0");
                 return "redirect:/user/rentals";
             }
 
             if (sportWearId != null) {
-                // Kiểm tra stock quantity
                 SportWear wear = sportWearService.findById(sportWearId);
                 if (wear == null) {
                     redirectAttributes.addFlashAttribute("errorMessage", "Không tìm thấy sản phẩm");

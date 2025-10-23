@@ -30,6 +30,7 @@ public class RentalService {
     private final RentalOrderDetailRepository rentalOrderDetailRepository;
     private final SportWearService sportWearService;
     private final ServiceService serviceService;
+    private final PaymentService paymentService;
 
     public long countActiveRentals(String username) {
         return rentalRepository.countActiveRentals(username);
@@ -134,13 +135,32 @@ public class RentalService {
         rentalOrder.setCustomerName(customerName);
         rentalOrder.setCustomerPhone(customerPhone);
         rentalOrder.setCustomerAddress(customerAddress);
-        rentalOrder.setNotes(notes);
-        rentalOrder.setTotalAmount(cartDTO.getTotalPrice().doubleValue());
-        rentalOrder.setPaymentMethod(paymentMethod);
-        rentalOrder.setPaymentStatus(paymentMethod.equals("VNPAY") ? "PAID" : "UNPAID");
-        rentalOrder.setOrderStatus("PENDING"); // Đang chờ xử lý
         rentalOrder.setOrderDate(LocalDateTime.now());
 
+        // Tạo Payment
+        Payment payment = new Payment();
+        payment.setNotes(notes);
+        payment.setAmount(cartDTO.getTotalPrice());
+        payment.setPaymentMethod("COD".equals(paymentMethod) ? Payment.PaymentMethod.COD : Payment.PaymentMethod.VNPAY);
+
+        // Set trạng thái payment dựa vào phương thức thanh toán
+        if ("COD".equals(paymentMethod)) {
+            payment.setStatus(Payment.PaymentStatus.PENDING);
+            payment.setPaymentCode("COD-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+        } else if ("VNPAY".equals(paymentMethod)) {
+            // VNPAY sẽ được cập nhật sau khi callback thành công
+            payment.setStatus(Payment.PaymentStatus.COMPLETED);
+            payment.setPaymentCode("VNPAY-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+            payment.setPaidAt(LocalDateTime.now());
+        }
+
+        payment.setCreatedAt(LocalDateTime.now());
+
+        // Link payment với rentalOrder
+        rentalOrder.setPayment(payment);
+        payment.setRentalOrder(rentalOrder);
+
+        // Save rentalOrder (cascade sẽ save payment)
         rentalOrder = rentalOrderRepository.save(rentalOrder);
 
         // Tạo chi tiết đơn hàng (RentalOrderDetail)

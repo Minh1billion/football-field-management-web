@@ -126,7 +126,10 @@
                             </h5>
 
                             <form th:action="@{/user/bookings/save}" th:object="${bookingDTO}" method="post">
+                                <!-- Hidden fields -->
                                 <input type="hidden" th:field="*{fieldId}">
+                                <input type="hidden" th:field="*{startTime}" id="startTimeHidden">
+                                <input type="hidden" th:field="*{endTime}" id="endTimeHidden">
 
                                 <div class="row mb-4">
                                     <div th:each="slot, iterStat : ${timeSlots}" class="col-md-4 col-sm-6 mb-3">
@@ -152,9 +155,6 @@
                                     </div>
                                 </div>
 
-                                <input type="hidden" th:field="*{startTime}" id="startTimeHidden">
-                                <input type="hidden" th:field="*{endTime}" id="endTimeHidden">
-
                                 <!-- Ghi chú -->
                                 <div class="mb-3">
                                     <label class="form-label">Ghi chú (tùy chọn)</label>
@@ -164,7 +164,7 @@
                                               placeholder="Nhập ghi chú cho đặt sân..."></textarea>
                                 </div>
 
-                                <!-- Bước 5: Chọn dịch vụ kèm theo - ĐÃ FIX LỖI -->
+                                <!-- Bước 5: Chọn dịch vụ kèm theo -->
                                 <div class="mb-4" th:if="${services != null and not #lists.isEmpty(services)}">
                                     <h5 class="border-bottom pb-2 mb-3">
                                         <i class="bi bi-basket"></i> Bước 5: Chọn dịch vụ kèm theo (tùy chọn)
@@ -192,6 +192,42 @@
                                                     </div>
                                                 </div>
                                             </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Bước 6: Chọn phương thức thanh toán -->
+                                <div class="mb-4">
+                                    <h5 class="border-bottom pb-2 mb-3">
+                                        <i class="bi bi-credit-card"></i> Bước 6: Chọn phương thức thanh toán
+                                    </h5>
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <input type="radio" class="btn-check" name="paymentMethod" id="payment-cash"
+                                                   th:field="*{paymentMethod}" value="CASH" checked>
+                                            <label class="btn btn-outline-success w-100" for="payment-cash">
+                                                <i class="bi bi-cash fs-3"></i>
+                                                <div class="mt-2">Tiền mặt</div>
+                                                <small class="text-muted">Thanh toán khi đến sân</small>
+                                            </label>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <input type="radio" class="btn-check" name="paymentMethod" id="payment-cod"
+                                                   th:field="*{paymentMethod}" value="COD">
+                                            <label class="btn btn-outline-primary w-100" for="payment-cod">
+                                                <i class="bi bi-truck fs-3"></i>
+                                                <div class="mt-2">COD</div>
+                                                <small class="text-muted">Thanh toán khi nhận hàng</small>
+                                            </label>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <input type="radio" class="btn-check" name="paymentMethod" id="payment-vnpay"
+                                                   th:field="*{paymentMethod}" value="VNPAY">
+                                            <label class="btn btn-outline-info w-100" for="payment-vnpay">
+                                                <i class="bi bi-wallet2 fs-3"></i>
+                                                <div class="mt-2">VNPay</div>
+                                                <small class="text-muted">Ví điện tử VNPay</small>
+                                            </label>
                                         </div>
                                     </div>
                                 </div>
@@ -246,6 +282,7 @@
                             <li>Chọn ngày để xem khung giờ trống</li>
                             <li>Khung giờ đỏ là đã có người đặt</li>
                             <li>Có thể hủy đặt trước 24 giờ</li>
+                            <li>Chọn phương thức thanh toán phù hợp</li>
                         </ul>
                     </div>
                 </div>
@@ -253,7 +290,7 @@
         </div>
     </div>
 
-    <!-- JavaScript tối thiểu để set datetime từ radio button -->
+    <!-- JavaScript -->
     <script th:inline="javascript">
         /*<![CDATA[*/
         const dateStr = /*[[${selectedDate}]]*/ '';

@@ -4,8 +4,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import utescore.dto.ServiceDTO;
 import utescore.repository.ServiceRepository;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -55,5 +57,20 @@ public class ServiceService {
 
     public long countAllServices() {
         return serviceRepository.count();
+    }
+
+    public List<ServiceDTO> findAllAvailableServices() {
+        List<utescore.entity.Service> services = serviceRepository.findByIsAvailableTrue();
+        return services.stream().map(this::convertToDTO).toList();
+    }
+
+    public ServiceDTO convertToDTO(utescore.entity.Service service) {
+        ServiceDTO dto = new ServiceDTO();
+        dto.setId(service.getId());
+        dto.setName(service.getName());
+        dto.setPrice(service.getPrice());
+        dto.setServiceType(service.getServiceType().toString());
+        dto.setIsAvailable(true);
+        return dto;
     }
 }

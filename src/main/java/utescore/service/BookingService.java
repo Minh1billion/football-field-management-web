@@ -32,6 +32,8 @@ public class BookingService {
 	private final MaintenanceRepository maintenanceRepo;
 	private final SportWearRepository sportWearRepo;
 	private final BookingSportWearRepository bookingSportWearRepo;
+	private final ServiceRepository serviceRepository;
+	private final BookingServiceRepository bookingServiceRepository;
 
 	public long countUpcomingBookings(String username) {
 		return bookingRepo.countUpcomingBookings(username, LocalDateTime.now());
@@ -136,7 +138,6 @@ public class BookingService {
 		LocalDateTime startDateTime = dto.getStartTime();
 		LocalDateTime endDateTime = dto.getEndTime();
 
-
 		// Kiểm tra sân có khả dụng không
 		boolean hasOverlap = bookingRepo.existsOverlap(field.getId(), startDateTime, endDateTime);
 		if (hasOverlap) {
@@ -174,8 +175,39 @@ public class BookingService {
 		booking.setTotalAmount(totalPrice);
 		booking.setStatus(Booking.BookingStatus.PENDING);
 		booking.setNotes(dto.getNotes());
-		System.out.println(booking);
+
 		booking = bookingRepo.save(booking);
+
+		if (dto.getServices() != null && !dto.getServices().isEmpty()) {
+			BigDecimal serviceTotal = BigDecimal.ZERO;
+
+			for (RentalDTO serviceDTO : dto.getServices()) {
+				// Chỉ xử lý những service có quantity > 0
+				if (serviceDTO.getQuantity() > 0) {
+					utescore.entity.Service service = serviceRepository.findById(serviceDTO.getServiceId())
+							.orElseThrow(() -> new RuntimeException("Service not found: " + serviceDTO.getServiceId()));
+
+					// Tạo BookingService entity
+					utescore.entity.BookingService bookingService = new utescore.entity.BookingService();
+					bookingService.setBooking(booking);
+					bookingService.setService(service);
+					bookingService.setQuantity(serviceDTO.getQuantity());
+					bookingService.setUnitPrice(service.getPrice());
+
+					BigDecimal itemTotal = service.getPrice()
+							.multiply(BigDecimal.valueOf(serviceDTO.getQuantity()));
+					bookingService.setTotalPrice(itemTotal);
+
+					booking.getBookingServices().add(bookingService);
+					serviceTotal = serviceTotal.add(itemTotal);
+				}
+			}
+
+			// Cập nhật tổng tiền booking
+			booking.setTotalAmount(totalPrice.add(serviceTotal));
+			bookingRepo.save(booking);
+		}
+
 		return convertToDTO(booking);
 	}
 

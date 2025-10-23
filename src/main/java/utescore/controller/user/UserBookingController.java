@@ -6,12 +6,10 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import utescore.dto.BookingDTO;
-import utescore.dto.FootballFieldDTO;
-import utescore.dto.LocationDTO;
-import utescore.dto.TimeSlotDTO;
+import utescore.dto.*;
 import utescore.service.BookingService;
 import utescore.service.FieldManagementService;
+import utescore.service.ServiceService;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -23,6 +21,7 @@ public class UserBookingController {
 
     private final BookingService bookingService;
     private final FieldManagementService fieldService;
+    private final ServiceService serviceService;
 
     @GetMapping
     public String listBookings(Model model, Authentication auth) {
@@ -67,6 +66,8 @@ public class UserBookingController {
         bookingDTO.setFieldId(fieldId);
         bookingDTO.setBookingTime(selectedDate);
 
+        List<ServiceDTO> services = serviceService.findAllAvailableServices();
+
         model.addAttribute("bookingDTO", bookingDTO);
         model.addAttribute("locations", locations);
         model.addAttribute("fields", fields);
@@ -75,6 +76,7 @@ public class UserBookingController {
         model.addAttribute("selectedLocationId", locationId);
         model.addAttribute("selectedFieldId", fieldId);
         model.addAttribute("selectedDate", selectedDate);
+        model.addAttribute("services", services);
 
         return "user/bookings/form";
     }
@@ -111,6 +113,7 @@ public class UserBookingController {
                               RedirectAttributes redirectAttributes) {
         try {
             bookingService.createBooking(bookingDTO, authentication.getName());
+
             redirectAttributes.addFlashAttribute("successMessage", "Đặt sân thành công!");
             return "redirect:/user/bookings";
         } catch (Exception e) {
@@ -119,6 +122,7 @@ public class UserBookingController {
                     "&date=" + bookingDTO.getBookingTime();
         }
     }
+
 
     @PostMapping("/cancel/{id}")
     public String cancelBooking(@PathVariable Long id,

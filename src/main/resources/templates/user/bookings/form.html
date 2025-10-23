@@ -152,7 +152,6 @@
                                     </div>
                                 </div>
 
-                                <!-- Hidden fields để lưu start/end time sẽ được set bằng JavaScript nhẹ -->
                                 <input type="hidden" th:field="*{startTime}" id="startTimeHidden">
                                 <input type="hidden" th:field="*{endTime}" id="endTimeHidden">
 
@@ -163,6 +162,38 @@
                                               th:field="*{notes}"
                                               rows="3"
                                               placeholder="Nhập ghi chú cho đặt sân..."></textarea>
+                                </div>
+
+                                <!-- Bước 5: Chọn dịch vụ kèm theo - ĐÃ FIX LỖI -->
+                                <div class="mb-4" th:if="${services != null and not #lists.isEmpty(services)}">
+                                    <h5 class="border-bottom pb-2 mb-3">
+                                        <i class="bi bi-basket"></i> Bước 5: Chọn dịch vụ kèm theo (tùy chọn)
+                                    </h5>
+                                    <div class="row g-3">
+                                        <div th:each="service, iterStat : ${services}" class="col-md-6">
+                                            <div class="card h-100 shadow-sm">
+                                                <div class="card-body d-flex justify-content-between align-items-center">
+                                                    <div>
+                                                        <h6 class="card-title mb-1" th:text="${service.name}">Dịch vụ ví dụ</h6>
+                                                        <p class="mb-0 text-muted small"
+                                                           th:text="'Giá: ' + ${#numbers.formatDecimal(service.price, 0, 'COMMA', 0, 'POINT')} + '₫'">Giá: 50.000₫</p>
+                                                    </div>
+                                                    <div class="d-flex align-items-center">
+                                                        <label class="me-2 mb-0">SL:</label>
+                                                        <input type="number"
+                                                               class="form-control form-control-sm"
+                                                               th:name="'services[' + ${iterStat.index} + '].quantity'"
+                                                               value="0"
+                                                               min="0"
+                                                               style="width: 70px;">
+                                                        <input type="hidden"
+                                                               th:name="'services[' + ${iterStat.index} + '].serviceId'"
+                                                               th:value="${service.id}">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <!-- Buttons -->

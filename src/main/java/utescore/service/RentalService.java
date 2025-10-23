@@ -157,5 +157,4 @@ public class RentalService {
 
         bookingRepository.save(booking);
     }
-
 }

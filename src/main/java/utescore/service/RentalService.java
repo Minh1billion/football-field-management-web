@@ -209,7 +209,9 @@ public class RentalService {
             bsw.setTotalPrice(wear.getRentalPricePerDay());
 
             booking.getBookingSportWears().add(bsw);
+            booking.setTotalAmount(booking.getTotalAmount().add(bsw.getTotalPrice()));
         }
+
 
         bookingRepository.save(booking);
     }

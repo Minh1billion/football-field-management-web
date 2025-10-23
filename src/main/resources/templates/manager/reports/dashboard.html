@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/manager :: layout(content=~{::section})}">
+<head>
+    <title>Báo cáo</title>
+</head>
+<section>
+    <div class="container">
+        <h2 class="mb-4">📊 Báo cáo</h2>
+
+        <form class="row g-2 mb-4" method="get">
+            <div class="col-auto">
+                <label class="form-label">Năm</label>
+                <input class="form-control" type="number" name="year" th:value="${year}">
+            </div>
+            <div class="col-auto">
+                <label class="form-label">Từ ngày</label>
+                <input class="form-control" type="date" name="start"
+                       th:value="${#temporals.format(rangeStart,'yyyy-MM-dd')}">
+            </div>
+            <div class="col-auto">
+                <label class="form-label">Đến ngày</label>
+                <input class="form-control" type="date" name="end"
+                       th:value="${#temporals.format(rangeEnd,'yyyy-MM-dd')}">
+            </div>
+            <div class="col-auto align-self-end">
+                <button class="btn btn-primary">Lọc</button>
+            </div>
+        </form>
+
+        <div class="row g-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">Doanh thu theo tháng [[${year}]]</div>
+                    <div class="card-body p-0">
+                        <table class="table table-striped mb-0">
+                            <thead><tr><th>Tháng</th><th>Doanh thu</th></tr></thead>
+                            <tbody>
+                            <tr th:each="e : ${revByMonth}">
+                                <td th:text="${e.key}"></td>
+                                <td th:text="${#numbers.formatDecimal(e.value,0,'COMMA',0,'POINT')}"></td>
+                            </tr>
+                            <tr th:if="${#maps.isEmpty(revByMonth)}">
+                                <td colspan="2" class="text-center text-muted">Chưa có dữ liệu</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">Tổng doanh thu (khoảng lọc)</div>
+                    <div class="card-body">
+                        <h3 class="text-success"
+                            th:text="${totalRevenue != null ? #numbers.formatDecimal(totalRevenue,0,'COMMA',0,'POINT') : '0'}"></h3>
+                        <div class="text-muted">
+                            [[${#temporals.format(rangeStart,'dd/MM/yyyy')}]] - [[${#temporals.format(rangeEnd,'dd/MM/yyyy')}]]
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4 mt-1">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">Doanh thu theo sân</div>
+                    <div class="card-body p-0">
+                        <table class="table table-hover mb-0">
+                            <thead><tr><th>Sân</th><th>Doanh thu</th></tr></thead>
+                            <tbody>
+                            <tr th:each="e : ${revenueByField}">
+                                <td th:text="${e.key}"></td>
+                                <td th:text="${#numbers.formatDecimal(e.value,0,'COMMA',0,'POINT')}"></td>
+                            </tr>
+                            <tr th:if="${#maps.isEmpty(revenueByField)}">
+                                <td colspan="2" class="text-center text-muted">Chưa có dữ liệu</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">Thống kê Booking</div>
+                    <div class="card-body p-0">
+                        <table class="table table-striped mb-0">
+                            <thead><tr><th>Trạng thái</th><th>Số lượng</th></tr></thead>
+                            <tbody>
+                            <tr th:each="e : ${bookingStats}">
+                                <td th:text="${e.key}"></td>
+                                <td th:text="${e.value}"></td>
+                            </tr>
+                            <tr th:if="${#maps.isEmpty(bookingStats)}">
+                                <td colspan="2" class="text-center text-muted">Chưa có dữ liệu</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+</html>

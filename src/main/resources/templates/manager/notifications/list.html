@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="layout/manager :: layout(~{::section})">
+<section>
+    <div class="container">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <h2>🔔 Thông báo</h2>
+            <a class="btn btn-primary" th:href="@{/manager/notifications/compose}">Gửi thông báo</a>
+        </div>
+
+        <div class="card">
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead>
+                    <tr>
+                        <th>Thời gian</th>
+                        <th>Người nhận</th>
+                        <th>Tiêu đề</th>
+                        <th>Nội dung</th>
+                        <th>Loại</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="n : ${notifications}">
+                        <td th:text="${#temporals.format(n.createdAt,'yyyy-MM-dd HH:mm')}"></td>
+                        <td th:text="${n.account != null ? n.account.username : 'N/A'}"></td>
+                        <td th:text="${n.title}"></td>
+                        <td th:text="${n.message}"></td>
+                        <td th:text="${n.type}"></td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(notifications)}">
+                        <td colspan="5" class="text-center text-muted">Chưa có thông báo</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+</html>

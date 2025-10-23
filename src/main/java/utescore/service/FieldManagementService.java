@@ -111,6 +111,7 @@ public class FieldManagementService {
         dto.setIsActive(f.getIsActive());
         dto.setLocationId(f.getLocation() != null ? f.getLocation().getId() : null);
         dto.setLocationName(f.getLocation() != null ? f.getLocation().getName() : "Unknown location");
+        dto.setLocationAddress(f.getLocation() != null ? f.getLocation().getAddress() : "Unknown address");
         return dto;
     }
 

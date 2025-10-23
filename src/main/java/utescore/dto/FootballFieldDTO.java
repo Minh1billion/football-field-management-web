@@ -15,4 +15,5 @@ public class FootballFieldDTO {
     private Boolean isActive;
     private Long locationId;
     private String locationName;
+    private String locationAddress;
 }

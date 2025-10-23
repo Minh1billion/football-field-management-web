@@ -21,6 +21,7 @@
             <div class="col-md-2">
                 <label class="form-label fw-semibold">Sân</label>
                 <select class="form-select" name="fieldId" required>
+                    <option value="">-- Chọn sân --</option>
                     <option th:each="f : ${fields}" th:value="${f.id}" th:text="${f.name}"></option>
                 </select>
             </div>
@@ -34,6 +35,7 @@
 
             <div class="col-md-3">
                 <label class="form-label fw-semibold">Thời điểm</label>
+                <!-- @DateTimeFormat(iso = ISO.DATE_TIME) chấp nhận yyyy-MM-dd'T'HH:mm -->
                 <input type="datetime-local" class="form-control" name="scheduledDate" required>
             </div>
 
@@ -67,39 +69,43 @@
 
                 <tbody>
                 <tr th:each="m : ${maintenances}">
-                    <td th:text="${m.field.name}"></td>
+                    <td th:text="${m.field != null ? m.field.name : ''}"></td>
                     <td th:text="${m.title}"></td>
                     <td th:text="${m.type}"></td>
-                    <td th:text="${#dates.format(m.scheduledDate, 'yyyy-MM-dd HH:mm')}"></td>
+
+                    <!-- Sửa: dùng #temporals cho LocalDateTime -->
+                    <td th:text="${m.scheduledDate != null ? #temporals.format(m.scheduledDate, 'yyyy-MM-dd HH:mm') : ''}"></td>
+
                     <td>
+                        <!-- Sửa: map đúng enum SCHEDULED/IN_PROGRESS/COMPLETED/CANCELLED -->
                         <span th:text="${m.status}"
-                              th:classappend="${m.status.name() == 'PENDING' ? 'badge bg-warning text-dark' :
-                                               (m.status.name() == 'IN_PROGRESS' ? 'badge bg-info text-dark' :
+                              th:classappend="${m.status.name() == 'SCHEDULED' ? 'badge bg-secondary' :
+                                               (m.status.name() == 'IN_PROGRESS' ? 'badge bg-warning text-dark' :
                                                (m.status.name() == 'COMPLETED' ? 'badge bg-success' :
-                                               'badge bg-secondary'))}">
+                                               'badge bg-dark'))}">
                         </span>
                     </td>
 
                     <td class="text-center">
                         <!-- Form cập nhật trạng thái -->
-                        <form th:action="@{'/manager/maintenances/' + ${m.id} + '/status'}"
+                        <form th:action="@{|/manager/maintenances/${m.id}/status|}"
                               method="post"
                               class="d-inline">
                             <select name="status" class="form-select form-select-sm d-inline w-auto me-1">
                                 <option th:each="s : ${statuses}"
                                         th:value="${s}"
                                         th:text="${s}"
-                                        th:selected="${m.status} == ${s}"></option>
+                                        th:selected="${s == m.status}"></option>
                             </select>
                             <button class="btn btn-sm btn-success">💾 Lưu</button>
                         </form>
 
                         <!-- Form xóa lịch -->
-                        <form th:action="@{'/manager/maintenances/' + ${m.id} + '/delete'}"
+                        <form th:action="@{|/manager/maintenances/${m.id}/delete|}"
                               method="post"
-                              class="d-inline">
-                            <button class="btn btn-sm btn-danger"
-                                    onclick="return confirm('Bạn có chắc chắn muốn xóa lịch này không?');">
+                              class="d-inline"
+                              onsubmit="return confirm('Bạn có chắc chắn muốn xóa lịch này không?');">
+                            <button class="btn btn-sm btn-danger">
                                 🗑️ Xóa
                             </button>
                         </form>

@@ -23,10 +23,10 @@ public class SportWear {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "NVARCHAR(255)")
     private String name;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "NVARCHAR(MAX)")
     private String description;
 
     @Enumerated(EnumType.STRING)
@@ -37,7 +37,7 @@ public class SportWear {
     @Column(nullable = false)
     private Size size;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "NVARCHAR(100)")
     private String color;
 
     @Column(nullable = false, precision = 10, scale = 2)
@@ -57,6 +57,7 @@ public class SportWear {
 
     private String imageUrl;
 
+    @Column(columnDefinition = "NVARCHAR(255)")
     private String brand;
 
     @CreationTimestamp

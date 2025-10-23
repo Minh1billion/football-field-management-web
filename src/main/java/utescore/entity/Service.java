@@ -23,10 +23,10 @@ public class Service {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "NVARCHAR(255)")
     private String name;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "NVARCHAR(MAX)")
     private String description;
 
     @Enumerated(EnumType.STRING)
@@ -42,7 +42,7 @@ public class Service {
     private String imageUrl;
 
     @Column(nullable = false)
-    private Integer stockQuantity = 0; // For items like food, drinks
+    private Integer stockQuantity = 0;
 
     @CreationTimestamp
     private LocalDateTime createdAt;

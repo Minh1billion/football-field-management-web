@@ -34,13 +34,7 @@ public class MockingField implements CommandLineRunner {
 
         Location loc1 = new Location();
         loc1.setName("Sân bóng Phú Nhuận");
-        loc1.setAddress("123 Nguyễn Văn Trỗi");
-        loc1.setCity("Hồ Chí Minh");
-        loc1.setState("Phú Nhuận");
-        loc1.setZipCode("700000");
-        loc1.setCountry("Việt Nam");
-        loc1.setLatitude(10.7992);
-        loc1.setLongitude(106.6781);
+        loc1.setAddress("123 Nguyễn Văn Trỗi, Phú Nhuận, Hồ Chí Minh");
         loc1.setDescription("Sân bóng hiện đại với đầy đủ tiện nghi");
         loc1.setIsActive(true);
         loc1.setContactPhone("0901234567");
@@ -50,13 +44,7 @@ public class MockingField implements CommandLineRunner {
 
         Location loc2 = new Location();
         loc2.setName("Sân bóng Tân Bình");
-        loc2.setAddress("456 Trường Chinh");
-        loc2.setCity("Hồ Chí Minh");
-        loc2.setState("Tân Bình");
-        loc2.setZipCode("700000");
-        loc2.setCountry("Việt Nam");
-        loc2.setLatitude(10.8011);
-        loc2.setLongitude(106.6529);
+        loc2.setAddress("456 Trường Chinh, Tân Bình, Hồ Chí Minh");
         loc2.setDescription("Khu liên hợp sân bóng lớn nhất quận");
         loc2.setIsActive(true);
         loc2.setContactPhone("0901234568");
@@ -66,13 +54,7 @@ public class MockingField implements CommandLineRunner {
 
         Location loc3 = new Location();
         loc3.setName("Sân bóng Quận 7");
-        loc3.setAddress("789 Nguyễn Hữu Thọ");
-        loc3.setCity("Hồ Chí Minh");
-        loc3.setState("Quận 7");
-        loc3.setZipCode("700000");
-        loc3.setCountry("Việt Nam");
-        loc3.setLatitude(10.7329);
-        loc3.setLongitude(106.7221);
+        loc3.setAddress("789 Nguyễn Hữu Thọ, Quận 7, Hồ Chí Minh");
         loc3.setDescription("Sân bóng gần khu đô thị Phú Mỹ Hưng");
         loc3.setIsActive(true);
         loc3.setContactPhone("0901234569");

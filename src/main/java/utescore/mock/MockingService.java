@@ -9,7 +9,9 @@ import utescore.entity.Service;
 import utescore.entity.SportWear;
 import utescore.repository.ServiceRepository;
 import utescore.repository.SportWearRepository;
+import utescore.service.CloudinaryService;
 
+import java.io.File;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -23,6 +25,7 @@ public class MockingService implements CommandLineRunner {
 
     private final ServiceRepository serviceRepository;
     private final SportWearRepository sportWearRepository;
+    private final CloudinaryService cloudinaryService;
 
     // Mock Services
     public static List<Service> getMockServices() {
@@ -273,10 +276,23 @@ public class MockingService implements CommandLineRunner {
     }
 
     @Override
-    public void run(String ... args) throws Exception {
+    public void run(String... args) throws Exception {
+        File fallbackImage = new File("C:\\Users\\ADMIN\\Desktop\\web-programming\\images\\services\\fallback.png");
+        String uploadedImageName = cloudinaryService.uploadAndGetName(fallbackImage);
+        String uploadedImageUrl = cloudinaryService.getImageUrl(uploadedImageName);
+
         List<Service> services = getMockServices();
+        for (Service s : services) {
+            // ✅ Set trực tiếp, không cần kiểm tra
+            s.setImageUrl(uploadedImageUrl);
+        }
         serviceRepository.saveAll(services);
+
         List<SportWear> sportWears = getMockSportWears();
+        for (SportWear w : sportWears) {
+            // ✅ Set trực tiếp, không cần kiểm tra
+            w.setImageUrl(uploadedImageUrl);
+        }
         sportWearRepository.saveAll(sportWears);
     }
 }

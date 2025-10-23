@@ -5,6 +5,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+
+import utescore.repository.FootballFieldRepository;
 import utescore.service.AccountService;
 import utescore.service.ServiceService;
 
@@ -17,6 +19,9 @@ public class AdminDashboardController {
     
     @Autowired
     private ServiceService serviceService;
+    
+    @Autowired
+    private FootballFieldRepository footballFieldRepository;
     
     @GetMapping("/dashboard")
     public String dashboard(Model model) {
@@ -32,8 +37,9 @@ public class AdminDashboardController {
             // Lấy thống kê dịch vụ
             long totalServices = serviceService.countAllServices();
             
+            Long countFields = footballFieldRepository.findByIsActiveTrue().stream().count();
             // Thống kê sân (tạm thời để 0, sẽ implement sau)
-            long totalFields = 0;
+            long totalFields = countFields;
             
             // Thêm dữ liệu vào model
             model.addAttribute("totalAccounts", totalAccounts);

@@ -25,7 +25,7 @@ public class UserHomeController {
         try {
             String username = SecurityUtils.getCurrentUsername();
             model.addAttribute("username", username);
-
+            
             long upcomingBookings = bookingService.countUpcomingBookings(username);
             long monthlySpending = bookingService.calculateMonthlySpending(username);
             long rewardPoints = rewardService.getRewardPoints(username);

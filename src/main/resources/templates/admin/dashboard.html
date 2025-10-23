@@ -83,6 +83,60 @@
       </div>
     </div>
   </div>
+  <!-- Section to display active users -->
+  <div class="row mb-4">
+    <div class="col-md-12">
+      <div class="card shadow-sm border-0">
+        <div class="card-body">
+          <h5 class="card-title">👥 Người dùng đang online <span id="connectionStatus" class="badge bg-danger">Disconnected</span></h5>
+          <ul id="activeUsersList" class="list-group"></ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Initialize WebSocket connection
+    const socket = new SockJS('/ws');
+    const stompClient = Stomp.over(socket);
+
+    // Connect to WebSocket (no username needed for admin dashboard)
+    stompClient.connect({}, function (frame) {
+      console.log('Connected: ' + frame);
+      document.getElementById('connectionStatus').textContent = 'Connected';
+      document.getElementById('connectionStatus').className = 'badge bg-success';
+
+      // Subscribe to /topic/activeUsers
+      stompClient.subscribe('/topic/activeUsers', function (message) {
+        const activeUsers = JSON.parse(message.body);
+        updateActiveUsersList(activeUsers);
+      });
+    }, function (error) {
+      console.error('WebSocket error: ', error);
+      document.getElementById('connectionStatus').textContent = 'Disconnected';
+      document.getElementById('connectionStatus').className = 'badge bg-danger';
+    });
+
+    // Function to update the active users list in the UI
+    function updateActiveUsersList(users) {
+      const listElement = document.getElementById('activeUsersList');
+      listElement.innerHTML = '';
+      if (users.length === 0) {
+        const li = document.createElement('li');
+        li.className = 'list-group-item';
+        li.textContent = 'Không có người dùng nào đang online';
+        listElement.appendChild(li);
+      } else {
+        users.forEach(user => {
+          const li = document.createElement('li');
+          li.className = 'list-group-item';
+          li.textContent = user;
+          listElement.appendChild(li);
+        });
+      }
+    }
+  </script>
 </div>
+
 </body>
 </html>

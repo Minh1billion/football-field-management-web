@@ -2,108 +2,155 @@
 <html xmlns:th="http://www.thymeleaf.org" th:fragment="layout(content)">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard</title>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
     <style>
-        /* Prevent horizontal scrolling on the entire page */
-        html, body {
+        :root {
+            --sidebar-bg: #1e272e;
+            --sidebar-hover: #2f3640;
+            --primary-color: #00a8ff;
+            --text-light: #f5f6fa;
+            --text-muted: #dcdde1;
+        }
+
+        body {
             margin: 0;
-            padding: 0;
-            width: 100%;
-            overflow-x: hidden; /* Prevent horizontal scrollbar */
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            min-height: 100vh;
+            background-color: #f1f2f6;
+            overflow-x: hidden;
+        }
+
+        /* ===== Sidebar ===== */
+        .sidebar {
+            width: 250px;
+            background-color: var(--sidebar-bg);
+            color: var(--text-light);
             display: flex;
             flex-direction: column;
-            min-height: 100vh;
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            transition: width 0.3s;
         }
 
-        /* Custom styles for the navbar */
-        .navbar {
-            background-color: #2c3e50; /* Dark background for the navbar */
-            padding: 15px 20px;
-            width: 100%; /* Ensure navbar spans full width */
-        }
-        .navbar-brand {
-            color: #ffffff !important;
+        .sidebar .brand {
             font-size: 1.5rem;
             font-weight: bold;
-        }
-        .navbar-brand i {
-            margin-right: 10px;
-        }
-        .navbar-nav .nav-link {
-            color: #ffffff !important;
-            margin: 0 15px;
-            font-size: 1rem;
-            transition: color 0.3s;
-        }
-        .navbar-nav .nav-link:hover {
-            color: #1abc9c !important; /* Highlight color on hover */
-        }
-
-        /* Content styling to prevent overlap and scrolling issues */
-        .content {
-            margin-top: 70px; /* Space for fixed navbar */
             padding: 20px;
-            width: 100%;
-            box-sizing: border-box; /* Ensure padding doesn't cause overflow */
-            flex: 1; /* Allow content to take remaining space */
-            
+            text-align: center;
+            background-color: var(--primary-color);
         }
 
-        /* Ensure container-fluid doesn't cause overflow */
-        .container-fluid {
-            max-width: 100%; /* Prevent container from exceeding viewport */
-            padding-left: 15px;
-            padding-right: 15px;
+        .sidebar .brand i {
+            margin-right: 8px;
+        }
+
+        .sidebar a {
+            color: var(--text-muted);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            font-size: 1rem;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        .sidebar a:hover,
+        .sidebar a.active {
+            background-color: var(--sidebar-hover);
+            color: var(--primary-color);
+        }
+
+        .sidebar a i {
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
+        }
+
+        /* ===== Navbar ===== */
+        .navbar-top {
+            position: fixed;
+            top: 0;
+            left: 250px;
+            right: 0;
+            height: 60px;
+            background-color: white;
+            border-bottom: 1px solid #dcdde1;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding: 0 20px;
+            z-index: 10;
+        }
+
+        .navbar-top .nav-item {
+            margin-left: 20px;
+        }
+
+        /* ===== Content ===== */
+        .content {
+            margin-left: 250px;
+            margin-top: 60px;
+            padding: 30px;
+            width: calc(100% - 250px);
+            box-sizing: border-box;
+        }
+
+        @media (max-width: 992px) {
+            .sidebar {
+                width: 70px;
+            }
+
+            .sidebar a span {
+                display: none;
+            }
+
+            .navbar-top {
+                left: 70px;
+            }
+
+            .content {
+                margin-left: 70px;
+                width: calc(100% - 70px);
+            }
         }
     </style>
 </head>
 <body>
-    <!-- Sticky Horizontal Navbar -->
-    <nav class="navbar navbar-expand-lg fixed-top">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="#"><i class="fas fa-crown"></i> Admin Panel</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" th:href="@{/admin/dashboard}">Dashboard</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" th:href="@{/admin/accounts}">Quản lý tài khoản</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" th:href="@{/admin/services}">Quản lý dịch vụ</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" th:href="@{/admin/system-config}">Quản lý hệ thống</a>
-                    </li>
-                    
-                    <li class="nav-item">
-                        <a class="nav-link" th:href="@{/admin/sportwears}">Đồ thể thao</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" th:href="@{/admin/logs}">Lịch sử</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" th:href="@{/admin/payment}">Thanh toán</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" th:href="@{/logout}">Đăng xuất</a>
-                    </li>
-                    
-                </ul>
-            </div>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="brand">
+            <i class="fas fa-crown"></i> <span>Admin</span>
         </div>
-    </nav>
+        <a th:href="@{/admin/dashboard}" class="active"><i class="fas fa-chart-line"></i> <span>Dashboard</span></a>
+        <a th:href="@{/admin/accounts}"><i class="fas fa-users"></i> <span>Tài khoản</span></a>
+        <a th:href="@{/admin/services}"><i class="fas fa-cogs"></i> <span>Dịch vụ</span></a>
+        <a th:href="@{/admin/system-config}"><i class="fas fa-wrench"></i> <span>Hệ thống</span></a>
+        <a th:href="@{/admin/sportwears}"><i class="fas fa-shirt"></i> <span>Đồ thể thao</span></a>
+        <a th:href="@{/admin/logs}"><i class="fas fa-history"></i> <span>Lịch sử</span></a>
+        <a th:href="@{/admin/payment}"><i class="fas fa-credit-card"></i> <span>Thanh toán</span></a>
+        <a th:href="@{/logout}" class="text-danger"><i class="fas fa-sign-out-alt"></i> <span>Đăng xuất</span></a>
+    </div>
 
-    <!-- Content area for Thymeleaf -->
-    <div class="content" th:insert="${content}"></div>
+    <!-- Top Navbar -->
+    <div class="navbar-top">
+        <div class="nav-item">
+            <i class="fas fa-user-circle fa-lg me-2"></i>
+            <span th:text="${session.username} ?: 'Admin'"></span>
+        </div>
+    </div>
 
-    <!-- Bootstrap JS for navbar functionality -->
+    <!-- Content -->
+    <main class="content" th:insert="${content}"></main>
+	
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

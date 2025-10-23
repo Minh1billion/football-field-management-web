@@ -46,9 +46,14 @@ public class SportWearService {
         sportWearRepository.deleteById(id);
     }
 
-    public Page<SportWear> findAvailableForRent(Pageable pageable) {
-        return sportWearRepository.findByIsAvailableForRentTrue(pageable);
+    public List<SportWear> findAvailableForRent(Pageable pageable) {
+        if (pageable == null) {
+            // Lấy tất cả đồ khả dụng nếu pageable = null
+            return sportWearRepository.findByIsAvailableForRentTrue();
+        }
+        return sportWearRepository.findByIsAvailableForRentTrue(pageable).getContent();
     }
+
 
     public Page<SportWear> findAvailableForSale(Pageable pageable) {
         return sportWearRepository.findByIsAvailableForSaleTrue(pageable);

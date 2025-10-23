@@ -12,6 +12,7 @@ public class FootballFieldDTO {
     private String surfaceType;
     private Integer capacity;
     private BigDecimal pricePerHour;
+    private String description;
     private Boolean isActive;
     private Long locationId;
     private String locationName;

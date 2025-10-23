@@ -56,12 +56,4 @@ public class ServiceService {
     public long countAllServices() {
         return serviceRepository.count();
     }
-
-    public long countActiveFields() {
-        return serviceRepository.countByIsAvailableTrue();
-    }
-
-    public long countByServiceType(utescore.entity.Service.ServiceType serviceType) {
-        return serviceRepository.countByServiceType(serviceType);
-    }
 }

@@ -1,10 +1,7 @@
 package utescore.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -15,7 +12,8 @@ import java.util.Set;
 
 @Entity
 @Table(name = "bookings")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class Booking {
@@ -54,23 +52,28 @@ public class Booking {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "customer_id", nullable = false)
     @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private Customer customer;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "field_id", nullable = false)
     @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private FootballField field;
 
     @OneToOne(mappedBy = "booking", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private Payment payment;
 
     @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private Set<BookingService> bookingServices = new HashSet<>();
 
     @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private Set<BookingSportWear> bookingSportWears = new HashSet<>();
 
     public enum BookingStatus {

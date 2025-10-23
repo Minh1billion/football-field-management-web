@@ -108,6 +108,7 @@ public class FieldManagementService {
         dto.setCapacity(f.getCapacity());
         dto.setSurfaceType(f.getSurfaceType().toString());
         dto.setPricePerHour(f.getPricePerHour());
+        dto.setDescription(f.getDescription());
         dto.setIsActive(f.getIsActive());
         dto.setLocationId(f.getLocation() != null ? f.getLocation().getId() : null);
         dto.setLocationName(f.getLocation() != null ? f.getLocation().getName() : "Unknown location");

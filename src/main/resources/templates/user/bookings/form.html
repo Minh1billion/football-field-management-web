@@ -3,27 +3,30 @@
       th:replace="~{layout/user :: layout(~{::content})}">
 <head>
     <style>
-        .time-slot-btn {
-            width: 100%;
-            margin-bottom: 8px;
-        }
-        .time-slot-btn.selected {
-            background-color: #198754 !important;
-            color: white !important;
-            border-color: #198754 !important;
-        }
-        .time-slot-btn.unavailable {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
         .field-info-card {
             position: sticky;
             top: 20px;
         }
-        .booking-summary {
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 15px;
+        .time-slot-card {
+            border: 2px solid #dee2e6;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        .time-slot-card:hover:not(.unavailable) {
+            border-color: #198754;
+            background-color: #f8f9fa;
+        }
+        .time-slot-card.unavailable {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background-color: #e9ecef;
+        }
+        .time-slot-radio {
+            display: none;
+        }
+        .time-slot-radio:checked + .time-slot-card {
+            border-color: #198754;
+            background-color: #d1e7dd;
         }
     </style>
 </head>
@@ -32,7 +35,11 @@
     <div class="container mt-4">
         <h3 class="mb-4">📝 Đặt sân mới</h3>
 
-        <!-- Thông báo lỗi -->
+        <!-- Thông báo -->
+        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle"></i> <span th:text="${successMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
         <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
             <i class="bi bi-exclamation-circle"></i> <span th:text="${errorMessage}"></span>
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
@@ -41,20 +48,18 @@
         <div class="row">
             <!-- Form bên trái -->
             <div class="col-lg-8">
-                <div class="card shadow-sm">
+                <div class="card shadow-sm mb-4">
                     <div class="card-body">
-                        <form th:action="@{/user/bookings/save}" th:object="${bookingDTO}" method="post" id="bookingForm">
-                            <!-- Bước 1: Chọn địa điểm và sân -->
-                            <div class="step-section mb-4">
-                                <h5 class="border-bottom pb-2 mb-3">
-                                    <i class="bi bi-geo-alt"></i> Bước 1: Chọn sân
-                                </h5>
-
-                                <div class="row mb-3">
-                                    <label class="col-sm-3 col-form-label">Địa điểm</label>
-                                    <div class="col-sm-9">
-                                        <select class="form-select" id="locationFilter"
-                                                th:value="${selectedLocationId}">
+                        <!-- Bước 1: Chọn địa điểm -->
+                        <div class="mb-4">
+                            <h5 class="border-bottom pb-2 mb-3">
+                                <i class="bi bi-geo-alt"></i> Bước 1: Chọn địa điểm
+                            </h5>
+                            <form th:action="@{/user/bookings/new}" method="get">
+                                <input type="hidden" name="date" th:value="${selectedDate}">
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <select class="form-select" name="locationId" onchange="this.form.submit()">
                                             <option value="">Tất cả địa điểm</option>
                                             <option th:each="l : ${locations}"
                                                     th:value="${l.id}"
@@ -63,138 +68,152 @@
                                         </select>
                                     </div>
                                 </div>
+                            </form>
+                        </div>
 
-                                <div class="row mb-3">
-                                    <label class="col-sm-3 col-form-label">Chọn sân <span class="text-danger">*</span></label>
-                                    <div class="col-sm-9">
-                                        <select class="form-select" th:field="*{fieldId}" id="fieldSelect" required>
-                                            <option value="">-- Chọn sân --</option>
-                                            <option th:each="f : ${fields}"
-                                                    th:value="${f.id}"
-                                                    th:text="${f.name} + ' (' + ${f.fieldType} + ') - ' + ${#numbers.formatDecimal(f.pricePerHour, 0, 'COMMA', 0, 'POINT')} + ' VNĐ/giờ'"
-                                                    th:data-location="${f.locationId}"
-                                                    th:data-price="${f.pricePerHour}"
-                                                    th:data-type="${f.fieldType}"></option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Bước 2: Chọn ngày -->
-                            <div class="step-section mb-4">
-                                <h5 class="border-bottom pb-2 mb-3">
-                                    <i class="bi bi-calendar"></i> Bước 2: Chọn ngày
-                                </h5>
-
-                                <div class="row mb-3">
-                                    <label class="col-sm-3 col-form-label">Ngày đặt <span class="text-danger">*</span></label>
-                                    <div class="col-sm-9">
-                                        <input type="date"
-                                               class="form-control"
-                                               th:field="*{bookingTime}"
-                                               id="bookingDate"
-                                               th:min="${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd')}"
-                                               required>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Bước 3: Chọn giờ -->
-                            <div class="step-section mb-4" id="timeSlotSection" style="display: none;">
-                                <h5 class="border-bottom pb-2 mb-3">
-                                    <i class="bi bi-clock"></i> Bước 3: Chọn giờ
-                                </h5>
-
-                                <div class="row mb-3">
-                                    <div class="col-12">
-                                        <div id="timeSlotsContainer" class="row">
-                                            <div class="col-12 text-center text-muted py-3">
-                                                <i class="bi bi-hourglass-split"></i> Đang tải khung giờ...
+                        <!-- Bước 2: Chọn sân -->
+                        <div class="mb-4">
+                            <h5 class="border-bottom pb-2 mb-3">
+                                <i class="bi bi-dribbble"></i> Bước 2: Chọn sân
+                            </h5>
+                            <div class="row">
+                                <div th:each="field : ${fields}" class="col-md-6 mb-3">
+                                    <a th:href="@{/user/bookings/new(locationId=${selectedLocationId}, fieldId=${field.id}, date=${selectedDate})}"
+                                       class="text-decoration-none">
+                                        <div class="card h-100"
+                                             th:classappend="${field.id == selectedFieldId} ? 'border-success border-3' : ''">
+                                            <div class="card-body">
+                                                <h6 class="card-title" th:text="${field.name}"></h6>
+                                                <p class="card-text small mb-1">
+                                                    <span class="badge bg-info" th:text="${field.fieldType}"></span>
+                                                </p>
+                                                <p class="card-text text-primary fw-bold">
+                                                    <span th:text="${#numbers.formatDecimal(field.pricePerHour, 0, 'COMMA', 0, 'POINT')}"></span> VNĐ/giờ
+                                                </p>
+                                                <p class="card-text small text-muted" th:text="${field.description}"></p>
                                             </div>
                                         </div>
-                                    </div>
+                                    </a>
                                 </div>
+                            </div>
+                        </div>
 
-                                <div class="row mb-3">
-                                    <label class="col-sm-3 col-form-label">Giờ bắt đầu <span class="text-danger">*</span></label>
-                                    <div class="col-sm-9">
-                                        <input type="datetime-local"
+                        <!-- Bước 3: Chọn ngày -->
+                        <div class="mb-4" th:if="${selectedFieldId != null}">
+                            <h5 class="border-bottom pb-2 mb-3">
+                                <i class="bi bi-calendar"></i> Bước 3: Chọn ngày
+                            </h5>
+                            <form th:action="@{/user/bookings/new}" method="get">
+                                <input type="hidden" name="locationId" th:value="${selectedLocationId}">
+                                <input type="hidden" name="fieldId" th:value="${selectedFieldId}">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <input type="date"
                                                class="form-control"
-                                               th:field="*{startTime}"
-                                               id="startTime"
+                                               name="date"
+                                               th:value="${selectedDate}"
+                                               th:min="${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd')}"
+                                               onchange="this.form.submit()">
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Bước 4: Chọn khung giờ -->
+                        <div class="mb-4" th:if="${timeSlots != null}">
+                            <h5 class="border-bottom pb-2 mb-3">
+                                <i class="bi bi-clock"></i> Bước 4: Chọn khung giờ
+                            </h5>
+
+                            <form th:action="@{/user/bookings/save}" th:object="${bookingDTO}" method="post">
+                                <input type="hidden" th:field="*{fieldId}">
+
+                                <div class="row mb-4">
+                                    <div th:each="slot, iterStat : ${timeSlots}" class="col-md-4 col-sm-6 mb-3">
+                                        <input type="radio"
+                                               class="time-slot-radio"
+                                               th:id="'slot-' + ${iterStat.index}"
+                                               name="timeSlot"
+                                               th:value="${slot.startTime} + '-' + ${slot.endTime}"
+                                               th:disabled="${!slot.available}"
                                                required>
+                                        <label th:for="'slot-' + ${iterStat.index}" class="w-100">
+                                            <div class="card time-slot-card"
+                                                 th:classappend="${!slot.available} ? 'unavailable' : ''">
+                                                <div class="card-body text-center py-3">
+                                                    <div class="fw-bold">
+                                                        <span th:text="${slot.startTime}"></span> - <span th:text="${slot.endTime}"></span>
+                                                    </div>
+                                                    <small class="text-danger" th:if="${!slot.available}">Đã đặt</small>
+                                                    <small class="text-success" th:if="${slot.available}">Còn trống</small>
+                                                </div>
+                                            </div>
+                                        </label>
                                     </div>
                                 </div>
 
-                                <div class="row mb-3">
-                                    <label class="col-sm-3 col-form-label">Giờ kết thúc <span class="text-danger">*</span></label>
-                                    <div class="col-sm-9">
-                                        <input type="datetime-local"
-                                               class="form-control"
-                                               th:field="*{endTime}"
-                                               id="endTime"
-                                               required>
-                                    </div>
+                                <!-- Hidden fields để lưu start/end time sẽ được set bằng JavaScript nhẹ -->
+                                <input type="hidden" th:field="*{startTime}" id="startTimeHidden">
+                                <input type="hidden" th:field="*{endTime}" id="endTimeHidden">
+
+                                <!-- Ghi chú -->
+                                <div class="mb-3">
+                                    <label class="form-label">Ghi chú (tùy chọn)</label>
+                                    <textarea class="form-control"
+                                              th:field="*{notes}"
+                                              rows="3"
+                                              placeholder="Nhập ghi chú cho đặt sân..."></textarea>
                                 </div>
-                            </div>
 
-                            <!-- Bước 4: Ghi chú -->
-                            <div class="step-section mb-4">
-                                <h5 class="border-bottom pb-2 mb-3">
-                                    <i class="bi bi-pencil"></i> Bước 4: Ghi chú (tùy chọn)
-                                </h5>
-
-                                <div class="row mb-3">
-                                    <label class="col-sm-3 col-form-label">Ghi chú</label>
-                                    <div class="col-sm-9">
-                                        <textarea class="form-control"
-                                                  th:field="*{notes}"
-                                                  rows="3"
-                                                  placeholder="Nhập ghi chú cho đặt sân (nếu có)..."></textarea>
-                                    </div>
+                                <!-- Buttons -->
+                                <div class="text-end">
+                                    <a th:href="@{/user/bookings}" class="btn btn-secondary">
+                                        <i class="bi bi-arrow-left"></i> Hủy
+                                    </a>
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="bi bi-check-circle"></i> Xác nhận đặt sân
+                                    </button>
                                 </div>
-                            </div>
-
-                            <!-- Nút submit -->
-                            <div class="text-end">
-                                <a th:href="@{/user/bookings}" class="btn btn-secondary">
-                                    <i class="bi bi-arrow-left"></i> Hủy
-                                </a>
-                                <button type="submit" class="btn btn-success" id="submitBtn">
-                                    <i class="bi bi-check-circle"></i> Xác nhận đặt sân
-                                </button>
-                            </div>
-                        </form>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Thông tin tổng kết bên phải -->
+            <!-- Thông tin bên phải -->
             <div class="col-lg-4">
-                <div class="card shadow-sm field-info-card">
+                <!-- Thông tin sân đã chọn -->
+                <div class="card shadow-sm field-info-card mb-3" th:if="${selectedField != null}">
                     <div class="card-header bg-success text-white">
-                        <h5 class="mb-0"><i class="bi bi-info-circle"></i> Thông tin đặt sân</h5>
+                        <h6 class="mb-0"><i class="bi bi-info-circle"></i> Thông tin sân</h6>
                     </div>
                     <div class="card-body">
-                        <div id="bookingSummary">
-                            <div class="text-center text-muted py-5">
-                                <i class="bi bi-clipboard" style="font-size: 3rem;"></i>
-                                <p class="mt-2">Chọn sân và thời gian để xem tổng kết</p>
-                            </div>
+                        <h5 th:text="${selectedField.name}"></h5>
+                        <p class="mb-2">
+                            <span class="badge bg-info" th:text="${selectedField.fieldType}"></span>
+                        </p>
+                        <p class="mb-2" th:text="${selectedField.description}"></p>
+                        <hr>
+                        <div class="d-flex justify-content-between">
+                            <strong>Giá:</strong>
+                            <span class="text-success fw-bold">
+                                <span th:text="${#numbers.formatDecimal(selectedField.pricePerHour, 0, 'COMMA', 0, 'POINT')}"></span> VNĐ/giờ
+                            </span>
                         </div>
                     </div>
                 </div>
 
                 <!-- Hướng dẫn -->
-                <div class="card shadow-sm mt-3">
+                <div class="card shadow-sm">
                     <div class="card-header bg-info text-white">
                         <h6 class="mb-0"><i class="bi bi-lightbulb"></i> Lưu ý</h6>
                     </div>
                     <div class="card-body">
                         <ul class="small mb-0">
-                            <li>Thời gian đặt sân tối thiểu 1 giờ</li>
-                            <li>Chỉ được đặt trong giờ hoạt động (8:00 - 22:00)</li>
-                            <li>Vui lòng đặt trước ít nhất 2 giờ</li>
+                            <li>Chọn địa điểm để lọc sân</li>
+                            <li>Chọn sân để xem khung giờ</li>
+                            <li>Chọn ngày để xem khung giờ trống</li>
+                            <li>Khung giờ đỏ là đã có người đặt</li>
                             <li>Có thể hủy đặt trước 24 giờ</li>
                         </ul>
                     </div>
@@ -203,208 +222,24 @@
         </div>
     </div>
 
+    <!-- JavaScript tối thiểu để set datetime từ radio button -->
     <script th:inline="javascript">
-        const locationFilter = document.getElementById('locationFilter');
-        const fieldSelect = document.getElementById('fieldSelect');
-        const bookingDate = document.getElementById('bookingDate');
-        const timeSlotSection = document.getElementById('timeSlotSection');
-        const startTimeInput = document.getElementById('startTime');
-        const endTimeInput = document.getElementById('endTime');
+        /*<![CDATA[*/
+        const dateStr = /*[[${selectedDate}]]*/ '';
+        const radioButtons = document.querySelectorAll('input[name="timeSlot"]');
+        const startTimeInput = document.getElementById('startTimeHidden');
+        const endTimeInput = document.getElementById('endTimeHidden');
 
-        // Lọc sân theo địa điểm
-        locationFilter.addEventListener('change', function() {
-            const selectedLocation = this.value;
-            const options = fieldSelect.querySelectorAll('option');
-
-            options.forEach(option => {
-                if (option.value === '') {
-                    option.style.display = 'block';
-                    return;
-                }
-
-                const locationId = option.dataset.location;
-                if (selectedLocation === '' || locationId === selectedLocation) {
-                    option.style.display = 'block';
-                } else {
-                    option.style.display = 'none';
+        radioButtons.forEach(radio => {
+            radio.addEventListener('change', function() {
+                if (this.checked) {
+                    const [startTime, endTime] = this.value.split('-');
+                    startTimeInput.value = dateStr + 'T' + startTime;
+                    endTimeInput.value = dateStr + 'T' + endTime;
                 }
             });
-
-            fieldSelect.value = '';
-            updateSummary();
         });
-
-        // Load khung giờ khi chọn sân và ngày
-        function loadTimeSlots() {
-            const fieldId = fieldSelect.value;
-            const date = bookingDate.value;
-
-            if (!fieldId || !date) {
-                timeSlotSection.style.display = 'none';
-                return;
-            }
-
-            timeSlotSection.style.display = 'block';
-            const container = document.getElementById('timeSlotsContainer');
-            container.innerHTML = '<div class="col-12 text-center"><div class="spinner-border text-success" role="status"></div></div>';
-
-            fetch(`/user/bookings/api/time-slots?fieldId=${fieldId}&date=${date}`)
-                .then(response => response.json())
-                .then(slots => {
-                    container.innerHTML = '';
-                    slots.forEach(slot => {
-                        const col = document.createElement('div');
-                        col.className = 'col-md-4 col-sm-6 mb-2';
-
-                        const btn = document.createElement('button');
-                        btn.type = 'button';
-                        btn.className = 'btn btn-outline-success time-slot-btn';
-                        btn.textContent = `${slot.startTime} - ${slot.endTime}`;
-                        btn.dataset.start = slot.startTime;
-                        btn.dataset.end = slot.endTime;
-
-                        if (!slot.available) {
-                            btn.classList.add('unavailable');
-                            btn.disabled = true;
-                            btn.innerHTML = `${slot.startTime} - ${slot.endTime} <br><small>Đã đặt</small>`;
-                        } else {
-                            btn.addEventListener('click', function() {
-                                // Remove selection from all buttons
-                                document.querySelectorAll('.time-slot-btn').forEach(b => {
-                                    b.classList.remove('selected');
-                                });
-                                // Select this button
-                                this.classList.add('selected');
-
-                                // Set datetime inputs
-                                const startDateTime = `${date}T${slot.startTime}`;
-                                const endDateTime = `${date}T${slot.endTime}`;
-                                startTimeInput.value = startDateTime;
-                                endTimeInput.value = endDateTime;
-
-                                updateSummary();
-                            });
-                        }
-
-                        col.appendChild(btn);
-                        container.appendChild(col);
-                    });
-                })
-                .catch(error => {
-                    container.innerHTML = '<div class="col-12"><div class="alert alert-danger">Không thể tải khung giờ</div></div>';
-                });
-        }
-
-        fieldSelect.addEventListener('change', loadTimeSlots);
-        bookingDate.addEventListener('change', loadTimeSlots);
-
-        // Update summary
-        function updateSummary() {
-            const fieldId = fieldSelect.value;
-            const startTime = startTimeInput.value;
-            const endTime = endTimeInput.value;
-            const summaryDiv = document.getElementById('bookingSummary');
-
-            if (!fieldId || !startTime || !endTime) {
-                summaryDiv.innerHTML = `
-                    <div class="text-center text-muted py-5">
-                        <i class="bi bi-clipboard" style="font-size: 3rem;"></i>
-                        <p class="mt-2">Chọn sân và thời gian để xem tổng kết</p>
-                    </div>
-                `;
-                return;
-            }
-
-            const selectedOption = fieldSelect.options[fieldSelect.selectedIndex];
-            const fieldName = selectedOption.text.split(' (')[0];
-            const pricePerHour = parseFloat(selectedOption.dataset.price);
-            const fieldType = selectedOption.dataset.type;
-
-            // Calculate hours
-            const start = new Date(startTime);
-            const end = new Date(endTime);
-            const hours = (end - start) / (1000 * 60 * 60);
-            const totalAmount = pricePerHour * hours;
-
-            summaryDiv.innerHTML = `
-                <div class="booking-summary">
-                    <div class="mb-3">
-                        <small class="text-muted">Sân đã chọn</small>
-                        <div class="fw-bold">${fieldName}</div>
-                        <small class="text-muted">${fieldType}</small>
-                    </div>
-
-                    <div class="mb-3">
-                        <small class="text-muted">Ngày</small>
-                        <div class="fw-bold">${new Date(startTime).toLocaleDateString('vi-VN')}</div>
-                    </div>
-
-                    <div class="mb-3">
-                        <small class="text-muted">Thời gian</small>
-                        <div class="fw-bold">
-                            ${new Date(startTime).toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})} -
-                            ${new Date(endTime).toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})}
-                        </div>
-                        <small class="text-muted">${hours} giờ</small>
-                    </div>
-
-                    <hr>
-
-                    <div class="d-flex justify-content-between mb-2">
-                        <span>Giá/giờ:</span>
-                        <span>${pricePerHour.toLocaleString('vi-VN')} VNĐ</span>
-                    </div>
-
-                    <div class="d-flex justify-content-between mb-2">
-                        <span>Số giờ:</span>
-                        <span>${hours} giờ</span>
-                    </div>
-
-                    <hr>
-
-                    <div class="d-flex justify-content-between">
-                        <strong>Tổng cộng:</strong>
-                        <strong class="text-success">${totalAmount.toLocaleString('vi-VN')} VNĐ</strong>
-                    </div>
-                </div>
-            `;
-        }
-
-        startTimeInput.addEventListener('change', updateSummary);
-        endTimeInput.addEventListener('change', updateSummary);
-
-        // Validation before submit
-        document.getElementById('bookingForm').addEventListener('submit', function(e) {
-            const startTime = new Date(startTimeInput.value);
-            const endTime = new Date(endTimeInput.value);
-            const now = new Date();
-
-            if (startTime < now) {
-                e.preventDefault();
-                alert('Không thể đặt sân trong quá khứ!');
-                return false;
-            }
-
-            if (endTime <= startTime) {
-                e.preventDefault();
-                alert('Thời gian kết thúc phải sau thời gian bắt đầu!');
-                return false;
-            }
-
-            const hours = (endTime - startTime) / (1000 * 60 * 60);
-            if (hours < 1) {
-                e.preventDefault();
-                alert('Thời gian đặt tối thiểu là 1 giờ!');
-                return false;
-            }
-
-            return true;
-        });
-
-        // Initial load if date is set
-        if (bookingDate.value) {
-            loadTimeSlots();
-        }
+        /*]]>*/
     </script>
 </div>
 </body>

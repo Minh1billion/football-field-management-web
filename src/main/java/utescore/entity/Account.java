@@ -1,10 +1,7 @@
 package utescore.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -14,7 +11,8 @@ import java.util.Set;
 
 @Entity
 @Table(name = "accounts")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class Account {
@@ -46,10 +44,12 @@ public class Account {
 
     @OneToOne(mappedBy = "account", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private Customer customer;
 
     @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private Set<Notification> notifications = new HashSet<>();
 
     public enum Role {

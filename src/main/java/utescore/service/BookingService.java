@@ -1,9 +1,12 @@
 package utescore.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import utescore.dto.BookingDTO;
+import utescore.dto.RentalDTO;
 import utescore.dto.TimeSlotDTO;
 import utescore.entity.*;
 import utescore.repository.*;
@@ -27,34 +30,32 @@ public class BookingService {
 	private final CustomerRepository customerRepo;
 	private final FieldAvailabilityRepository availabilityRepo;
 	private final MaintenanceRepository maintenanceRepo;
+	private final SportWearRepository sportWearRepo;
+	private final BookingSportWearRepository bookingSportWearRepo;
 
-	/**
-	 * Đếm số đặt sân sắp tới
-	 */
 	public long countUpcomingBookings(String username) {
 		return bookingRepo.countUpcomingBookings(username, LocalDateTime.now());
 	}
 
-	/**
-	 * Tính chi tiêu hàng tháng trong năm
-	 */
 	public long calculateMonthlySpending(String username) {
 		Long spending = bookingRepo.calculateMonthlySpending(username, LocalDateTime.now().getMonthValue(), LocalDateTime.now().getYear());
 		return spending != null ? spending : 0L;
 	}
 
-	/**
-	 * Lấy tất cả đặt sân
-	 */
 	public List<BookingDTO> getAllBookings() {
 		return bookingRepo.findAll().stream()
 				.map(this::convertToDTO)
 				.collect(Collectors.toList());
 	}
 
-	/**
-	 * Lấy tất cả đặt sân của user
-	 */
+	public List<BookingDTO> getMyBooking() {
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		String username = authentication.getName();
+		return bookingRepo.findByCustomer_Account_UsernameOrderByCreatedAt(username).stream()
+				.map(this::convertToDTO)
+				.collect(Collectors.toList());
+	}
+
 	public List<BookingDTO> getBookingsByUsername(String username) {
 		Account user = accountRepo.findByUsername(username)
 				.orElseThrow(() -> new RuntimeException("User not found"));
@@ -65,18 +66,59 @@ public class BookingService {
 				.collect(Collectors.toList());
 	}
 
-	/**
-	 * Lấy chi tiết đặt sân theo ID
-	 */
+	@Transactional(readOnly = true)
 	public BookingDTO getBookingById(Long id) {
 		Booking booking = bookingRepo.findById(id)
-				.orElseThrow(() -> new RuntimeException("Booking not found"));
-		return convertToDTO(booking);
+				.orElseThrow(() -> new RuntimeException("Không tìm thấy booking"));
+
+		BookingDTO dto = new BookingDTO();
+		dto.setId(booking.getId());
+		dto.setBookingCode(booking.getBookingCode());
+		dto.setFieldId(booking.getField().getId());
+		dto.setFieldName(booking.getField().getName());
+		dto.setCustomerId(booking.getCustomer().getId());
+		dto.setCustomerName(booking.getCustomer().getFullName());
+		dto.setStartTime(booking.getStartTime());
+		dto.setEndTime(booking.getEndTime());
+		dto.setNotes(booking.getNotes());
+		dto.setTotalAmount(booking.getTotalAmount());
+		dto.setStatus(booking.getStatus().toString());
+
+		if (booking.getPayment() != null) {
+			dto.setPaymentMethod(booking.getPayment().getPaymentMethod().toString());
+		}
+
+		List<RentalDTO> sportWears = booking.getBookingSportWears().stream()
+				.map(bsw -> {
+					RentalDTO rental = new RentalDTO();
+					rental.setSportWearId(bsw.getSportWear().getId());
+					rental.setName(bsw.getSportWear().getName());
+					rental.setQuantity(bsw.getQuantity());
+					rental.setRentalDays(bsw.getRentalDays());
+					rental.setRentalPricePerDay(bsw.getUnitPrice());
+					rental.setTotalPrice(bsw.getTotalPrice());
+					rental.setStatus(bsw.getStatus().toString());
+					return rental;
+				})
+				.toList();
+		dto.setSportWears(sportWears);
+
+		List<RentalDTO> services = booking.getBookingServices().stream()
+				.map(bs -> {
+					RentalDTO rental = new RentalDTO();
+					rental.setServiceId(bs.getService().getId());
+					rental.setName(bs.getService().getName());
+					rental.setQuantity(bs.getQuantity());
+					rental.setRentalPricePerDay(bs.getUnitPrice());
+					rental.setTotalPrice(bs.getTotalPrice());
+					return rental;
+				})
+				.toList();
+		dto.setServices(services);
+
+		return dto;
 	}
 
-	/**
-	 * Tạo đặt sân mới
-	 */
 	public BookingDTO createBooking(BookingDTO dto, String username) {
 		Customer customer = customerRepo.findByAccount_Username(username);
 
@@ -137,9 +179,6 @@ public class BookingService {
 		return convertToDTO(booking);
 	}
 
-	/**
-	 * Hủy đặt sân
-	 */
 	public void cancelBooking(Long bookingId) {
 		Booking booking = bookingRepo.findById(bookingId)
 				.orElseThrow(() -> new RuntimeException("Booking not found"));
@@ -154,9 +193,6 @@ public class BookingService {
 		bookingRepo.save(booking);
 	}
 
-	/**
-	 * Lấy danh sách khung giờ khả dụng
-	 */
 	public List<TimeSlotDTO> getAvailableTimeSlots(Long fieldId, LocalDate date) {
 		FootballField field = fieldRepo.findById(fieldId)
 				.orElseThrow(() -> new RuntimeException("Field not found"));

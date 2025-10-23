@@ -1,5 +1,6 @@
 package utescore.repository;
 
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -8,8 +9,20 @@ import utescore.entity.Booking;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface BookingRepository extends JpaRepository<Booking, Long> {
+
+    @EntityGraph(attributePaths = {
+            "customer",
+            "field",
+            "payment",
+            "bookingSportWears",
+            "bookingSportWears.sportWear",
+            "bookingServices",
+            "bookingServices.service"
+    })
+    Optional<Booking> findById(Long id);
 
     @Query("""
         select count(b) > 0 from Booking b

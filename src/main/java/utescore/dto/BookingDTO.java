@@ -5,6 +5,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 public class BookingDTO {
@@ -21,4 +22,6 @@ public class BookingDTO {
     private BigDecimal totalAmount;
     private String status;
     private String paymentMethod;
+    private List<RentalDTO> sportWears;
+    private List<RentalDTO> services;
 }

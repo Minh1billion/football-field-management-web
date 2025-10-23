@@ -24,11 +24,11 @@
             <p class="card-subtitle mb-2 text-muted small" th:text="${wear.brand}">Thương hiệu</p>
 
             <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="badge"
-                                  th:classappend="${wear.isAvailableForRent and wear.stockQuantity > 0} ? 'bg-success' : 'bg-danger'"
-                                  th:text="${wear.isAvailableForRent and wear.stockQuantity > 0} ? 'Sẵn sàng thuê' : 'Đã cho thuê/Hết hàng'">
-                                Trạng thái
-                            </span>
+              <span class="badge"
+                    th:classappend="${wear.isAvailableForRent and wear.stockQuantity > 0} ? 'bg-success' : 'bg-danger'"
+                    th:text="${wear.isAvailableForRent and wear.stockQuantity > 0} ? 'Sẵn sàng thuê' : 'Đã cho thuê/Hết hàng'">
+                Trạng thái
+              </span>
               <small class="text-uppercase border border-secondary px-2 rounded" th:text="${wear.size}">Size</small>
             </div>
 
@@ -38,11 +38,45 @@
             </h4>
 
             <div class="mt-2">
+              <!-- Nút Thuê ngay -->
               <a th:href="@{/user/rentals/detail/{id}(id=${wear.id})}"
                  class="btn btn-primary w-100"
                  th:classappend="${wear.isAvailableForRent and wear.stockQuantity > 0} ? '' : ' disabled'">
                 <i class="bi bi-cart-plus"></i> Thuê ngay
               </a>
+
+              <!-- Form thêm vào Booking -->
+              <form th:action="@{/user/rentals/add-to-booking}" method="post" class="mt-2">
+                <input type="hidden" th:name="sportWearId" th:value="${wear.id}" />
+
+                <!-- Chọn Booking -->
+                <select name="bookingId" class="form-select form-select-sm mb-2" required>
+                  <option value="" disabled selected>Chọn booking</option>
+                  <option th:each="booking : ${myBookings}"
+                          th:value="${booking.id}"
+                          th:text="${#temporals.format(booking.bookingTime, 'dd/MM/yyyy HH:mm')}">
+                    Booking
+                  </option>
+                </select>
+
+                <!-- Chọn Số lượng -->
+                <div class="input-group input-group-sm mb-2">
+                  <span class="input-group-text">Số lượng</span>
+                  <input type="number"
+                         name="quantity"
+                         class="form-control"
+                         value="1"
+                         min="1"
+                         th:max="${wear.stockQuantity}"
+                         required>
+                </div>
+
+                <!-- Nút Submit -->
+                <button type="submit" class="btn btn-success btn-sm w-100"
+                        th:disabled="${!(wear.isAvailableForRent and wear.stockQuantity > 0) or myBookings.isEmpty()}">
+                  <i class="bi bi-bookmark-plus"></i> Thêm vào Booking
+                </button>
+              </form>
             </div>
           </div>
 

@@ -1,16 +1,14 @@
 package utescore.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 
 import java.math.BigDecimal;
 
 @Entity
 @Table(name = "booking_sport_wears")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class BookingSportWear {
@@ -37,11 +35,13 @@ public class BookingSportWear {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "booking_id", nullable = false)
     @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private Booking booking;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sport_wear_id", nullable = false)
     @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private SportWear sportWear;
 
     public enum RentalStatus {

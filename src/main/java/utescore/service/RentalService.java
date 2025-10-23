@@ -7,7 +7,11 @@ import org.springframework.ui.Model;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import utescore.dto.CartDTO;
 import utescore.dto.RentalDTO;
+import utescore.entity.Booking;
+import utescore.entity.BookingService;
+import utescore.entity.BookingSportWear;
 import utescore.entity.SportWear;
+import utescore.repository.BookingRepository;
 import utescore.repository.RentalRepository;
 
 import java.math.BigDecimal;
@@ -18,7 +22,9 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class RentalService {
     private final RentalRepository rentalRepository;
+    private final BookingRepository bookingRepository;
     private final SportWearService sportWearService;
+    private final ServiceService serviceService;
 
     public long countActiveRentals(String username) {
         return rentalRepository.countActiveRentals(username);
@@ -72,9 +78,6 @@ public class RentalService {
         return "redirect:/user/rentals/cart";
     }
 
-    /**
-     * Cập nhật số lượng và ngày thuê trong cart
-     */
     public void updateCartItem(CartDTO cart, Long sportWearId, int quantity, int rentalDays) {
         Optional<RentalDTO> itemOpt = cart.findItemById(sportWearId);
         if (itemOpt.isPresent()) {
@@ -111,4 +114,48 @@ public class RentalService {
                 .multiply(BigDecimal.valueOf(item.getRentalDays()))
                 .multiply(BigDecimal.valueOf(item.getQuantity()));
     }
+
+    public void addSportWearToBooking(long bookingId, List<RentalDTO> rentals) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new RuntimeException("Booking không tồn tại"));
+
+        for (RentalDTO rental : rentals) {
+            SportWear wear = sportWearService.findById(rental.getSportWearId());
+            if (wear == null) continue;
+
+            BookingSportWear bsw = new BookingSportWear();
+            bsw.setBooking(booking);
+            bsw.setSportWear(wear);
+            bsw.setQuantity(rental.getQuantity());
+            bsw.setRentalDays(1);
+            bsw.setUnitPrice(wear.getRentalPricePerDay());
+            bsw.setTotalPrice(wear.getRentalPricePerDay());
+
+            booking.getBookingSportWears().add(bsw);
+        }
+
+        bookingRepository.save(booking);
+    }
+
+    public void addServiceToBooking(long bookingId, List<RentalDTO> rentals) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new RuntimeException("Booking không tồn tại"));
+
+        for (RentalDTO rental : rentals) {
+            utescore.entity.Service serv = serviceService.findById(rental.getServiceId());
+            if (serv == null) continue;
+
+            BookingService bs = new BookingService();
+            bs.setBooking(booking);
+            bs.setService(serv);
+            bs.setQuantity(1);
+            bs.setUnitPrice(serv.getPrice());
+            bs.setTotalPrice(serv.getPrice());
+
+            booking.getBookingServices().add(bs);
+        }
+
+        bookingRepository.save(booking);
+    }
+
 }

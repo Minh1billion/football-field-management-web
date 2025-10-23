@@ -6,21 +6,99 @@
     <h3>🔍 Chi tiết đặt sân</h3>
 
     <div th:if="${booking}">
-        <p><strong>Mã đặt:</strong> <span th:text="${booking.bookingCode}"></span></p>
-        <p><strong>Tên sân:</strong> <span th:text="${booking.fieldName}"></span></p>
-        <p><strong>Ngày đặt:</strong> <span th:text="${#temporals.format(booking.bookingTime, 'dd/MM/yyyy')}"></span></p>
-        <p><strong>Thời gian:</strong>
-            <span th:text="${#temporals.format(booking.startTime, 'HH:mm')}"></span> -
-            <span th:text="${#temporals.format(booking.endTime, 'HH:mm')}"></span>
-        </p>
-        <p><strong>Tổng tiền:</strong>
-            <span th:text="${#numbers.formatDecimal(booking.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></span>
-        </p>
-        <p><strong>Trạng thái:</strong> <span th:text="${booking.status}"></span></p>
-        <p><strong>Thanh toán:</strong> <span th:text="${booking.paymentMethod}"></span></p>
+        <div class="card mb-3">
+            <div class="card-body">
+                <p><strong>Mã đặt:</strong> <span th:text="${booking.bookingCode}"></span></p>
+                <p><strong>Tên sân:</strong> <span th:text="${booking.fieldName}"></span></p>
+                <p><strong>Ngày đặt:</strong> <span th:text="${#temporals.format(booking.bookingTime, 'dd/MM/yyyy')}"></span></p>
+                <p><strong>Thời gian:</strong>
+                    <span th:text="${#temporals.format(booking.startTime, 'HH:mm')}"></span> -
+                    <span th:text="${#temporals.format(booking.endTime, 'HH:mm')}"></span>
+                </p>
+                <p><strong>Tổng tiền:</strong>
+                    <span th:text="${#numbers.formatDecimal(booking.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></span>
+                </p>
+                <p><strong>Trạng thái:</strong> <span th:text="${booking.status}"></span></p>
+                <p><strong>Thanh toán:</strong> <span th:text="${booking.paymentMethod}"></span></p>
+            </div>
+        </div>
+
+        <!-- Đồ thể thao đã thuê -->
+        <div class="card mb-3" th:if="${booking.sportWears != null and !booking.sportWears.isEmpty()}">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">👕 Đồ thể thao đã thuê</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-striped">
+                    <thead>
+                    <tr>
+                        <th>Tên sản phẩm</th>
+                        <th>Số lượng</th>
+                        <th>Số ngày thuê</th>
+                        <th>Đơn giá</th>
+                        <th>Thành tiền</th>
+                        <th>Trạng thái</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="item : ${booking.sportWears}">
+                        <td th:text="${item.name}"></td>
+                        <td th:text="${item.quantity}"></td>
+                        <td th:text="${item.rentalDays}"></td>
+                        <td th:text="${#numbers.formatDecimal(item.rentalPricePerDay, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></td>
+                        <td th:text="${#numbers.formatDecimal(item.totalPrice, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></td>
+                        <td>
+                            <span class="badge bg-info" th:if="${item.status == 'RENTED'}" th:text="${item.status}"></span>
+                            <span class="badge bg-success" th:if="${item.status == 'RETURNED'}" th:text="${item.status}"></span>
+                            <span class="badge bg-warning" th:if="${item.status == 'DAMAGED'}" th:text="${item.status}"></span>
+                            <span class="badge bg-danger" th:if="${item.status == 'LOST'}" th:text="${item.status}"></span>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Thông báo nếu chưa có đồ thuê -->
+        <div class="alert alert-info" th:if="${booking.sportWears == null or booking.sportWears.isEmpty()}">
+            Chưa có đồ thể thao nào được thuê cho booking này.
+        </div>
+
+        <!-- Dịch vụ đã đặt -->
+        <div class="card mb-3" th:if="${booking.services != null and !booking.services.isEmpty()}">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">⚙️ Dịch vụ đã đặt</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-striped">
+                    <thead>
+                    <tr>
+                        <th>Tên dịch vụ</th>
+                        <th>Số lượng</th>
+                        <th>Đơn giá</th>
+                        <th>Thành tiền</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="item : ${booking.services}">
+                        <td th:text="${item.name}"></td>
+                        <td th:text="${item.quantity}"></td>
+                        <td th:text="${#numbers.formatDecimal(item.rentalPricePerDay, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></td>
+                        <td th:text="${#numbers.formatDecimal(item.totalPrice, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Thông báo nếu chưa có dịch vụ -->
+        <div class="alert alert-info" th:if="${booking.services == null or booking.services.isEmpty()}">
+            Chưa có dịch vụ nào được đặt cho booking này.
+        </div>
     </div>
 
     <a th:href="@{/user/bookings}" class="btn btn-secondary mt-3">⬅ Quay lại danh sách</a>
+    <a th:href="@{/user/rentals}" class="btn btn-primary mt-3">➕ Thêm đồ thuê</a>
 </div>
 </body>
 </html>

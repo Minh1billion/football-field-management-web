@@ -1,10 +1,7 @@
 package utescore.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -15,7 +12,8 @@ import java.util.Set;
 
 @Entity
 @Table(name = "customers")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class Customer {
@@ -52,22 +50,27 @@ public class Customer {
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "account_id", unique = true)
     @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private Account account;
 
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private Set<Booking> bookings = new HashSet<>();
 
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private Set<Order> orders = new HashSet<>();
 
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private Set<Review> reviews = new HashSet<>();
 
     @OneToOne(mappedBy = "customer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private Loyalty loyalty;
 
     public enum Gender {

@@ -8,6 +8,8 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import utescore.entity.SportWear;
 
+import java.util.List;
+
 @Repository
 public interface SportWearRepository extends JpaRepository<SportWear, Long> {
 
@@ -21,6 +23,7 @@ public interface SportWearRepository extends JpaRepository<SportWear, Long> {
             @Param("size") SportWear.Size size,
             Pageable pageable);
 
+    List<SportWear> findByIsAvailableForRentTrue();
     Page<SportWear> findByIsAvailableForRentTrue(Pageable pageable);
 
     Page<SportWear> findByIsAvailableForSaleTrue(Pageable pageable);

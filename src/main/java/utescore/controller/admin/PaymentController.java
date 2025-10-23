@@ -42,7 +42,6 @@ public class PaymentController {
         model.addAttribute("sportWears", sportWears);
         model.addAttribute("customers", customers);
         model.addAttribute("bookings", bookings);
-        
         return "admin/transactions/payment";
     }
 }

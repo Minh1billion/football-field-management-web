@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout/admin :: layout(~{::content})}">
+<body>
+<div th:fragment="content">
+    <h2 class="mb-3">👤 Quản lý tài khoản</h2>
+
+    <!-- Chỉ hiển thị nút thêm tài khoản cho ADMIN và MANAGER -->
+    <a th:if="${currentUserRole == 'ADMIN' or currentUserRole == 'MANAGER'}" 
+       th:href="@{/admin/accounts/create}" class="btn btn-primary mb-3">➕ Thêm tài khoản</a>
+
+    <!-- Form tìm kiếm -->
+    <div class="card mb-3">
+        <div class="card-body">
+            <form th:action="@{/admin/accounts}" method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label for="email" class="form-label">Tìm theo Email:</label>
+                    <input type="text" class="form-control" id="email" name="email"
+                           th:value="${searchEmail}" placeholder="Nhập email...">
+                </div>
+                <div class="col-md-3">
+                    <label for="role" class="form-label">Tìm theo Quyền:</label>
+                    <select class="form-select" id="role" name="role">
+                        <option value="">-- Tất cả quyền --</option>
+                        <option th:each="roleOption : ${roles}"
+                                th:value="${roleOption}"
+                                th:text="${roleOption}"
+                                th:selected="${roleOption.toString() == searchRole}">
+                        </option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-outline-primary me-2">🔍 Tìm kiếm</button>
+                    <a th:href="@{/admin/accounts}" class="btn btn-outline-secondary">🔄 Reset</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+    <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+
+    <table class="table table-striped table-hover">
+        <thead class="table-dark">
+        <tr>
+            <th>ID</th>
+            <th>Tên đăng nhập</th>
+            <th>Email</th>
+            <th>Quyền</th>
+            <th>Trạng thái</th>
+            <th>Hành động</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="account : ${accounts.content}">
+            <td th:text="${account.id}"></td>
+            <td th:text="${account.username}"></td>
+            <td th:text="${account.email}"></td>
+            <td th:text="${account.role}"></td>
+            <td>
+                <span th:if="${account.isActive}" class="badge bg-success">✅ Hoạt động</span>
+                <span th:if="${!account.isActive}" class="badge bg-danger">❌ Bị khóa</span>
+            </td>
+            <td>
+                <!-- Nút xem - tất cả quyền đều có thể xem -->
+                <a th:href="@{'/admin/accounts/view/' + ${account.id}}" class="btn btn-info btn-sm">👁️</a>
+                
+                <!-- Nút chỉnh sửa - chỉ ADMIN và MANAGER -->
+                <a th:if="${currentUserRole == 'ADMIN' or currentUserRole == 'MANAGER'}" 
+                   th:href="@{'/admin/accounts/edit/' + ${account.id}}" class="btn btn-warning btn-sm">✏️</a>
+                
+                <!-- Nút xóa - chỉ ADMIN và MANAGER -->
+                <form th:if="${currentUserRole == 'ADMIN' or currentUserRole == 'MANAGER'}" 
+                      th:action="@{'/admin/accounts/delete/' + ${account.id}}" method="post" class="d-inline">
+                    <button type="submit" class="btn btn-danger btn-sm"
+                            onclick="return confirm('Xác nhận xóa tài khoản này?')">🗑️</button>
+                </form>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+
+    <!-- Phân trang với tham số tìm kiếm -->
+    <nav th:if="${totalPages > 1}">
+        <ul class="pagination">
+            <li class="page-item" th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
+                th:classappend="${i == currentPage} ? 'active'">
+                <a class="page-link"
+                   th:href="@{/admin/accounts(page=${i}, email=${searchEmail}, role=${searchRole})}"
+                   th:text="${i + 1}"></a>
+            </li>
+        </ul>
+    </nav>
+</div>
+</body>
+</html>

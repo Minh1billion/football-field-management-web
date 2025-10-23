@@ -72,4 +72,11 @@ public class HomeController {
     public String publicHome() {
         return "home/public-home";
     }
+    
+
+    @GetMapping("/maintenance")
+    public String showMaintenancePage() {
+         return "home/maintenance";
+    }
+
 }

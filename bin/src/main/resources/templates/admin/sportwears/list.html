@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout/admin :: layout(~{::content})}">
+<body>
+<div th:fragment="content">
+    <h2 class="mb-3">👕 Quản lý trang phục thể thao</h2>
+
+    <a th:href="@{/admin/sportwears/create}" class="btn btn-primary mb-3">➕ Thêm trang phục</a>
+
+    <!-- Form tìm kiếm -->
+    <div class="card mb-3">
+        <div class="card-body">
+            <form th:action="@{/admin/sportwears}" method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label for="name" class="form-label">Tìm theo tên:</label>
+                    <input type="text" class="form-control" id="name" name="name"
+                           th:value="${searchName}" placeholder="Nhập tên trang phục...">
+                </div>
+                <div class="col-md-3">
+                    <label for="wearType" class="form-label">Loại trang phục:</label>
+                    <select class="form-select" id="wearType" name="wearType">
+                        <option value="">-- Tất cả loại --</option>
+                        <option th:each="typeOption : ${wearTypes}"
+                                th:value="${typeOption}"
+                                th:text="${typeOption}"
+                                th:selected="${typeOption.toString() == searchWearType}">
+                        </option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="sizeFilter" class="form-label">Kích thước:</label>
+                    <select class="form-select" id="sizeFilter" name="sizeFilter">
+                        <option value="">-- Tất cả size --</option>
+                        <option th:each="sizeOption : ${sizes}"
+                                th:value="${sizeOption}"
+                                th:text="${sizeOption}"
+                                th:selected="${sizeOption.toString() == searchSize}">
+                        </option>
+                    </select>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-outline-primary me-2">🔍 Tìm kiếm</button>
+                    <a th:href="@{/admin/sportwears}" class="btn btn-outline-secondary">🔄 Reset</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Thông báo -->
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- Bảng trang phục -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">📋 Danh sách trang phục thể thao</h5>
+        </div>
+        <div class="card-body">
+            <div th:if="${sportWears.content.empty}" class="text-center py-4">
+                <h5>Không có trang phục nào</h5>
+                <p class="text-muted">Hãy thêm trang phục đầu tiên!</p>
+            </div>
+            
+            <div th:unless="${sportWears.content.empty}">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="table-dark">
+                        <tr>
+                            <th>ID</th>
+                            <th>Hình ảnh</th>
+                            <th>Tên</th>
+                            <th>Loại</th>
+                            <th>Size</th>
+                            <th>Màu</th>
+                            <th>Giá thuê/ngày</th>
+                            <th>Giá bán</th>
+                            <th>Tồn kho</th>
+                            <th>Cho thuê</th>
+                            <th>Bán hàng</th>
+                            <th>Thao tác</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="sportWear : ${sportWears.content}">
+                            <td th:text="${sportWear.id}"></td>
+                            <td>
+                                <img th:if="${sportWear.imageUrl}" th:src="${sportWear.imageUrl}" 
+                                     alt="Hình ảnh" class="img-thumbnail" style="width: 50px; height: 50px; object-fit: cover;">
+                                <span th:unless="${sportWear.imageUrl}" class="text-muted">Không có ảnh</span>
+                            </td>
+                            <td th:text="${sportWear.name}"></td>
+                            <td th:text="${sportWear.wearType}"></td>
+                            <td th:text="${sportWear.size}"></td>
+                            <td th:text="${sportWear.color}"></td>
+                            <td th:text="${sportWear.rentalPricePerDay + ' VNĐ'}"></td>
+                            <td th:text="${sportWear.sellPrice + ' VNĐ'}"></td>
+                            <td th:text="${sportWear.stockQuantity}"></td>
+                            <td>
+                                <form th:action="@{/admin/sportwears/toggle-rent-availability/{id}(id=${sportWear.id})}" 
+                                      method="post" style="display: inline;">
+                                    <button type="submit" class="btn btn-sm" 
+                                            th:classappend="${sportWear.isAvailableForRent} ? 'btn-success' : 'btn-secondary'">
+                                        <span th:text="${sportWear.isAvailableForRent} ? '✅' : '❌'"></span>
+                                    </button>
+                                </form>
+                            </td>
+                            <td>
+                                <form th:action="@{/admin/sportwears/toggle-sale-availability/{id}(id=${sportWear.id})}" 
+                                      method="post" style="display: inline;">
+                                    <button type="submit" class="btn btn-sm" 
+                                            th:classappend="${sportWear.isAvailableForSale} ? 'btn-success' : 'btn-secondary'">
+                                        <span th:text="${sportWear.isAvailableForSale} ? '✅' : '❌'"></span>
+                                    </button>
+                                </form>
+                            </td>
+                            <td>
+                                <a th:href="@{/admin/sportwears/edit/{id}(id=${sportWear.id})}" 
+                                   class="btn btn-sm btn-warning me-1">✏️ Sửa</a>
+                                <form th:action="@{/admin/sportwears/delete/{id}(id=${sportWear.id})}" 
+                                      method="post" style="display: inline;"
+                                      onsubmit="return confirm('Bạn có chắc chắn muốn xóa trang phục này?')">
+                                    <button type="submit" class="btn btn-sm btn-danger">🗑️ Xóa</button>
+                                </form>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Phân trang -->
+                <nav th:if="${sportWears.totalPages > 1}">
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
+                            <a class="page-link" th:href="@{/admin/sportwears(page=${currentPage - 1}, name=${searchName}, wearType=${searchWearType}, sizeFilter=${searchSize})}">Trước</a>
+                        </li>
+                        <li th:each="pageNum : ${#numbers.sequence(0, sportWears.totalPages - 1)}" 
+                            class="page-item" th:classappend="${pageNum == currentPage} ? 'active'">
+                            <a class="page-link" th:href="@{/admin/sportwears(page=${pageNum}, name=${searchName}, wearType=${searchWearType}, sizeFilter=${searchSize})}" th:text="${pageNum + 1}"></a>
+                        </li>
+                        <li class="page-item" th:classappend="${currentPage >= sportWears.totalPages - 1} ? 'disabled'">
+                            <a class="page-link" th:href="@{/admin/sportwears(page=${currentPage + 1}, name=${searchName}, wearType=${searchWearType}, sizeFilter=${searchSize})}">Sau</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

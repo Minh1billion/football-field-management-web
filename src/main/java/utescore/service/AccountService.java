@@ -88,9 +88,8 @@ public class AccountService {
         loyalty.setTotalBookings(0);
         savedCustomer.setLoyalty(loyalty);
         
-        logService.logAction("New user registered: " + savedAccount.getUsername(), savedAccount);
-        
-        
+        logService.logAction("New user registered: " + savedAccount.getUsername(), savedAccount, "SYSTEM");
+
         return savedAccount;
     }
 
@@ -150,8 +149,12 @@ public class AccountService {
                 : null;
 
         logService.logAction(
-                "New account created: " + savedAccount.getUsername() + " (" + role + ")",
-                currentUser != null ? accountRepository.findByUsername(currentUser).orElse(null) : null
+                "New user registered: " + savedAccount.getUsername() + " with " + role,
+                currentUser != null
+                        ? accountRepository.findByUsername(currentUser).orElse(null)
+                        : null
+                ,
+                "SYSTEM"
         );
 
         return savedAccount;

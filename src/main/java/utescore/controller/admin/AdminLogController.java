@@ -14,7 +14,7 @@ public class AdminLogController {
 
     @GetMapping("/admin/logs")
     public String viewLogs(Model model) {
-        model.addAttribute("logs", logService.getAllLogs());
+        model.addAttribute("logs", logService.findByType("SYSTEM"));
         return "admin/log/logs";
     }
 }

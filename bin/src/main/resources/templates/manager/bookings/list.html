@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/manager :: layout(~{::content})}">
+<head>
+    <title>Danh sách đặt sân</title>
+</head>
+
+<body>
+<div th:fragment="content">
+    <div class="container mt-4">
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="text-primary">Danh sách đặt sân</h2>
+            <a th:href="@{/manager/bookings/new}" class="btn btn-success">
+                ➕ Tạo đặt sân
+            </a>
+        </div>
+
+        <div class="table-responsive shadow-sm rounded">
+            <table class="table table-striped align-middle">
+                <thead class="table-primary">
+                <tr>
+                    <th>Mã đặt</th>
+                    <th>Khách hàng</th>
+                    <th>Sân</th>
+                    <th>Thời gian</th>
+                    <th>Tổng tiền</th>
+                    <th>Trạng thái</th>
+                    <th class="text-center">Thao tác</th>
+                </tr>
+                </thead>
+
+                <tbody>
+                <tr th:each="b : ${bookings}">
+                    <td th:text="${b.bookingCode}"></td>
+                    <td th:text="${b.customer != null ? b.customer.fullName : 'N/A'}"></td>
+                    <td th:text="${b.field.name}"></td>
+                    <td th:text="${#dates.format(b.startTime, 'yyyy-MM-dd HH:mm')} + ' - ' + ${#dates.format(b.endTime, 'yyyy-MM-dd HH:mm')}"></td>
+                    <td th:text="${#numbers.formatDecimal(b.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' đ'"></td>
+
+                    <td>
+                        <span th:text="${b.status}"
+                              th:classappend="${b.status.name() == 'PENDING' ? 'badge bg-warning text-dark' :
+                                               (b.status.name() == 'CONFIRMED' ? 'badge bg-success' :
+                                               (b.status.name() == 'CANCELLED' ? 'badge bg-danger' : 'badge bg-secondary'))}">
+                        </span>
+                    </td>
+
+                    <td class="text-center">
+                        <form th:action="@{'/manager/bookings/' + ${b.id} + '/confirm'}" method="post" class="d-inline"
+                              th:if="${b.status.name() == 'PENDING'}">
+                            <button class="btn btn-sm btn-success">✅ Xác nhận</button>
+                        </form>
+
+                        <form th:action="@{'/manager/bookings/' + ${b.id} + '/cancel'}" method="post" class="d-inline"
+                              th:if="${b.status.name() != 'CANCELLED'}">
+                            <button class="btn btn-sm btn-danger">❌ Hủy</button>
+                        </form>
+                    </td>
+                </tr>
+
+                <tr th:if="${#lists.isEmpty(bookings)}">
+                    <td colspan="7" class="text-center text-muted">
+                        Không có đặt sân nào được tìm thấy.
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</body>
+</html>

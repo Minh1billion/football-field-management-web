@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout/admin :: layout(~{::content})}">
+<head>
+    <meta charset="UTF-8" />
+    <title>👑 Admin Chat Hỗ trợ khách hàng</title>
+    <style>
+        
+    </style>
+</head>
+
+<body>
+    <div th:fragment="content">
+        <div class="chat-wrapper">
+            <div class="chat-header">👑 Hỗ trợ khách hàng (Admin)</div>
+            <div class="chat-body">
+                <div class="user-select-container">
+                    <label>📋 Chọn người dùng:</label>
+                    <select id="userSelect">
+                        <option value="">-- Chọn người dùng --</option>
+                    </select>
+                </div>
+
+                <div id="chatBox">
+                    <div class="placeholder-text">
+                        <i class="bi bi-chat-dots"></i> Chưa có cuộc trò chuyện nào
+                    </div>
+                </div>
+
+                <div class="chat-controls">
+                    <input type="text" id="msgInput" placeholder="Nhập tin nhắn...">
+                    <button id="sendBtn">
+                        <i class="bi bi-send-fill"></i> Gửi
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1.6.1/dist/sockjs.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+        <script>
+            let stompClient;
+            const currentUser = "ADMIN";
+            let selectedUser = null;
+
+            function connect() {
+                const socket = new SockJS("/ws");
+                stompClient = Stomp.over(socket);
+                stompClient.connect({}, () => {
+                    console.log("✅ Kết nối WebSocket thành công");
+                    stompClient.subscribe(`/topic/messages/${currentUser}`, (msg) => {
+                        const message = JSON.parse(msg.body);
+                        console.log("Received message:", message);
+                        showMessage(message);
+                    }, (error) => {
+                        console.error("❌ WebSocket subscription error:", error);
+                    });
+                    loadUsers();
+                }, (error) => {
+                    console.error("❌ WebSocket connection error:", error);
+                });
+            }
+
+            function loadUsers() {
+                fetch("/user/chat/api/accounts")
+                    .then(res => res.json())
+                    .then(users => {
+                        console.log("Loaded users:", users);
+                        const select = document.getElementById("userSelect");
+                        select.innerHTML = '<option value="">-- Chọn người dùng --</option>';
+                        users.forEach(u => {
+                            if (u.username !== currentUser) {
+                                const opt = document.createElement("option");
+                                opt.value = u.username;
+                                opt.textContent = u.username;
+                                select.appendChild(opt);
+                            }
+                        });
+                    })
+                    .catch(err => console.error("❌ Lỗi tải user:", err));
+            }
+
+            document.getElementById("userSelect").addEventListener("change", (e) => {
+                selectedUser = e.target.value;
+                const chatBox = document.getElementById("chatBox");
+                console.log("Selected user:", selectedUser);
+
+                if (selectedUser) {
+                    chatBox.innerHTML = `<div class="placeholder-text"><i class="bi bi-chat-dots"></i> Đang chat với ${selectedUser}</div>`;
+                    loadHistory(selectedUser);
+                } else {
+                    chatBox.innerHTML = `<div class="placeholder-text"><i class="bi bi-chat-dots"></i> Chưa có cuộc trò chuyện nào</div>`;
+                }
+            });
+
+            document.getElementById("sendBtn").addEventListener("click", () => {
+                const content = document.getElementById("msgInput").value.trim();
+                if (!content || !selectedUser) {
+                    console.warn("No content or user selected");
+                    return;
+                }
+
+                const message = {
+                    sender: currentUser,
+                    receiver: selectedUser,
+                    content: content,
+                    timestamp: new Date().toISOString()
+                };
+                console.log("Sending message:", message);
+                stompClient.send("/app/user/chat", {}, JSON.stringify(message));
+                document.getElementById("msgInput").value = "";
+            });
+
+            function showMessage(m) {
+                const chatBox = document.getElementById("chatBox");
+                if (m.sender !== selectedUser && m.receiver !== selectedUser) {
+                    console.log("Message ignored, not for selected user:", m);
+                    return;
+                }
+
+                const div = document.createElement("div");
+                const isAdmin = m.sender === currentUser;
+                console.log("Message sender:", m.sender, "isAdmin:", isAdmin);
+                div.classList.add("msg", isAdmin ? "admin" : "user");
+
+                const header = document.createElement("div");
+                header.classList.add("msg-header");
+                header.innerHTML = `<span>${m.sender}</span><span class="msg-timestamp">${formatTimestamp(m.timestamp)}</span>`;
+
+                const content = document.createElement("div");
+                content.textContent = m.content;
+
+                div.appendChild(header);
+                div.appendChild(content);
+                chatBox.appendChild(div);
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }
+
+            function formatTimestamp(timestamp) {
+                if (!timestamp) return "";
+                const date = new Date(timestamp);
+                return date.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+            }
+
+            function loadHistory(target) {
+                fetch(`/user/chat/history/${target}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        console.log("Loaded history:", data);
+                        const chatBox = document.getElementById("chatBox");
+                        chatBox.innerHTML = `<div class="placeholder-text"><i class="bi bi-chat-dots"></i> Lịch sử với ${target}</div>`;
+                        data.forEach(m => showMessage(m));
+                    })
+                    .catch(err => console.error("❌ Lỗi tải lịch sử:", err));
+            }
+
+            connect();
+        </script>
+    </div>
+</body>
+</html>

@@ -277,7 +277,7 @@ public class MockingService implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        File fallbackImage = new File("C:\\Users\\ADMIN\\Desktop\\web-programming\\images\\services\\fallback.png");
+    	File fallbackImage = new File(IMAGE_PATH);
         String uploadedImageName = cloudinaryService.uploadAndGetName(fallbackImage);
         String uploadedImageUrl = cloudinaryService.getImageUrl(uploadedImageName);
 

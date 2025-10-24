@@ -40,7 +40,16 @@ public class MaintenanceManagementService {
         m.setScheduledDate(scheduledDate);
         m.setPerformedBy(performedBy);
         m.setStatus(Maintenance.MaintenanceStatus.SCHEDULED);
-        return maintenanceRepo.save(m);
+
+        Maintenance saved = maintenanceRepo.save(m);
+
+        // Tạm ngừng sân ngay khi lên lịch
+        if (Boolean.TRUE.equals(field.getIsActive())) {
+            field.setIsActive(false);
+            fieldRepo.save(field);
+        }
+
+        return saved;
     }
 
     public Maintenance updateStatus(Long id, Maintenance.MaintenanceStatus status) {
@@ -49,7 +58,33 @@ public class MaintenanceManagementService {
         if (status == Maintenance.MaintenanceStatus.COMPLETED) {
             m.setCompletedDate(java.time.LocalDateTime.now());
         }
-        return maintenanceRepo.save(m);
+        Maintenance updated = maintenanceRepo.save(m);
+
+        FootballField field = m.getField();
+        if (field != null) {
+            switch (status) {
+                case SCHEDULED, IN_PROGRESS -> {
+                    // Đảm bảo sân đang tạm ngừng trong thời gian bảo trì
+                    if (Boolean.TRUE.equals(field.getIsActive())) {
+                        field.setIsActive(false);
+                        fieldRepo.save(field);
+                    }
+                }
+                case COMPLETED, CANCELLED -> {
+                    // Bật lại sân nếu không còn maintenance mở nào khác
+                    long openCount = maintenanceRepo.countByField_IdAndStatusIn(
+                            field.getId(),
+                            java.util.List.of(Maintenance.MaintenanceStatus.SCHEDULED, Maintenance.MaintenanceStatus.IN_PROGRESS)
+                    );
+                    if (openCount == 0 && Boolean.FALSE.equals(field.getIsActive())) {
+                        field.setIsActive(true);
+                        fieldRepo.save(field);
+                    }
+                }
+            }
+        }
+
+        return updated;
     }
 
     public long countUpcomingMaintenanceByManager(String username, LocalDateTime now, LocalDateTime end) {
@@ -64,6 +99,21 @@ public class MaintenanceManagementService {
     }
 
     public void delete(Long id) {
+        Maintenance m = maintenanceRepo.findById(id).orElseThrow(() -> new IllegalArgumentException("Maintenance not found"));
+        FootballField field = m.getField();
+
         maintenanceRepo.deleteById(id);
+
+        // Sau khi xóa, nếu không còn maintenance mở thì bật lại sân
+        if (field != null) {
+            long openCount = maintenanceRepo.countByField_IdAndStatusIn(
+                    field.getId(),
+                    java.util.List.of(Maintenance.MaintenanceStatus.SCHEDULED, Maintenance.MaintenanceStatus.IN_PROGRESS)
+            );
+            if (openCount == 0 && Boolean.FALSE.equals(field.getIsActive())) {
+                field.setIsActive(true);
+                fieldRepo.save(field);
+            }
+        }
     }
 }

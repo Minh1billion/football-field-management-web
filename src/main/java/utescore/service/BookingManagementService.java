@@ -33,6 +33,11 @@ public class BookingManagementService {
         FootballField field = fieldRepo.findById(req.getFieldId()).orElseThrow(() -> new IllegalArgumentException("Field not found"));
         Customer customer = customerRepo.findById(req.getCustomerId()).orElseThrow(() -> new IllegalArgumentException("Customer not found"));
 
+        // Chặn đặt sân khi sân đang tạm ngừng
+        if (Boolean.FALSE.equals(field.getIsActive())) {
+            throw new IllegalStateException("Field is temporarily unavailable due to maintenance");
+        }
+
         if (!isAvailable(field.getId(), req.getStartTime(), req.getEndTime())) {
             throw new IllegalStateException("Time slot is not available");
         }

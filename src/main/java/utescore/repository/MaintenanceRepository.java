@@ -21,10 +21,14 @@ public interface MaintenanceRepository extends JpaRepository<Maintenance, Long> 
                                          @Param("end") LocalDateTime end);
 
     long countByField_ManagerIdAndScheduledDateBetween(Long managerId, LocalDateTime start, LocalDateTime end);
+
     @Query("""
     select count(distinct m.field.id) from Maintenance m
     where m.field.managerId = :managerId
       and m.status = utescore.entity.Maintenance.MaintenanceStatus.IN_PROGRESS
     """)
     long countActiveMaintenanceFieldsByManagerUsername(@Param("managerId") Long managerId);
+
+    // Đếm số bản ghi bảo trì đang mở (SCHEDULED/IN_PROGRESS) theo sân
+    long countByField_IdAndStatusIn(Long fieldId, java.util.Collection<Maintenance.MaintenanceStatus> statuses);
 }

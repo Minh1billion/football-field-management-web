@@ -7,7 +7,6 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import utescore.dto.FootballFieldDTO;
 import utescore.entity.FootballField;
-import utescore.entity.Location;
 import utescore.service.FieldManagementService;
 
 import java.time.LocalDateTime;
@@ -29,7 +28,8 @@ public class ManagerFieldController {
 
     @GetMapping("/new")
     public String createForm(Model model) {
-        model.addAttribute("footballField", new FootballFieldDTO());
+        // Sử dụng entity FootballField để bind form
+        model.addAttribute("footballField", new FootballField());
         model.addAttribute("locations", fieldService.listLocations());
         model.addAttribute("fieldTypes", utescore.entity.FootballField.FieldType.values());
         model.addAttribute("surfaceTypes", utescore.entity.FootballField.SurfaceType.values());
@@ -38,8 +38,10 @@ public class ManagerFieldController {
 
     @GetMapping("/{id}/edit")
     public String editForm(@PathVariable Long id, Model model) {
-        FootballField field = fieldService.get(id).orElseThrow(() -> new IllegalArgumentException("Field not found"));
-        model.addAttribute("field", field);
+        FootballField field = fieldService.get(id)
+                .orElseThrow(() -> new IllegalArgumentException("Field not found"));
+        // Thống nhất attribute tên "footballField" khớp với th:object trong form
+        model.addAttribute("footballField", field);
         model.addAttribute("locations", fieldService.listLocations());
         model.addAttribute("fieldTypes", utescore.entity.FootballField.FieldType.values());
         model.addAttribute("surfaceTypes", utescore.entity.FootballField.SurfaceType.values());
@@ -47,7 +49,7 @@ public class ManagerFieldController {
     }
 
     @PostMapping("/save")
-    public String save(@ModelAttribute FootballField field,
+    public String save(@ModelAttribute("footballField") FootballField field,
                        @RequestParam(required = false) Long locationId) {
         fieldService.save(field, locationId);
         return "redirect:/manager/fields";

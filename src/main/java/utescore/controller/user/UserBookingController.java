@@ -52,7 +52,6 @@ public class UserBookingController {
         List<LocationDTO> locations = fieldService.getAllLocations();
         List<FootballFieldDTO> allFields = fieldService.listAll();
 
-        // Lọc fields theo location nếu có
         List<FootballFieldDTO> fields = allFields;
         if (locationId != null) {
             fields = allFields.stream()
@@ -60,7 +59,6 @@ public class UserBookingController {
                     .toList();
         }
 
-        // Load time slots nếu đã chọn field và date
         List<TimeSlotDTO> timeSlots = null;
         FootballFieldDTO selectedField = null;
         if (fieldId != null && date != null) {
@@ -93,7 +91,6 @@ public class UserBookingController {
                               Authentication auth,
                               RedirectAttributes redirectAttributes) {
         try {
-            // Kiểm tra quyền sở hữu
             if (!bookingService.isBookingOwner(auth.getName(), id)) {
                 redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền xem booking này");
                 return "redirect:/user/bookings";
@@ -113,13 +110,99 @@ public class UserBookingController {
         }
     }
 
+    @GetMapping("/{id}/edit")
+    public String showEditForm(@PathVariable Long id,
+                               Model model,
+                               Authentication auth,
+                               RedirectAttributes redirectAttributes) {
+        try {
+            if (!bookingService.isBookingOwner(auth.getName(), id)) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền chỉnh sửa booking này");
+                return "redirect:/user/bookings";
+            }
+
+            BookingDTO booking = bookingService.getBookingById(id);
+            if (booking == null) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Không tìm thấy booking");
+                return "redirect:/user/bookings";
+            }
+
+            if (!"PENDING".equals(booking.getStatus()) && !"CONFIRMED".equals(booking.getStatus())) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Không thể chỉnh sửa booking đã hoàn thành hoặc đã hủy");
+                return "redirect:/user/bookings/" + id;
+            }
+
+            List<ServiceDTO> allServices = serviceService.findAllAvailableServices();
+
+            model.addAttribute("booking", booking);
+            model.addAttribute("allServices", allServices);
+
+            return "user/bookings/edit";
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi: " + e.getMessage());
+            return "redirect:/user/bookings";
+        }
+    }
+
+    @PostMapping("/{id}/update")
+    public String updateBooking(@PathVariable Long id,
+                                @ModelAttribute BookingDTO bookingDTO,
+                                Authentication auth,
+                                RedirectAttributes redirectAttributes) {
+        try {
+            if (!bookingService.isBookingOwner(auth.getName(), id)) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền chỉnh sửa booking này");
+                return "redirect:/user/bookings";
+            }
+
+            bookingDTO.setId(id);
+            bookingService.updateBookingServices(bookingDTO);
+
+            redirectAttributes.addFlashAttribute("successMessage", "Cập nhật booking thành công!");
+            return "redirect:/user/bookings/" + id;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            redirectAttributes.addFlashAttribute("errorMessage", "Đã xảy ra lỗi: " + e.getMessage());
+            return "redirect:/user/bookings/" + id + "/edit";
+        }
+    }
+
+    // ⭐ THÊM MỚI: Xóa sportwear khỏi booking
+    @PostMapping("/{bookingId}/remove-sportwear/{sportWearId}")
+    public String removeSportWearFromBooking(@PathVariable Long bookingId,
+                                             @PathVariable Long sportWearId,
+                                             Authentication auth,
+                                             RedirectAttributes redirectAttributes) {
+        try {
+            // Kiểm tra quyền sở hữu
+            if (!bookingService.isBookingOwner(auth.getName(), bookingId)) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền chỉnh sửa booking này");
+                return "redirect:/user/bookings";
+            }
+
+            // Gọi service để xóa sportwear
+            bookingService.removeSportWearFromBooking(bookingId, sportWearId);
+
+            redirectAttributes.addFlashAttribute("successMessage", "Đã xóa đồ thuê thành công!");
+            return "redirect:/user/bookings/" + bookingId;
+
+        } catch (RuntimeException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            return "redirect:/user/bookings/" + bookingId;
+        } catch (Exception e) {
+            e.printStackTrace();
+            redirectAttributes.addFlashAttribute("errorMessage", "Đã xảy ra lỗi: " + e.getMessage());
+            return "redirect:/user/bookings/" + bookingId;
+        }
+    }
+
     @PostMapping("/save")
     public String saveBooking(@ModelAttribute BookingDTO bookingDTO,
                               Authentication authentication,
                               RedirectAttributes redirectAttributes) {
         try {
             bookingDTO = bookingService.createBooking(bookingDTO, authentication.getName());
-
             redirectAttributes.addFlashAttribute("successMessage", "Đặt sân thành công!");
             return "redirect:/user/bookings";
         } catch (Exception e) {
@@ -128,7 +211,6 @@ public class UserBookingController {
                     "&date=" + bookingDTO.getBookingTime();
         }
     }
-
 
     @PostMapping("/cancel/{id}")
     public String cancelBooking(@PathVariable Long id,

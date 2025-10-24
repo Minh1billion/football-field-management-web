@@ -31,7 +31,8 @@ public class BookingService {
     private final FieldAvailabilityRepository availabilityRepo;
     private final MaintenanceRepository maintenanceRepo;
     private final ServiceRepository serviceRepo;
-    private final PaymentRepository paymentRepo;
+    private final SportWearRepository sportWearRepo;
+    private final BookingSportWearRepository bookingSportWearRepo;
 
     public long countUpcomingBookings(String username) {
         return bookingRepo.countUpcomingBookings(username, LocalDateTime.now());
@@ -238,6 +239,67 @@ public class BookingService {
         return convertToDTO(booking);
     }
 
+    @Transactional
+    public void updateBookingServices(BookingDTO dto) {
+        Booking booking = bookingRepo.findById(dto.getId())
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
+
+        // Kiểm tra trạng thái
+        if (booking.getStatus() != Booking.BookingStatus.PENDING &&
+                booking.getStatus() != Booking.BookingStatus.CONFIRMED) {
+            throw new RuntimeException("Cannot update completed or cancelled booking");
+        }
+
+        // Xóa tất cả services cũ
+        booking.getBookingServices().clear();
+        bookingRepo.save(booking);
+
+        // Tính lại tổng tiền (giữ nguyên giá sân)
+        long hours = java.time.Duration.between(booking.getStartTime(), booking.getEndTime()).toHours();
+        BigDecimal fieldPrice = booking.getField().getPricePerHour()
+                .multiply(BigDecimal.valueOf(hours));
+
+        BigDecimal serviceTotal = BigDecimal.ZERO;
+
+        // Thêm services mới
+        if (dto.getServices() != null && !dto.getServices().isEmpty()) {
+            for (RentalDTO serviceDTO : dto.getServices()) {
+                if (serviceDTO.getQuantity() > 0) {
+                    utescore.entity.Service service = serviceRepo.findById(serviceDTO.getServiceId())
+                            .orElseThrow(() -> new RuntimeException("Service not found: " + serviceDTO.getServiceId()));
+
+                    utescore.entity.BookingService bookingService = new utescore.entity.BookingService();
+                    bookingService.setBooking(booking);
+                    bookingService.setService(service);
+                    bookingService.setQuantity(serviceDTO.getQuantity());
+                    bookingService.setUnitPrice(service.getPrice());
+
+                    BigDecimal itemTotal = service.getPrice()
+                            .multiply(BigDecimal.valueOf(serviceDTO.getQuantity()));
+                    bookingService.setTotalPrice(itemTotal);
+
+                    booking.getBookingServices().add(bookingService);
+                    serviceTotal = serviceTotal.add(itemTotal);
+                }
+            }
+        }
+
+        // Cập nhật tổng tiền
+        booking.setTotalAmount(fieldPrice.add(serviceTotal));
+
+        // Cập nhật payment amount nếu có
+        if (booking.getPayment() != null) {
+            booking.getPayment().setAmount(fieldPrice.add(serviceTotal));
+        }
+
+        // Cập nhật notes nếu có
+        if (dto.getNotes() != null) {
+            booking.setNotes(dto.getNotes());
+        }
+
+        bookingRepo.save(booking);
+    }
+
     public void cancelBooking(Long bookingId) {
         Booking booking = bookingRepo.findById(bookingId)
                 .orElseThrow(() -> new RuntimeException("Booking not found"));
@@ -376,5 +438,42 @@ public class BookingService {
         }
 
         return dto;
+    }
+
+    @Transactional
+    public void removeSportWearFromBooking(Long bookingId, Long sportWearId) {
+        Booking booking = bookingRepo.findById(bookingId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy booking"));
+
+        if (booking.getStatus() != Booking.BookingStatus.PENDING) {
+            throw new RuntimeException("Chỉ có thể xóa đồ thuê khi booking đang chờ xác nhận");
+        }
+
+        // Tìm BookingSportWear cần xóa
+        BookingSportWear toRemove = booking.getBookingSportWears().stream()
+                .filter(bsw -> bsw.getSportWear().getId().equals(sportWearId))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đồ thuê trong booking"));
+
+        // Lấy giá trước khi xóa
+        BigDecimal removedPrice = toRemove.getTotalPrice();
+
+        // Hoàn trả số lượng vào kho
+        SportWear sportWear = toRemove.getSportWear();
+        sportWear.setStockQuantity(sportWear.getStockQuantity() + toRemove.getQuantity());
+        sportWearRepo.save(sportWear);
+
+        // XÓA từ collection VÀ database
+        booking.getBookingSportWears().remove(toRemove);
+        bookingSportWearRepo.delete(toRemove);
+
+        // Cập nhật tổng tiền
+        booking.setTotalAmount(booking.getTotalAmount().subtract(removedPrice));
+
+        if (booking.getPayment() != null) {
+            booking.getPayment().setAmount(booking.getTotalAmount());
+        }
+
+        bookingRepo.save(booking);
     }
 }

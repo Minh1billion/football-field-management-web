@@ -148,13 +148,13 @@
                                 <span th:if="${b.status == 'PENDING'}" class="badge bg-danger">
                                     <i class="bi bi-exclamation-circle"></i> Chưa thanh toán
                                 </span>
-                                                            <span th:if="${b.paymentMethod == 'CASH'}" class="badge bg-success">
+                                <span th:if="${b.paymentMethod == 'CASH'}" class="badge bg-success">
                                     <i class="bi bi-cash"></i> Tiền mặt
                                 </span>
-                                                            <span th:if="${b.paymentMethod == 'COD'}" class="badge bg-primary">
+                                <span th:if="${b.paymentMethod == 'COD'}" class="badge bg-primary">
                                     <i class="bi bi-truck"></i> COD
                                 </span>
-                                                            <span th:if="${b.paymentMethod == 'VNPAY'}" class="badge bg-info">
+                                <span th:if="${b.paymentMethod == 'VNPAY'}" class="badge bg-info">
                                     <i class="bi bi-wallet2"></i> VNPay
                                 </span>
                             </td>
@@ -166,6 +166,16 @@
                                        data-bs-toggle="tooltip">
                                         <i class="bi bi-eye-fill"></i>
                                     </a>
+
+                                    <!-- Nút Edit - chỉ hiện khi PENDING hoặc CONFIRMED -->
+                                    <a th:if="${b.status == 'PENDING' or b.status == 'CONFIRMED'}"
+                                       th:href="@{'/user/bookings/' + ${b.id} + '/edit'}"
+                                       class="btn btn-outline-warning"
+                                       title="Chỉnh sửa"
+                                       data-bs-toggle="tooltip">
+                                        <i class="bi bi-pencil-fill"></i>
+                                    </a>
+
                                     <button th:if="${b.status == 'PENDING' or b.status == 'CONFIRMED'}"
                                             class="btn btn-outline-danger"
                                             type="button"

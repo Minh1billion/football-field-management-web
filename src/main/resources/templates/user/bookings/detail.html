@@ -5,6 +5,16 @@
 <div th:fragment="content" class="container mt-4">
     <h3>🔍 Chi tiết đặt sân</h3>
 
+    <!-- Thông báo -->
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle"></i> <span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-circle"></i> <span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
     <div th:if="${booking}">
         <div class="card mb-3">
             <div class="card-body">
@@ -18,15 +28,28 @@
                 <p><strong>Tổng tiền:</strong>
                     <span th:text="${#numbers.formatDecimal(booking.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></span>
                 </p>
-                <p><strong>Trạng thái:</strong> <span th:text="${booking.status}"></span></p>
+                <p><strong>Trạng thái:</strong>
+                    <span th:if="${booking.status == 'PENDING'}" class="badge bg-warning text-dark">Chờ xác nhận</span>
+                    <span th:if="${booking.status == 'CONFIRMED'}" class="badge bg-info">Đã xác nhận</span>
+                    <span th:if="${booking.status == 'COMPLETED'}" class="badge bg-success">Hoàn thành</span>
+                    <span th:if="${booking.status == 'CANCELLED'}" class="badge bg-secondary">Đã hủy</span>
+                </p>
                 <p><strong>Thanh toán:</strong> <span th:text="${booking.paymentMethod}"></span></p>
+
+                <div th:if="${booking.notes != null and !booking.notes.isEmpty()}" class="mt-3">
+                    <strong>Ghi chú:</strong>
+                    <p class="text-muted" th:text="${booking.notes}"></p>
+                </div>
             </div>
         </div>
 
         <!-- Đồ thể thao đã thuê -->
         <div class="card mb-3" th:if="${booking.sportWears != null and !booking.sportWears.isEmpty()}">
-            <div class="card-header bg-primary text-white">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">👕 Đồ thể thao đã thuê</h5>
+                <span th:if="${booking.status == 'PENDING'}" class="badge bg-light text-dark">
+                    <i class="bi bi-info-circle"></i> Có thể chỉnh sửa
+                </span>
             </div>
             <div class="card-body">
                 <table class="table table-striped">
@@ -38,6 +61,7 @@
                         <th>Đơn giá</th>
                         <th>Thành tiền</th>
                         <th>Trạng thái</th>
+                        <th th:if="${booking.status == 'PENDING'}">Thao tác</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -48,10 +72,18 @@
                         <td th:text="${#numbers.formatDecimal(item.rentalPricePerDay, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></td>
                         <td th:text="${#numbers.formatDecimal(item.totalPrice, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></td>
                         <td>
-                            <span class="badge bg-info" th:if="${item.status == 'RENTED'}" th:text="${item.status}"></span>
-                            <span class="badge bg-success" th:if="${item.status == 'RETURNED'}" th:text="${item.status}"></span>
-                            <span class="badge bg-warning" th:if="${item.status == 'DAMAGED'}" th:text="${item.status}"></span>
-                            <span class="badge bg-danger" th:if="${item.status == 'LOST'}" th:text="${item.status}"></span>
+                            <span th:text="${item.status}"></span>
+                        </td>
+
+                        <!-- Cột Thao tác -->
+                        <td th:if="${booking.status == 'PENDING'}">
+                            <form th:action="@{'/user/bookings/' + ${booking.id} + '/remove-sportwear/' + ${item.sportWearId}}"
+                                  method="post"
+                                  onsubmit="return confirm('Bạn có chắc muốn xóa đồ thuê này không?');">
+                                <button type="submit" class="btn btn-sm btn-danger">
+                                    <i class="bi bi-trash"></i> Xóa
+                                </button>
+                            </form>
                         </td>
                     </tr>
                     </tbody>
@@ -97,8 +129,26 @@
         </div>
     </div>
 
-    <a th:href="@{/user/bookings}" class="btn btn-secondary mt-3">⬅ Quay lại danh sách</a>
-    <a th:href="@{/user/rentals}" class="btn btn-primary mt-3">➕ Thêm đồ thuê</a>
+    <!-- Nút hành động -->
+    <div class="mt-3 d-flex gap-2">
+        <a th:href="@{/user/bookings}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Quay lại danh sách
+        </a>
+
+        <!-- Nút Edit (chỉ hiện khi status = PENDING hoặc CONFIRMED) -->
+        <a th:if="${booking.status == 'PENDING' or booking.status == 'CONFIRMED'}"
+           th:href="@{'/user/bookings/' + ${booking.id} + '/edit'}"
+           class="btn btn-warning">
+            <i class="bi bi-pencil"></i> Chỉnh sửa
+        </a>
+
+        <!-- Nút thêm đồ thuê chỉ hiện khi PENDING -->
+        <a th:if="${booking.status == 'PENDING'}"
+           th:href="@{/user/rentals}"
+           class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Thêm đồ thuê
+        </a>
+    </div>
 </div>
 </body>
 </html>

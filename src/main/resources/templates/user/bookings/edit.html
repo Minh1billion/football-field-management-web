@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/user :: layout(~{::content})}">
+<body>
+<div th:fragment="content" class="container mt-4">
+  <h3 class="mb-4">✏️ Chỉnh sửa đặt sân</h3>
+
+  <!-- Thông báo -->
+  <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+    <i class="bi bi-check-circle"></i> <span th:text="${successMessage}"></span>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+    <i class="bi bi-exclamation-circle"></i> <span th:text="${errorMessage}"></span>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+
+  <div class="row">
+    <!-- Form chỉnh sửa -->
+    <div class="col-lg-8">
+      <form th:action="@{'/user/bookings/' + ${booking.id} + '/update'}"
+            th:object="${booking}"
+            method="post">
+
+        <!-- Thông tin cơ bản (chỉ hiển thị, không cho sửa) -->
+        <div class="card shadow-sm mb-4">
+          <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="bi bi-info-circle"></i> Thông tin đặt sân</h5>
+          </div>
+          <div class="card-body">
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label class="form-label fw-bold">Mã đặt:</label>
+                <p th:text="${booking.bookingCode}">REG123</p>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-bold">Tên sân:</label>
+                <p th:text="${booking.fieldName}">Sân A1</p>
+              </div>
+            </div>
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label class="form-label fw-bold">Ngày đặt:</label>
+                <p th:text="${#temporals.format(booking.bookingTime, 'dd/MM/yyyy')}">01/01/2025</p>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-bold">Thời gian:</label>
+                <p>
+                  <span th:text="${#temporals.format(booking.startTime, 'HH:mm')}">08:00</span> -
+                  <span th:text="${#temporals.format(booking.endTime, 'HH:mm')}">10:00</span>
+                </p>
+              </div>
+            </div>
+            <div class="alert alert-info mb-0">
+              <i class="bi bi-info-circle"></i>
+              <small>Bạn chỉ có thể chỉnh sửa dịch vụ và ghi chú. Để thay đổi thời gian hoặc sân, vui lòng hủy và đặt lại.</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dịch vụ đã chọn -->
+        <div class="card shadow-sm mb-4">
+          <div class="card-header bg-success text-white">
+            <h5 class="mb-0"><i class="bi bi-basket"></i> Dịch vụ kèm theo</h5>
+          </div>
+          <div class="card-body">
+            <div th:if="${allServices != null and not #lists.isEmpty(allServices)}">
+              <div class="row g-3">
+                <div th:each="service, iterStat : ${allServices}" class="col-md-6">
+                  <div class="card h-100 shadow-sm">
+                    <div class="card-body d-flex justify-content-between align-items-center">
+                      <div>
+                        <h6 class="card-title mb-1" th:text="${service.name}">Dịch vụ</h6>
+                        <p class="mb-0 text-muted small"
+                           th:text="'Giá: ' + ${#numbers.formatDecimal(service.price, 0, 'COMMA', 0, 'POINT')} + '₫'">
+                          Giá: 50.000₫
+                        </p>
+                      </div>
+                      <div class="d-flex align-items-center">
+                        <label class="me-2 mb-0">SL:</label>
+                        <input type="number"
+                               class="form-control form-control-sm service-quantity"
+                               th:name="'services[' + ${iterStat.index} + '].quantity'"
+                               th:value="${booking.services != null ? (#lists.isEmpty(booking.services.?[serviceId == __${service.id}__]) ? 0 : booking.services.?[serviceId == __${service.id}__][0].quantity) : 0}"
+                               th:data-price="${service.price}"
+                               min="0"
+                               style="width: 70px;"
+                               onchange="calculateTotal()">
+                        <input type="hidden"
+                               th:name="'services[' + ${iterStat.index} + '].serviceId'"
+                               th:value="${service.id}">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div th:if="${allServices == null or #lists.isEmpty(allServices)}"
+                 class="alert alert-info mb-0">
+              Hiện không có dịch vụ nào khả dụng.
+            </div>
+          </div>
+        </div>
+
+        <!-- Ghi chú -->
+        <div class="card shadow-sm mb-4">
+          <div class="card-header bg-info text-white">
+            <h5 class="mb-0"><i class="bi bi-pencil"></i> Ghi chú</h5>
+          </div>
+          <div class="card-body">
+            <textarea class="form-control"
+                      th:field="*{notes}"
+                      rows="4"
+                      placeholder="Nhập ghi chú..."></textarea>
+          </div>
+        </div>
+
+        <!-- Nút hành động -->
+        <div class="text-end">
+          <a th:href="@{'/user/bookings/' + ${booking.id}}" class="btn btn-secondary">
+            <i class="bi bi-x-circle"></i> Hủy
+          </a>
+          <button type="submit" class="btn btn-success">
+            <i class="bi bi-check-circle"></i> Lưu thay đổi
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Tóm tắt chi phí -->
+    <div class="col-lg-4">
+      <div class="card shadow-sm sticky-top" style="top: 20px;">
+        <div class="card-header bg-warning">
+          <h5 class="mb-0"><i class="bi bi-calculator"></i> Tóm tắt chi phí</h5>
+        </div>
+        <div class="card-body">
+          <div class="d-flex justify-content-between mb-2">
+            <span>Tiền sân:</span>
+            <strong id="fieldPrice"
+                    th:attr="data-field-price=${booking.totalAmount}"
+                    th:text="${#numbers.formatDecimal(booking.totalAmount, 0, 'COMMA', 0, 'POINT')} + '₫'">
+              100,000₫
+            </strong>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <span>Tiền dịch vụ:</span>
+            <strong id="servicePrice">0₫</strong>
+          </div>
+          <hr>
+          <div class="d-flex justify-content-between">
+            <span class="fw-bold">Tổng cộng:</span>
+            <span class="text-success fw-bold fs-5" id="totalPrice">0₫</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script th:inline="javascript">
+    /*<![CDATA[*/
+    const fieldPriceElement = document.getElementById('fieldPrice');
+    const fieldPrice = parseFloat(fieldPriceElement.dataset.fieldPrice) || 0;
+
+    // Tính giá sân ban đầu (trừ đi dịch vụ cũ)
+    let initialServiceTotal = 0;
+    const quantities = document.querySelectorAll('.service-quantity');
+    quantities.forEach(input => {
+      const initialQty = parseInt(input.value) || 0;
+      const price = parseFloat(input.dataset.price) || 0;
+      initialServiceTotal += initialQty * price;
+    });
+
+    const actualFieldPrice = fieldPrice - initialServiceTotal;
+
+    function calculateTotal() {
+      let serviceTotal = 0;
+
+      quantities.forEach(input => {
+        const quantity = parseInt(input.value) || 0;
+        const price = parseFloat(input.dataset.price) || 0;
+        serviceTotal += quantity * price;
+      });
+
+      const total = actualFieldPrice + serviceTotal;
+
+      document.getElementById('servicePrice').textContent =
+              serviceTotal.toLocaleString('vi-VN') + '₫';
+      document.getElementById('totalPrice').textContent =
+              total.toLocaleString('vi-VN') + '₫';
+
+      // Cập nhật giá sân hiển thị
+      document.getElementById('fieldPrice').textContent =
+              actualFieldPrice.toLocaleString('vi-VN') + '₫';
+    }
+
+    // Tính toán ban đầu
+    calculateTotal();
+    /*]]>*/
+  </script>
+</div>
+</body>
+</html>

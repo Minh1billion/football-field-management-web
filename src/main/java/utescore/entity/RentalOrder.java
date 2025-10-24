@@ -16,11 +16,23 @@ public class RentalOrder {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "account_id")
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private Account account;
 
+    // ⭐ THÊM RELATIONSHIP VỚI CUSTOMER
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "customer_id")
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private Customer customer;
+
+    @Column(nullable = false)
     private String customerName;
+
+    @Column(nullable = false)
     private String customerPhone;
 
     @Column(columnDefinition = "TEXT")
@@ -34,5 +46,7 @@ public class RentalOrder {
     private LocalDateTime orderDate;
 
     @OneToMany(mappedBy = "rentalOrder", cascade = CascadeType.ALL)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private List<RentalOrderDetail> orderDetails;
 }

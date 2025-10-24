@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/user :: layout(~{::content})}">
+<head>
+    <meta charset="UTF-8">
+    <title>Kết Quả Thanh Toán</title>
+</head>
+<body>
+<div th:fragment="content">
+    <div class="container mt-5 mb-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-6">
+                <div class="card shadow-lg border-0">
+                    <div class="card-body text-center p-5">
+
+                        <!-- Thanh toán thành công -->
+                        <div th:if="${paymentSuccess}">
+                            <div class="mb-4">
+                                <i class="bi bi-check-circle-fill text-success" style="font-size: 5rem;"></i>
+                            </div>
+
+                            <h2 class="text-success mb-3">Thanh Toán Thành Công!</h2>
+                            <p class="text-muted mb-4">
+                                Cảm ơn bạn đã thanh toán. Giao dịch của bạn đã được xử lý thành công.
+                            </p>
+
+                            <div class="alert alert-info">
+                                <h5 class="mb-2">Mã Giao Dịch</h5>
+                                <h3 class="text-primary mb-0">
+                                    #<span th:text="${orderId}">12345</span>
+                                </h3>
+                            </div>
+
+                            <div class="alert alert-success">
+                                <h5 class="mb-2">Số Tiền Đã Thanh Toán</h5>
+                                <h4 class="mb-0">
+                                    <span th:text="${#numbers.formatDecimal(amount / 100, 0, 'COMMA', 0, 'POINT')}">100,000</span> ₫
+                                </h4>
+                            </div>
+
+                            <div class="alert alert-light" th:if="${transactionNo}">
+                                <small class="text-muted">
+                                    Mã giao dịch VNPAY: <strong th:text="${transactionNo}"></strong>
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- Thanh toán thất bại -->
+                        <div th:unless="${paymentSuccess}">
+                            <div class="mb-4">
+                                <i class="bi bi-x-circle-fill text-danger" style="font-size: 5rem;"></i>
+                            </div>
+
+                            <h2 class="text-danger mb-3">Thanh Toán Thất Bại!</h2>
+                            <p class="text-muted mb-4">
+                                Rất tiếc, giao dịch của bạn không thể hoàn thành.
+                            </p>
+
+                            <div class="alert alert-danger">
+                                <h5 class="mb-2">Mã Lỗi</h5>
+                                <p class="mb-0">
+                                    <span th:if="${errorCode == -1}">Chữ ký không hợp lệ</span>
+                                    <span th:if="${errorCode == -2}">Thiếu thông tin bảo mật</span>
+                                    <span th:if="${errorCode == -3}">Lỗi hệ thống khi cập nhật</span>
+                                    <span th:if="${errorCode == 0}">Giao dịch không thành công</span>
+                                </p>
+                                <p th:if="${errorMessage}" class="text-muted small mt-2" th:text="${errorMessage}"></p>
+                            </div>
+
+                            <p class="text-muted">
+                                Vui lòng thử lại hoặc liên hệ với chúng tôi để được hỗ trợ.
+                            </p>
+                        </div>
+
+                        <p class="mb-4">
+                            <small class="text-muted">
+                                Chúng tôi đã gửi email xác nhận đến địa chỉ email của bạn.<br>
+                                Vui lòng kiểm tra email để biết thêm chi tiết.
+                            </small>
+                        </p>
+
+                        <hr class="my-4">
+
+                        <div class="d-grid gap-2">
+                            <a th:href="@{/user/orders}"
+                               class="btn btn-primary btn-lg">
+                                <i class="bi bi-list-ul"></i> Xem Danh Sách Thanh Toán
+                            </a>
+
+                            <a th:if="${!paymentSuccess}"
+                               th:href="@{/user/orders}"
+                               class="btn btn-warning">
+                                <i class="bi bi-arrow-clockwise"></i> Thử Lại
+                            </a>
+
+                            <a th:href="@{/user/rentals}"
+                               class="btn btn-outline-primary">
+                                <i class="bi bi-arrow-left"></i> Về Trang Chủ
+                            </a>
+                        </div>
+
+                        <div class="mt-4 p-3 bg-light rounded">
+                            <h6 class="mb-2">📞 Cần Hỗ Trợ?</h6>
+                            <p class="mb-0">
+                                <small>
+                                    Liên hệ: <strong>1900-xxxx</strong> hoặc
+                                    <a href="mailto:support@utescore.com">support@utescore.com</a>
+                                </small>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

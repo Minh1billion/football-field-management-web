@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/user :: layout(~{::content})}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Danh Sách Đồ Bán</title>
+</head>
+<body>
+<div th:fragment="content">
+    <div class="container mt-4">
+        <h2 class="mb-4">
+            <i class="bi bi-shop text-primary"></i> Cửa Hàng Đồ Thể Thao
+        </h2>
+
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+
+            <!-- Lặp qua danh sách đồ thể thao -->
+            <div class="col" th:each="wear : ${sportWears}">
+                <div class="card h-100 shadow-sm border-0">
+                    <div class="position-relative">
+                        <img th:src="${wear.imageUrl != null and !wear.imageUrl.isEmpty() ? wear.imageUrl : 'https://via.placeholder.com/250x250?text=No+Image'}"
+                             class="card-img-top"
+                             th:alt="${wear.name}"
+                             style="height: 250px; object-fit: cover;">
+
+                        <!-- Badge giảm giá (nếu có) -->
+                        <span class="position-absolute top-0 end-0 m-2 badge bg-danger"
+                              th:if="${wear.stockQuantity < 5 and wear.stockQuantity > 0}">
+              Còn <span th:text="${wear.stockQuantity}">5</span>
+            </span>
+                    </div>
+
+                    <div class="card-body d-flex flex-column p-3">
+                        <h5 class="card-title text-truncate mb-1" th:text="${wear.name}">Tên sản phẩm</h5>
+                        <p class="card-subtitle mb-2 text-muted small" th:text="${wear.brand}">Thương hiệu</p>
+
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+              <span class="badge"
+                    th:classappend="${wear.isAvailableForSale and wear.stockQuantity > 0} ? 'bg-success' : 'bg-danger'"
+                    th:text="${wear.isAvailableForSale and wear.stockQuantity > 0} ? 'Còn hàng' : 'Hết hàng'">
+                Trạng thái
+              </span>
+                            <small class="text-uppercase border border-secondary px-2 rounded" th:text="${wear.size}">Size</small>
+                        </div>
+
+                        <h4 class="text-danger mt-auto fw-bold mb-3">
+                            <span th:text="${#numbers.formatDecimal(wear.sellPrice, 0, 'POINT', 0, 'COMMA')}">500.000</span>₫
+                        </h4>
+
+                        <div class="mt-2">
+                            <!-- Nút Mua ngay -->
+                            <a th:href="@{/user/sales/detail/{id}(id=${wear.id})}"
+                               class="btn btn-primary w-100 mb-2"
+                               th:classappend="${wear.isAvailableForSale and wear.stockQuantity > 0} ? '' : ' disabled'">
+                                <i class="bi bi-cart-plus"></i> Mua ngay
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="card-footer bg-light p-2">
+                        <small class="text-muted d-block text-center">
+                            <i class="bi bi-tag"></i> <span th:text="${wear.wearType}">JERSEY</span>
+                            <span class="mx-1">•</span>
+                            <i class="bi bi-palette"></i> <span th:text="${wear.color}">Đỏ</span>
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Khi danh sách rỗng -->
+            <div th:if="${#lists.isEmpty(sportWears)}" class="col-12">
+                <div class="text-center py-5 border rounded bg-light">
+                    <i class="bi bi-inbox fs-1 text-muted"></i>
+                    <p class="text-muted mt-3">Không tìm thấy sản phẩm nào.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

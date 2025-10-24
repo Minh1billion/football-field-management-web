@@ -12,13 +12,4 @@ import java.util.List;
 public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
     
     List<OrderItem> findByOrderId(Long orderId);
-    
-    @Query("SELECT oi FROM OrderItem oi WHERE oi.order.id = :orderId")
-    List<OrderItem> findOrderItemsByOrderId(@Param("orderId") Long orderId);
-    
-    @Query("SELECT oi FROM OrderItem oi WHERE oi.service.id = :serviceId")
-    List<OrderItem> findByServiceId(@Param("serviceId") Long serviceId);
-    
-    @Query("SELECT oi FROM OrderItem oi WHERE oi.sportWear.id = :sportWearId")
-    List<OrderItem> findBySportWearId(@Param("sportWearId") Long sportWearId);
 }

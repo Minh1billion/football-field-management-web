@@ -3,8 +3,11 @@ package utescore.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import utescore.dto.PaymentDTO;
+import utescore.entity.Order;
 import utescore.entity.Payment;
 import utescore.entity.RentalOrder;
+import utescore.repository.OrderRepository;
 import utescore.repository.PaymentRepository;
 import utescore.repository.RentalOrderRepository;
 
@@ -19,9 +22,14 @@ public class PaymentService {
 
 	private final PaymentRepository paymentRepository;
 	private final RentalOrderRepository rentalOrderRepository;
+	private final OrderRepository orderRepository;
 
-	public List<Payment> getAllPayments() {
-		return paymentRepository.findAll();
+	public List<PaymentDTO> getAllPayments() {
+		return paymentRepository.findAll().stream().map(this::convertToDTO).toList();
+	}
+
+	public PaymentDTO getPaymentById(Long id) {
+		return paymentRepository.findById(id).map(this::convertToDTO).orElse(null);
 	}
 
 	public Payment processPayment(Long paymentId, String transactionId) {
@@ -69,6 +77,20 @@ public class PaymentService {
 		return paymentRepository.save(payment);
 	}
 
+	@Transactional
+	public void updatePaymentByOrderId(Long orderId, String transactionId) {
+		Order order = orderRepository.findById(orderId)
+				.orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+
+		Payment payment = order.getPayment();
+		if (payment != null) {
+			payment.setPaymentCode(transactionId);
+			payment.setStatus(Payment.PaymentStatus.COMPLETED);
+			payment.setPaidAt(LocalDateTime.now());
+			paymentRepository.save(payment);
+		}
+	}
+
 	public Payment findByPaymentCode(String paymentCode) {
 		return paymentRepository.findByPaymentCode(paymentCode)
 				.orElseThrow(() -> new RuntimeException("Payment not found with code: " + paymentCode));
@@ -89,52 +111,54 @@ public class PaymentService {
 		return paymentRepository.save(payment);
 	}
 
-	public Payment cancelPayment(Long paymentId, String reason) {
-		Payment payment = paymentRepository.findById(paymentId)
-				.orElseThrow(() -> new RuntimeException("Payment not found with ID: " + paymentId));
+	public Payment findById(Long id) {
+		return paymentRepository.findById(id)
+				.orElseThrow(() -> new RuntimeException("Không tìm thấy payment"));
+	}
 
-		if (payment.getStatus() == Payment.PaymentStatus.COMPLETED) {
-			throw new RuntimeException("Cannot cancel completed payment");
-		}
-
-		payment.setStatus(Payment.PaymentStatus.CANCELLED);
-		String currentNotes = payment.getNotes() != null ? payment.getNotes() : "";
-		payment.setNotes(currentNotes + " | Cancelled: " + reason);
-
+	@Transactional
+	public Payment save(Payment payment) {
 		return paymentRepository.save(payment);
 	}
 
-	public Payment refundPayment(Long paymentId, String reason) {
-		Payment payment = paymentRepository.findById(paymentId)
-				.orElseThrow(() -> new RuntimeException("Payment not found with ID: " + paymentId));
+	private PaymentDTO convertToDTO(Payment payment) {
+		PaymentDTO dto = new PaymentDTO();
+		dto.setId(payment.getId());
+		dto.setPaymentCode(payment.getPaymentCode());
+		dto.setPaymentMethod(payment.getPaymentMethod().toString());
+		dto.setAmount(payment.getAmount());
+		dto.setStatus(payment.getStatus().toString());
+		dto.setNotes(payment.getNotes());
+		dto.setCreatedAt(payment.getCreatedAt());
+		dto.setPaidAt(payment.getPaidAt());
 
-		if (payment.getStatus() != Payment.PaymentStatus.COMPLETED) {
-			throw new RuntimeException("Can only refund completed payments");
+		// Set các ID
+		if (payment.getOrder() != null) {
+			dto.setOrderId(payment.getOrder().getId());
 		}
 
-		payment.setStatus(Payment.PaymentStatus.REFUNDED);
-		String currentNotes = payment.getNotes() != null ? payment.getNotes() : "";
-		payment.setNotes(currentNotes + " | Refunded: " + reason);
-
-		return paymentRepository.save(payment);
-	}
-
-	public Payment updatePaymentAmount(Long paymentId, BigDecimal newAmount) {
-		Payment payment = paymentRepository.findById(paymentId)
-				.orElseThrow(() -> new RuntimeException("Payment not found with ID: " + paymentId));
-
-		if (payment.getStatus() == Payment.PaymentStatus.COMPLETED) {
-			throw new RuntimeException("Cannot update amount for completed payment");
+		if (payment.getRentalOrder() != null) {
+			dto.setRentalOrderId(payment.getRentalOrder().getId());
 		}
 
-		payment.setAmount(newAmount);
-		return paymentRepository.save(payment);
-	}
+		if (payment.getBooking() != null) {
+			dto.setBookingId(payment.getBooking().getId());
 
-	public Payment getPaymentByRentalOrderId(Long rentalOrderId) {
-		RentalOrder rentalOrder = rentalOrderRepository.findById(rentalOrderId)
-				.orElseThrow(() -> new RuntimeException("RentalOrder not found with ID: " + rentalOrderId));
+			// Chỉ set customer info nếu booking có customer
+			if (payment.getBooking().getCustomer() != null) {
+				dto.setCustomerId(payment.getBooking().getCustomer().getId());
+				dto.setCustomerName(payment.getBooking().getCustomer().getFullName());
+			}
+		} else if (payment.getRentalOrder() != null && payment.getRentalOrder().getCustomer() != null) {
+			// Nếu là RentalOrder, lấy customer từ RentalOrder
+			dto.setCustomerId(payment.getRentalOrder().getCustomer().getId());
+			dto.setCustomerName(payment.getRentalOrder().getCustomer().getFullName());
+		} else if (payment.getOrder() != null && payment.getOrder().getCustomer() != null) {
+			// Nếu là Order, lấy customer từ Order
+			dto.setCustomerId(payment.getOrder().getCustomer().getId());
+			dto.setCustomerName(payment.getOrder().getCustomer().getFullName());
+		}
 
-		return rentalOrder.getPayment();
+		return dto;
 	}
 }

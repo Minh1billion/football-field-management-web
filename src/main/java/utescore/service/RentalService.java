@@ -17,7 +17,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -30,13 +29,12 @@ public class RentalService {
     private final RentalOrderDetailRepository rentalOrderDetailRepository;
     private final SportWearService sportWearService;
     private final ServiceService serviceService;
-    private final PaymentService paymentService;
 
     public long countActiveRentals(String username) {
         return rentalRepository.countActiveRentals(username);
     }
 
-    public Iterable<SportWear> getAvailableSportWears(Pageable pageable) {
+    public Iterable<SportWear> getAvailableSportWearsForRent(Pageable pageable) {
         return sportWearService.findAvailableForRent(pageable);
     }
 
@@ -85,7 +83,7 @@ public class RentalService {
     }
 
     public void updateCartItem(CartDTO cart, Long sportWearId, int quantity, int rentalDays) {
-        Optional<RentalDTO> itemOpt = cart.findItemById(sportWearId);
+        Optional<RentalDTO> itemOpt = cart.findRentalItemById(sportWearId);
         if (itemOpt.isPresent()) {
             RentalDTO item = itemOpt.get();
             item.setQuantity(quantity);
@@ -95,7 +93,7 @@ public class RentalService {
     }
 
     private void updateCart(CartDTO cart, RentalDTO newItem) {
-        Optional<RentalDTO> existingItemOpt = cart.findItemById(newItem.getSportWearId());
+        Optional<RentalDTO> existingItemOpt = cart.findRentalItemById(newItem.getSportWearId());
 
         if (existingItemOpt.isPresent()) {
             RentalDTO existingItem = existingItemOpt.get();
@@ -129,9 +127,16 @@ public class RentalService {
         Account account = accountRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản"));
 
+        // ⭐ LẤY CUSTOMER TỪ ACCOUNT
+        Customer customer = account.getCustomer();
+        if (customer == null) {
+            throw new RuntimeException("Không tìm thấy thông tin khách hàng");
+        }
+
         // Tạo đơn hàng thuê (RentalOrder)
         RentalOrder rentalOrder = new RentalOrder();
         rentalOrder.setAccount(account);
+        rentalOrder.setCustomer(customer);  // ⭐ SET CUSTOMER
         rentalOrder.setCustomerName(customerName);
         rentalOrder.setCustomerPhone(customerPhone);
         rentalOrder.setCustomerAddress(customerAddress);
@@ -146,11 +151,11 @@ public class RentalService {
         // Set trạng thái payment dựa vào phương thức thanh toán
         if ("COD".equals(paymentMethod)) {
             payment.setStatus(Payment.PaymentStatus.PENDING);
-            payment.setPaymentCode("COD-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+            payment.setPaymentCode("COD-" + LocalDateTime.now().toString().replace(":", "").replace(".", "").substring(0, 20));
         } else if ("VNPAY".equals(paymentMethod)) {
             // VNPAY sẽ được cập nhật sau khi callback thành công
             payment.setStatus(Payment.PaymentStatus.COMPLETED);
-            payment.setPaymentCode("VNPAY-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+            payment.setPaymentCode("VNPAY-" + LocalDateTime.now().toString().replace(":", "").replace(".", "").substring(0, 20));
             payment.setPaidAt(LocalDateTime.now());
         }
 

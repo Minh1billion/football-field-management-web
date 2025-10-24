@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/user :: layout(~{::content})}">
+<head>
+  <meta charset="UTF-8">
+  <title>Đặt Hàng Thành Công</title>
+</head>
+<body>
+<div th:fragment="content">
+  <div class="container mt-5 mb-5">
+    <div class="row justify-content-center">
+      <div class="col-lg-7">
+        <div class="card shadow-lg border-0">
+          <div class="card-body text-center p-5">
+            <!-- Animation success icon -->
+            <div class="mb-4 position-relative">
+              <div class="position-relative d-inline-block">
+                <i class="bi bi-check-circle-fill text-success" style="font-size: 6rem;"></i>
+                <div class="position-absolute top-0 start-100 translate-middle">
+                  <span class="badge rounded-pill bg-success">
+                    <i class="bi bi-check2"></i>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <h1 class="text-success mb-3 fw-bold">Đặt Hàng Thành Công!</h1>
+            <p class="text-muted fs-5 mb-4">
+              Cảm ơn bạn đã mua sắm tại <strong>UTESCORE</strong>.<br>
+              Đơn hàng của bạn đã được tiếp nhận và đang được xử lý.
+            </p>
+
+            <!-- Mã đơn hàng -->
+            <div class="alert alert-success border-success mb-4">
+              <div class="mb-2">
+                <i class="bi bi-receipt-cutoff"></i> Mã Đơn Hàng
+              </div>
+              <h2 class="text-success mb-0 fw-bold">
+                #<span th:text="${orderId}">12345</span>
+              </h2>
+            </div>
+
+            <!-- Thông tin tiếp theo -->
+            <div class="row g-3 mb-4">
+              <div class="col-md-6">
+                <div class="card border-0 bg-light h-100">
+                  <div class="card-body">
+                    <i class="bi bi-envelope text-primary fs-3 mb-2"></i>
+                    <h6 class="mb-1">Email Xác Nhận</h6>
+                    <small class="text-muted">
+                      Chúng tôi đã gửi email xác nhận đến địa chỉ của bạn
+                    </small>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="card border-0 bg-light h-100">
+                  <div class="card-body">
+                    <i class="bi bi-truck text-success fs-3 mb-2"></i>
+                    <h6 class="mb-1">Giao Hàng</h6>
+                    <small class="text-muted">
+                      Đơn hàng sẽ được giao trong 2-3 ngày làm việc
+                    </small>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <hr class="my-4">
+
+            <!-- Các hành động -->
+            <div class="d-grid gap-2">
+              <a th:href="@{/user/orders/{id}(id=${orderId})}"
+                 class="btn btn-success btn-lg">
+                <i class="bi bi-eye"></i> Xem Chi Tiết Đơn Hàng
+              </a>
+
+              <div class="row g-2">
+                <div class="col-md-6">
+                  <a th:href="@{/user/orders}"
+                     class="btn btn-outline-secondary w-100">
+                    <i class="bi bi-list-ul"></i> Đơn Hàng Của Tôi
+                  </a>
+                </div>
+                <div class="col-md-6">
+                  <a th:href="@{/user/sales}"
+                     class="btn btn-outline-primary w-100">
+                    <i class="bi bi-shop"></i> Tiếp Tục Mua Sắm
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <!-- Thông tin hỗ trợ -->
+            <div class="mt-5 p-4 bg-light rounded">
+              <h5 class="mb-3">
+                <i class="bi bi-headset text-primary"></i> Cần Hỗ Trợ?
+              </h5>
+              <div class="row g-3 text-start">
+                <div class="col-md-6">
+                  <div class="d-flex align-items-center">
+                    <i class="bi bi-telephone-fill text-success me-2"></i>
+                    <div>
+                      <small class="text-muted d-block">Hotline</small>
+                      <strong>1900-xxxx</strong>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="d-flex align-items-center">
+                    <i class="bi bi-envelope-fill text-primary me-2"></i>
+                    <div>
+                      <small class="text-muted d-block">Email</small>
+                      <strong>support@utescore.com</strong>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <hr class="my-3">
+              <small class="text-muted">
+                <i class="bi bi-clock"></i>
+                Thời gian hỗ trợ: 8:00 - 22:00 (Thứ 2 - Chủ Nhật)
+              </small>
+            </div>
+
+            <!-- Chia sẻ social media -->
+            <div class="mt-4">
+              <p class="small text-muted mb-2">Chia sẻ trải nghiệm mua sắm:</p>
+              <div class="d-flex gap-2 justify-content-center">
+                <a href="#" class="btn btn-sm btn-outline-primary">
+                  <i class="bi bi-facebook"></i>
+                </a>
+                <a href="#" class="btn btn-sm btn-outline-info">
+                  <i class="bi bi-twitter"></i>
+                </a>
+                <a href="#" class="btn btn-sm btn-outline-danger">
+                  <i class="bi bi-instagram"></i>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Thông tin bổ sung -->
+        <div class="card border-0 bg-light mt-4">
+          <div class="card-body">
+            <h6 class="card-title">
+              <i class="bi bi-info-circle text-primary"></i>
+              Những điều bạn cần biết
+            </h6>
+            <ul class="list-unstyled mb-0 small">
+              <li class="mb-2">
+                <i class="bi bi-check-circle text-success"></i>
+                Bạn có thể theo dõi tình trạng đơn hàng trong mục "Đơn Hàng Của Tôi"
+              </li>
+              <li class="mb-2">
+                <i class="bi bi-check-circle text-success"></i>
+                Đơn hàng có thể được đổi/trả trong vòng 7 ngày kể từ ngày nhận hàng
+              </li>
+              <li class="mb-2">
+                <i class="bi bi-check-circle text-success"></i>
+                Vui lòng kiểm tra kỹ sản phẩm trước khi thanh toán với shipper (với đơn COD)
+              </li>
+              <li>
+                <i class="bi bi-check-circle text-success"></i>
+                Liên hệ ngay với chúng tôi nếu bạn cần hỗ trợ
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    @keyframes bounce {
+      0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+      }
+      40% {
+        transform: translateY(-20px);
+      }
+      60% {
+        transform: translateY(-10px);
+      }
+    }
+
+    .bi-check-circle-fill {
+      animation: bounce 1s ease-in-out;
+    }
+  </style>
+</div>
+</body>
+</html>

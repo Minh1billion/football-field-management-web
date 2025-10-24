@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/user :: layout(~{::content})}">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${sportWear.name} + ' - Chi Tiết Sản Phẩm'"></title>
+</head>
+<body>
+<div th:fragment="content">
+    <div class="container mt-5 mb-5">
+        <div class="row">
+            <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="bi bi-check-circle"></i> <span th:text="${successMessage}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-circle"></i> <span th:text="${errorMessage}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        </div>
+
+        <!-- Breadcrumb -->
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a th:href="@{/user/sales}">Cửa hàng</a></li>
+                <li class="breadcrumb-item active" th:text="${sportWear.name}">Sản phẩm</li>
+            </ol>
+        </nav>
+
+        <div class="row g-5">
+            <!-- Hình ảnh sản phẩm -->
+            <div class="col-md-6">
+                <div class="card shadow-lg border-0">
+                    <img th:src="${sportWear.imageUrl ?: 'https://via.placeholder.com/600x600?text=Image+Not+Found'}"
+                         class="img-fluid rounded"
+                         th:alt="${sportWear.name}"
+                         style="max-height: 600px; object-fit: contain; width: 100%;">
+                </div>
+            </div>
+
+            <!-- Thông tin sản phẩm -->
+            <div class="col-md-6">
+                <h1 th:text="${sportWear.name}">Áo Đấu CLB Ngoại Hạng Anh</h1>
+                <p class="text-muted fs-5 mb-3">
+                    <i class="bi bi-award"></i>
+                    Thương hiệu: <strong th:text="${sportWear.brand}">Nike</strong>
+                </p>
+
+                <!-- Trạng thái kho -->
+                <p class="fs-6">
+                    <i class="bi bi-box-seam me-1"></i> Kho:
+                    <span th:classappend="${sportWear.stockQuantity > 0} ? 'text-success fw-bold' : 'text-danger fw-bold'"
+                          th:text="${sportWear.stockQuantity > 0} ? 'Còn hàng (' + ${sportWear.stockQuantity} + ' sản phẩm)' : 'Hết hàng'">
+                        Còn hàng (15 sản phẩm)
+                    </span>
+                    <span th:if="${sportWear.isAvailableForSale}" class="badge bg-success ms-2">
+                        <i class="bi bi-check-circle"></i> SẴN HÀNG
+                    </span>
+                </p>
+                <hr>
+
+                <!-- Giá bán -->
+                <div class="mb-4">
+                    <h2 class="text-danger fw-bold mb-0">
+                        <span th:text="${#numbers.formatDecimal(sportWear.sellPrice, 0, 'POINT', 0, 'COMMA')}">500.000</span>₫
+                    </h2>
+                    <p class="text-muted mb-0"><small><i class="bi bi-truck"></i> Miễn phí vận chuyển đơn từ 500.000₫</small></p>
+                </div>
+
+                <!-- Thông số sản phẩm -->
+                <ul class="list-group list-group-flush mb-4">
+                    <li class="list-group-item">
+                        <i class="bi bi-tag me-2 text-primary"></i>
+                        <strong>Loại Đồ:</strong>
+                        <span class="badge bg-light text-dark" th:text="${sportWear.wearType}">JERSEY</span>
+                    </li>
+                    <li class="list-group-item">
+                        <i class="bi bi-arrows-fullscreen me-2 text-primary"></i>
+                        <strong>Kích Cỡ:</strong>
+                        <span class="badge bg-light text-dark" th:text="${sportWear.size}">L</span>
+                    </li>
+                    <li class="list-group-item">
+                        <i class="bi bi-palette me-2 text-primary"></i>
+                        <strong>Màu Sắc:</strong>
+                        <span class="badge bg-light text-dark" th:text="${sportWear.color}">Đỏ</span>
+                    </li>
+                </ul>
+                <hr>
+
+                <!-- Form đặt mua -->
+                <div th:if="${sportWear.isAvailableForSale and sportWear.stockQuantity > 0}">
+                    <h5 class="mb-3"><i class="bi bi-cart-plus"></i> Chọn Số Lượng</h5>
+                    <form th:action="@{/user/sales/add-to-cart/{id}(id=${sportWear.id})}" method="post" class="row g-3">
+                        <div class="col-md-6">
+                            <label for="quantity" class="form-label">Số Lượng</label>
+                            <div class="input-group">
+                                <button class="btn btn-outline-secondary" type="button" onclick="decreaseQuantity()">
+                                    <i class="bi bi-dash"></i>
+                                </button>
+                                <input type="number"
+                                       id="quantity"
+                                       name="quantity"
+                                       class="form-control text-center"
+                                       value="1"
+                                       min="1"
+                                       th:max="${sportWear.stockQuantity}"
+                                       required>
+                                <button class="btn btn-outline-secondary" type="button" onclick="increaseQuantity()">
+                                    <i class="bi bi-plus"></i>
+                                </button>
+                            </div>
+                            <small class="text-muted">Còn lại: <span th:text="${sportWear.stockQuantity}">10</span> sản phẩm</small>
+                        </div>
+                        <div class="col-md-12 pt-2">
+                            <button type="submit" class="btn btn-danger w-100 btn-lg">
+                                <i class="bi bi-cart-plus me-2"></i> THÊM VÀO GIỎ HÀNG
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Thông tin bổ sung -->
+                    <div class="mt-4 p-3 bg-light rounded">
+                        <h6 class="mb-2"><i class="bi bi-shield-check"></i> Chính Sách Mua Hàng</h6>
+                        <ul class="list-unstyled mb-0 small">
+                            <li><i class="bi bi-check-circle text-success"></i> Đổi trả trong 7 ngày</li>
+                            <li><i class="bi bi-check-circle text-success"></i> Bảo hành chính hãng</li>
+                            <li><i class="bi bi-check-circle text-success"></i> Kiểm tra hàng trước khi thanh toán</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Thông báo hết hàng -->
+                <div th:unless="${sportWear.isAvailableForSale and sportWear.stockQuantity > 0}"
+                     class="alert alert-warning mt-4">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    Sản phẩm này hiện không còn hàng hoặc không có sẵn để bán.
+                </div>
+            </div>
+
+            <!-- Mô tả sản phẩm -->
+            <div class="col-12 mt-5">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h4 class="card-title mb-3">
+                            <i class="bi bi-info-circle text-primary"></i> Mô Tả Sản Phẩm
+                        </h4>
+                        <div th:utext="${sportWear.description ?: 'Sản phẩm này chưa có mô tả chi tiết.'}">
+                            Mô tả chi tiết về sản phẩm...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Nút quay lại -->
+        <div class="mt-4">
+            <a th:href="@{/user/sales}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Quay lại cửa hàng
+            </a>
+        </div>
+    </div>
+
+    <script>
+        const maxQuantity = [[${sportWear.stockQuantity}]];
+
+        function increaseQuantity() {
+            const input = document.getElementById('quantity');
+            if (parseInt(input.value) < maxQuantity) {
+                input.value = parseInt(input.value) + 1;
+            }
+        }
+
+        function decreaseQuantity() {
+            const input = document.getElementById('quantity');
+            if (parseInt(input.value) > 1) {
+                input.value = parseInt(input.value) - 1;
+            }
+        }
+    </script>
+</div>
+</body>
+</html>

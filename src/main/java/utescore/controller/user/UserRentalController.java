@@ -37,7 +37,7 @@ public class UserRentalController {
 
     @GetMapping
     public String rentalSportWearsList(Model model, Pageable pageable) {
-        model.addAttribute("sportWears", rentalService.getAvailableSportWears(pageable));
+        model.addAttribute("sportWears", rentalService.getAvailableSportWearsForRent(pageable));
         model.addAttribute("myBookings", bookingService.getMyBooking());
         return "user/rentals/list";
     }

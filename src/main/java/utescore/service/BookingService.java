@@ -227,6 +227,9 @@ public class BookingService {
 		payment.setNotes(dto.getNotes());
 		payment.setPaymentCode(paymentMethod.name() + "-" + LocalDateTime.now().toString());
 
+		booking.setPayment(payment);
+		bookingRepo.save(booking);
+
 		return convertToDTO(booking);
 	}
 

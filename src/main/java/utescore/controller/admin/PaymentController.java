@@ -8,6 +8,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import utescore.dto.BookingDTO;
+import utescore.dto.PaymentDTO;
 import utescore.entity.*;
 import utescore.service.*;
 import utescore.service.BookingService;
@@ -30,7 +31,7 @@ public class PaymentController {
     @GetMapping("/payment")
     public String testPayment(Model model) {
         List<Order> orders = orderService.getAllOrders();
-        List<Payment> payments = paymentService.getAllPayments();
+        List<PaymentDTO> payments = paymentService.getAllPayments();
         List<utescore.entity.Service> services = serviceService.findAll();
         List<SportWear> sportWears = sportWearService.findAll();
         List<Customer> customers = customerService.getAllCustomers();

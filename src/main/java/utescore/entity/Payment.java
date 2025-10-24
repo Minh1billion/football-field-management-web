@@ -34,7 +34,7 @@ public class Payment {
     @Column(nullable = false)
     private PaymentStatus status = PaymentStatus.PENDING;
 
-    private String transactionId; // External payment gateway transaction ID
+    private String transactionId;
 
     @Column(columnDefinition = "TEXT")
     private String notes;

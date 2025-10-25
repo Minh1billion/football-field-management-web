@@ -20,4 +20,8 @@ public class CustomerService {
 	public Customer getCustomerById(Long id) {
 		return customerRepository.findById(id).orElse(null);
 	}
+
+	public Customer findByAccountUsername(String username) {
+		return customerRepository.findByAccount_Username(username);
+	}
 }

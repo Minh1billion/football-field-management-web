@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/user :: layout(~{::content})}">
+<head>
+  <meta charset="UTF-8">
+  <title>Đánh Giá Sân Bóng</title>
+</head>
+<body>
+<div th:fragment="content">
+  <div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <h2 th:text="'Đánh Giá: ' + ${field.name}">Đánh Giá Sân</h2>
+        <p class="text-muted mb-0">
+          <i class="bi bi-geo-alt"></i> <span th:text="${field.locationName}">Địa chỉ</span>
+        </p>
+      </div>
+      <a href="javascript:history.back()" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Quay Lại
+      </a>
+    </div>
+
+    <!-- Statistics Card -->
+    <div class="card mb-4 shadow-sm">
+      <div class="card-body">
+        <div class="row text-center">
+          <div class="col-md-4">
+            <h5 class="text-muted">Tổng đánh giá</h5>
+            <h2 class="text-primary" th:text="${reviewCount}">0</h2>
+          </div>
+          <div class="col-md-4">
+            <h5 class="text-muted">Điểm trung bình</h5>
+            <h2 class="text-warning">
+              <span th:text="${#numbers.formatDecimal(averageRating, 1, 1)}">0.0</span>
+              / 5.0
+            </h2>
+            <div>
+                            <span th:each="i : ${#numbers.sequence(1, 5)}"
+                                  class="text-warning fs-5">
+                                <i th:class="${i <= averageRating ? 'bi bi-star-fill' : 'bi bi-star'}"></i>
+                            </span>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <h5 class="text-muted">Loại sân</h5>
+            <h2 class="text-info" th:text="${field.fieldType}">5v5</h2>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reviews List -->
+    <h4 class="mb-3">Danh Sách Đánh Giá</h4>
+
+    <div th:if="${reviews == null || reviews.empty}" class="alert alert-info text-center">
+      <i class="bi bi-info-circle"></i> Sân này chưa có đánh giá nào.
+    </div>
+
+    <div class="row">
+      <div th:each="review : ${reviews}" class="col-12 mb-3">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start">
+              <div class="flex-grow-1">
+                <!-- Customer Info -->
+                <div class="d-flex align-items-center mb-3">
+                  <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3"
+                       style="width: 40px; height: 40px; font-weight: bold;">
+                    <span th:text="${#strings.substring(review.customerName, 0, 1)}">A</span>
+                  </div>
+                  <div>
+                    <strong th:text="${review.customerName}">Tên Khách Hàng</strong>
+                    <br>
+                    <small class="text-muted">
+                      <i class="bi bi-calendar"></i>
+                      <span th:text="${#temporals.format(review.createdAt, 'dd/MM/yyyy HH:mm')}">
+                                                01/01/2024 10:00
+                                            </span>
+                    </small>
+                  </div>
+                </div>
+
+                <!-- Rating -->
+                <div class="mb-2">
+                                    <span th:each="i : ${#numbers.sequence(1, 5)}"
+                                          class="text-warning">
+                                        <i th:class="${i <= review.rating ? 'bi bi-star-fill' : 'bi bi-star'}"></i>
+                                    </span>
+                  <span class="ms-2 fw-bold text-warning"
+                        th:text="${review.rating} + '.0'">5.0</span>
+                </div>
+
+                <!-- Comment -->
+                <p class="card-text mb-2" th:text="${review.comment}">
+                  Nhận xét về sân bóng...
+                </p>
+
+                <!-- View Detail Link -->
+                <a th:href="@{/user/reviews/{id}(id=${review.id})}"
+                   class="btn btn-sm btn-outline-primary">
+                  <i class="bi bi-eye"></i> Xem Chi Tiết
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pagination can be added here if needed -->
+  </div>
+</div>
+</body>
+</html>

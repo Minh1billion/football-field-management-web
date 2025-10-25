@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/user :: layout(~{::content})}">
+<head>
+  <meta charset="UTF-8">
+  <title>Đánh Giá Sân</title>
+  <style>
+    .star-rating {
+      font-size: 2rem;
+      cursor: pointer;
+      color: #ddd;
+    }
+    .star-rating input[type="radio"] {
+      display: none;
+    }
+    .star-rating label {
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+    .star-rating label:hover,
+    .star-rating label:hover ~ label {
+      color: #ffc107;
+    }
+    .star-rating input[type="radio"]:checked ~ label {
+      color: #ffc107;
+    }
+  </style>
+</head>
+<body>
+<div th:fragment="content">
+  <div class="container mt-4">
+    <div class="row justify-content-center">
+      <div class="col-md-8">
+        <div class="card">
+          <div class="card-header">
+            <h4 class="mb-0">Đánh Giá Sân Bóng</h4>
+          </div>
+          <div class="card-body">
+            <!-- Flash Messages -->
+            <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+              <span th:text="${errorMessage}"></span>
+              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+
+            <form th:action="@{/user/reviews/save}" method="post" th:object="${reviewDTO}">
+              <input type="hidden" th:field="*{bookingId}" />
+
+              <!-- Rating -->
+              <div class="mb-4">
+                <label class="form-label fw-bold">Đánh Giá <span class="text-danger">*</span></label>
+                <div class="star-rating d-flex flex-row-reverse justify-content-center">
+                  <input type="radio" th:field="*{rating}" value="5" id="star5" required>
+                  <label for="star5" title="5 sao">★</label>
+
+                  <input type="radio" th:field="*{rating}" value="4" id="star4">
+                  <label for="star4" title="4 sao">★</label>
+
+                  <input type="radio" th:field="*{rating}" value="3" id="star3">
+                  <label for="star3" title="3 sao">★</label>
+
+                  <input type="radio" th:field="*{rating}" value="2" id="star2">
+                  <label for="star2" title="2 sao">★</label>
+
+                  <input type="radio" th:field="*{rating}" value="1" id="star1">
+                  <label for="star1" title="1 sao">★</label>
+                </div>
+                <div class="text-center text-muted small mt-2">
+                  Nhấp vào số sao bạn muốn đánh giá
+                </div>
+              </div>
+
+              <!-- Comment -->
+              <div class="mb-4">
+                <label for="comment" class="form-label fw-bold">Nhận Xét</label>
+                <textarea th:field="*{comment}"
+                          class="form-control"
+                          id="comment"
+                          rows="6"
+                          placeholder="Chia sẻ trải nghiệm của bạn về sân bóng này..."
+                          maxlength="1000"></textarea>
+                <div class="form-text">Tối đa 1000 ký tự</div>
+              </div>
+
+              <!-- Buttons -->
+              <div class="d-flex justify-content-between">
+                <a th:href="@{/user/bookings/{id}(id=${bookingId})}"
+                   class="btn btn-secondary">
+                  <i class="bi bi-arrow-left"></i> Quay Lại
+                </a>
+                <button type="submit" class="btn btn-primary">
+                  <i class="bi bi-check-circle"></i> Gửi Đánh Giá
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Tips Card -->
+        <div class="card mt-3">
+          <div class="card-body">
+            <h6 class="card-title"><i class="bi bi-lightbulb"></i> Gợi ý đánh giá</h6>
+            <ul class="mb-0 small text-muted">
+              <li>Chất lượng mặt sân và thiết bị</li>
+              <li>Dịch vụ và thái độ nhân viên</li>
+              <li>Vị trí và tiện ích xung quanh</li>
+              <li>Giá cả có phù hợp không</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

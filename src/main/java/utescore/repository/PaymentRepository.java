@@ -27,9 +27,28 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     @Query("SELECT p FROM Payment p WHERE p.booking.id = :bookingId")
     Optional<Payment> findPaymentByBookingId(@Param("bookingId") Long bookingId);
 
-    // New: hỗ trợ báo cáo
     List<Payment> findByStatus(Payment.PaymentStatus status);
 
     List<Payment> findByStatusAndPaidAtBetween(Payment.PaymentStatus status,
                                                LocalDateTime start, LocalDateTime end);
+
+    @Query("SELECT p FROM Payment p " +
+            "LEFT JOIN p.booking b " +
+            "LEFT JOIN p.order o " +
+            "LEFT JOIN p.rentalOrder r " +
+            "WHERE (b.id IS NOT NULL AND b.customer.id = :customerId) " +
+            "OR (o.id IS NOT NULL AND o.customer.id = :customerId) " +
+            "OR (r.id IS NOT NULL AND r.customer.id = :customerId)")
+    List<Payment> findByCustomerId(@Param("customerId") Long customerId);
+
+    @Query("SELECT p FROM Payment p " +
+            "LEFT JOIN p.booking b " +
+            "LEFT JOIN p.order o " +
+            "LEFT JOIN p.rentalOrder r " +
+            "WHERE p.id = :paymentId " +
+            "AND ((b.id IS NOT NULL AND b.customer.id = :customerId) " +
+            "OR (o.id IS NOT NULL AND o.customer.id = :customerId) " +
+            "OR (r.id IS NOT NULL AND r.customer.id = :customerId))")
+    Optional<Payment> findByIdAndCustomerId(@Param("paymentId") Long paymentId,
+                                            @Param("customerId") Long customerId);
 }

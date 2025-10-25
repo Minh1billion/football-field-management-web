@@ -32,6 +32,18 @@ public class PaymentService {
 		return paymentRepository.findById(id).map(this::convertToDTO).orElse(null);
 	}
 
+	public List<PaymentDTO> getPaymentsByCustomerId(Long customerId) {
+		return paymentRepository.findByCustomerId(customerId).stream()
+				.map(this::convertToDTO)
+				.toList();
+	}
+
+	public PaymentDTO getPaymentByIdAndCustomerId(Long paymentId, Long customerId) {
+		return paymentRepository.findByIdAndCustomerId(paymentId, customerId)
+				.map(this::convertToDTO)
+				.orElse(null);
+	}
+
 	public Payment processPayment(Long paymentId, String transactionId) {
 		Payment payment = paymentRepository.findById(paymentId)
 				.orElseThrow(() -> new RuntimeException("Payment not found with ID: " + paymentId));

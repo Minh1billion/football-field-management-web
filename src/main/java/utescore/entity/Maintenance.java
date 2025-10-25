@@ -38,6 +38,10 @@ public class Maintenance {
     @Column(nullable = false)
     private LocalDateTime scheduledDate;
 
+    // ✅ THÊM FIELD NÀY
+    @Column(nullable = false)
+    private Integer estimatedDurationHours = 2; // Mặc định 2 giờ
+
     private LocalDateTime completedDate;
 
     @Column(precision = 10, scale = 2)
@@ -55,6 +59,10 @@ public class Maintenance {
     @JoinColumn(name = "field_id", nullable = false)
     @ToString.Exclude
     private FootballField field;
+
+    public LocalDateTime getEstimatedEndDate() {
+        return scheduledDate.plusHours(estimatedDurationHours);
+    }
 
     public enum MaintenanceType {
         ROUTINE, REPAIR, UPGRADE, CLEANING, INSPECTION

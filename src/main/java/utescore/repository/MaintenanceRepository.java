@@ -7,18 +7,30 @@ import utescore.entity.Maintenance;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public interface MaintenanceRepository extends JpaRepository<Maintenance, Long> {
 
     @Query("""
         select m from Maintenance m
         where m.field.id = :fieldId
-          and m.status in (utescore.entity.Maintenance.MaintenanceStatus.SCHEDULED, utescore.entity.Maintenance.MaintenanceStatus.IN_PROGRESS)
-          and m.scheduledDate between :start and :end
+          and m.status in (utescore.entity.Maintenance.MaintenanceStatus.SCHEDULED, 
+                           utescore.entity.Maintenance.MaintenanceStatus.IN_PROGRESS)
         """)
-    List<Maintenance> findPlannedInRange(@Param("fieldId") Long fieldId,
-                                         @Param("start") LocalDateTime start,
-                                         @Param("end") LocalDateTime end);
+    List<Maintenance> findActiveMaintenancesByField(@Param("fieldId") Long fieldId);
+
+    default List<Maintenance> findPlannedInRange(Long fieldId, LocalDateTime start, LocalDateTime end) {
+        return findActiveMaintenancesByField(fieldId).stream()
+                .filter(m -> {
+                    // Tính thời gian kết thúc bảo trì
+                    int duration = (m.getEstimatedDurationHours() != null) ? m.getEstimatedDurationHours() : 2;
+                    LocalDateTime maintenanceEnd = m.getScheduledDate().plusHours(duration);
+
+                    // Check overlap
+                    return m.getScheduledDate().isBefore(end) && maintenanceEnd.isAfter(start);
+                })
+                .collect(Collectors.toList());
+    }
 
     long countByField_ManagerIdAndScheduledDateBetween(Long managerId, LocalDateTime start, LocalDateTime end);
 
@@ -29,6 +41,5 @@ public interface MaintenanceRepository extends JpaRepository<Maintenance, Long> 
     """)
     long countActiveMaintenanceFieldsByManagerUsername(@Param("managerId") Long managerId);
 
-    // Đếm số bản ghi bảo trì đang mở (SCHEDULED/IN_PROGRESS) theo sân
     long countByField_IdAndStatusIn(Long fieldId, java.util.Collection<Maintenance.MaintenanceStatus> statuses);
 }

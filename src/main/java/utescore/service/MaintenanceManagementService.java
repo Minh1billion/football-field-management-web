@@ -1,6 +1,7 @@
 package utescore.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.transaction.annotation.Transactional;
 import utescore.entity.Account;
 import utescore.entity.FootballField;
@@ -30,21 +31,25 @@ public class MaintenanceManagementService {
                                 String description,
                                 Maintenance.MaintenanceType type,
                                 LocalDateTime scheduledDate,
+                                Integer estimatedDurationHours, 
                                 String performedBy) {
-        FootballField field = fieldRepo.findById(fieldId).orElseThrow(() -> new IllegalArgumentException("Field not found"));
+        FootballField field = fieldRepo.findById(fieldId)
+                .orElseThrow(() -> new IllegalArgumentException("Field not found"));
+
         Maintenance m = new Maintenance();
         m.setField(field);
         m.setTitle(title);
         m.setDescription(description);
         m.setType(type);
         m.setScheduledDate(scheduledDate);
+        m.setEstimatedDurationHours(estimatedDurationHours != null ? estimatedDurationHours : 2);
         m.setPerformedBy(performedBy);
         m.setStatus(Maintenance.MaintenanceStatus.SCHEDULED);
 
         Maintenance saved = maintenanceRepo.save(m);
 
-        // Tạm ngừng sân ngay khi lên lịch
-        if (Boolean.TRUE.equals(field.getIsActive())) {
+        LocalDateTime now = LocalDateTime.now();
+        if (scheduledDate.isBefore(now.plusHours(1)) && Boolean.TRUE.equals(field.getIsActive())) {
             field.setIsActive(false);
             fieldRepo.save(field);
         }

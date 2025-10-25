@@ -34,8 +34,10 @@ public class ManagerMaintenanceController {
                            @RequestParam(required = false) String description,
                            @RequestParam Maintenance.MaintenanceType type,
                            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime scheduledDate,
+                           @RequestParam(defaultValue = "2") Integer estimatedDurationHours, // ✅ Thêm param
                            @RequestParam(required = false) String performedBy) {
-        maintenanceService.schedule(fieldId, title, description, type, scheduledDate, performedBy);
+        maintenanceService.schedule(fieldId, title, description, type, scheduledDate,
+                estimatedDurationHours, performedBy);
         return "redirect:/manager/maintenances";
     }
 

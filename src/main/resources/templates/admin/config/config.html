@@ -15,7 +15,26 @@
             <span th:text="${error}"></span>
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
-
+		<div class="card mb-4">
+		    <div class="card-header">
+		        <h5>Thông tin liên hệ</h5>
+		    </div>
+		    <div class="card-body">
+		        <form th:action="@{/admin/system-config/update-info}" method="post">
+		            <div class="mb-3">
+		                <label for="mail" class="form-label">Email</label>
+		                <input type="text" class="form-control" id="mail" name="mail"
+		                       th:value="${infoConfig.mail}">
+		            </div>
+		            <div class="mb-3">
+		                <label for="phone" class="form-label">Số điện thoại</label>
+		                <input type="text" class="form-control" id="phone" name="phone"
+		                       th:value="${infoConfig.phone}">
+		            </div>
+		            <button type="submit" class="btn btn-primary">Cập nhật</button>
+		        </form>
+		    </div>
+		</div>
         <!-- Form thêm -->
         <div class="card mb-4">
             <div class="card-header">Thêm Thời Gian Bảo Trì</div>
@@ -108,7 +127,7 @@
                 </div>
             </div>
         </div>
-
+		
     </div> <!-- container -->
 </div>
 </body>

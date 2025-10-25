@@ -1,59 +1,73 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout/admin :: layout(~{::content})}">
+<html xmlns:th="http://www.thymeleaf.org"
+	th:replace="~{layout/admin :: layout(~{::content})}">
 <head>
-    <meta charset="UTF-8" />
-    <title>👑 Admin Chat Hỗ trợ khách hàng</title>
-    <style>
-        
-    </style>
+<meta charset="UTF-8" />
+<title>👑 Admin Chat Hỗ trợ khách hàng</title>
+<style>
+</style>
 </head>
-
 <body>
-    <div th:fragment="content">
-        <div class="chat-wrapper">
-            <div class="chat-header">👑 Hỗ trợ khách hàng (Admin)</div>
-            <div class="chat-body">
-                <div class="user-select-container">
-                    <label>📋 Chọn người dùng:</label>
-                    <select id="userSelect">
-                        <option value="">-- Chọn người dùng --</option>
-                    </select>
-                </div>
+	<div th:fragment="content">
+		<div class="chat-wrapper">
+			<div class="chat-header">👑 Hỗ trợ khách hàng (Admin)</div>
+			<div class="chat-body">
+				<div class="user-select-container mb-3">
+					<label>📋 Chọn người dùng:</label> <select id="userSelect">
+						<option value="">-- Chọn người dùng --</option>
+					</select>
+				</div>
 
-                <div id="chatBox">
-                    <div class="placeholder-text">
-                        <i class="bi bi-chat-dots"></i> Chưa có cuộc trò chuyện nào
-                    </div>
-                </div>
+				<div id="chatBox">
+					<div class="placeholder-text">
+						<i class="bi bi-chat-dots"></i> Chưa có cuộc trò chuyện nào
+					</div>
+				</div>
 
-                <div class="chat-controls">
-                    <input type="text" id="msgInput" placeholder="Nhập tin nhắn...">
-                    <button id="sendBtn">
-                        <i class="bi bi-send-fill"></i> Gửi
-                    </button>
-                </div>
-            </div>
-        </div>
+				<div class="chat-controls">
+					<input type="text" id="msgInput" placeholder="Nhập tin nhắn...">
+					<button id="sendBtn">
+						<i class="bi bi-send-fill"></i> Gửi
+					</button>
+				</div>
+			</div>
+		</div>
 
-        <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1.6.1/dist/sockjs.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
-        <script>
+		<!-- SocketJS + STOMP -->
+		<script
+			src="https://cdn.jsdelivr.net/npm/sockjs-client@1.6.1/dist/sockjs.min.js"></script>
+		<script
+			src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+
+		<script>
             let stompClient;
             const currentUser = "ADMIN";
             let selectedUser = null;
+            const autoResponse = {};
 
             function connect() {
                 const socket = new SockJS("/ws");
                 stompClient = Stomp.over(socket);
                 stompClient.connect({}, () => {
                     console.log("✅ Kết nối WebSocket thành công");
+
+                    // Nhận tin nhắn
                     stompClient.subscribe(`/topic/messages/${currentUser}`, (msg) => {
                         const message = JSON.parse(msg.body);
-                        console.log("Received message:", message);
                         showMessage(message);
-                    }, (error) => {
-                        console.error("❌ WebSocket subscription error:", error);
+
+                        // 👇 Nếu là tin nhắn từ user => gửi phản hồi tự động
+                        if (message.sender !== currentUser) {
+                            handleAutoReply(message);
+                        }
                     });
+
+                    // Nhận thông báo thu hồi
+                    stompClient.subscribe(`/topic/recall/${currentUser}`, (msg) => {
+                        const recalledId = JSON.parse(msg.body);
+                        markAsRecalled(recalledId);
+                    });
+
                     loadUsers();
                 }, (error) => {
                     console.error("❌ WebSocket connection error:", error);
@@ -64,7 +78,6 @@
                 fetch("/user/chat/api/accounts")
                     .then(res => res.json())
                     .then(users => {
-                        console.log("Loaded users:", users);
                         const select = document.getElementById("userSelect");
                         select.innerHTML = '<option value="">-- Chọn người dùng --</option>';
                         users.forEach(u => {
@@ -82,8 +95,6 @@
             document.getElementById("userSelect").addEventListener("change", (e) => {
                 selectedUser = e.target.value;
                 const chatBox = document.getElementById("chatBox");
-                console.log("Selected user:", selectedUser);
-
                 if (selectedUser) {
                     chatBox.innerHTML = `<div class="placeholder-text"><i class="bi bi-chat-dots"></i> Đang chat với ${selectedUser}</div>`;
                     loadHistory(selectedUser);
@@ -94,10 +105,7 @@
 
             document.getElementById("sendBtn").addEventListener("click", () => {
                 const content = document.getElementById("msgInput").value.trim();
-                if (!content || !selectedUser) {
-                    console.warn("No content or user selected");
-                    return;
-                }
+                if (!content || !selectedUser) return;
 
                 const message = {
                     sender: currentUser,
@@ -105,34 +113,125 @@
                     content: content,
                     timestamp: new Date().toISOString()
                 };
-                console.log("Sending message:", message);
+
                 stompClient.send("/app/user/chat", {}, JSON.stringify(message));
                 document.getElementById("msgInput").value = "";
             });
 
+            // 👇 Tự động phản hồi tin nhắn user
+            function handleAutoReply(msg) {
+                const user = msg.sender;
+                const text = msg.content.trim();
+
+                // Nếu đây là tin đầu tiên của user -> gửi menu trợ giúp
+                if (!autoResponse[user]) {
+                    autoResponse[user] = true;
+                    showHelpMenu(user);
+                } 
+                // Nếu user nhập 0 => hiện lại danh sách hỗ trợ
+                else if (text === "0") {
+                    showHelpMenu(user);
+                } 
+                // Nếu user nhập 1 => phản hồi tạm thời
+                else if (text === "2") {
+                    sendAutoMessage(user, "Vui lòng chờ, Admin sẽ hỗ trợ bạn ngay. 🤝");
+                }
+                else if (text === "1") {
+                		showHelpMenu1(user);
+                    
+                    
+                }
+            }
+
+            // Gửi danh sách hỗ trợ
+            function sleep(ms) {
+			    return new Promise(resolve => setTimeout(resolve, ms));
+			}
+			
+			async function showHelpMenu1(user) {
+			    const messages = [
+			    	"Hệ thống đang truy xuất dữ liệu ! 🏟️",
+			    	"Hiện tại chưa hỗ trợ tính năng này ! 🏟️"
+			    ];
+			
+			    for (const msg of messages) {
+			        sendAutoMessage(user, msg);
+			        await sleep(1000); // chờ 0.5s mới gửi tiếp
+			    }
+			}
+			
+			async function showHelpMenu(user) {
+			    const messages = [
+			        "Bạn cần giúp đỡ gì ?",
+			        "0️⃣ : Hiện lại danh sách hỗ trợ",
+			        "1️⃣ : Cần tìm sân liên hệ người đã đặt sân khác ?",
+			        "2️⃣ : Khác ?"
+			    ];
+			
+			    for (const msg of messages) {
+			        sendAutoMessage(user, msg);
+			        await sleep(500); // chờ 0.5s mới gửi tiếp
+			    }
+			}
+
+            // Gửi tin nhắn tự động từ Admin
+            function sendAutoMessage(to, text) {
+			    if (!selectedUser || selectedUser !== to) {
+			        // Chọn người dùng nếu chưa chọn hoặc khác
+			        const userSelect = document.getElementById("userSelect");
+			        userSelect.value = to;
+			        selectedUser = to;
+			        const chatBox = document.getElementById("chatBox");
+			        chatBox.innerHTML = `<div class="placeholder-text"><i class="bi bi-chat-dots"></i> Đang chat với ${to}</div>`;
+			        loadHistory(to);
+			    }
+			
+			    // Điền text vào khung input
+			    const msgInput = document.getElementById("msgInput");
+			    msgInput.value = text;
+			
+			    // "Bấm nút gửi" bằng code
+			    document.getElementById("sendBtn").click();
+			}
+
+            // Hiển thị tin nhắn
             function showMessage(m) {
                 const chatBox = document.getElementById("chatBox");
-                if (m.sender !== selectedUser && m.receiver !== selectedUser) {
-                    console.log("Message ignored, not for selected user:", m);
-                    return;
-                }
+                if (m.sender !== selectedUser && m.receiver !== selectedUser) return;
 
                 const div = document.createElement("div");
                 const isAdmin = m.sender === currentUser;
-                console.log("Message sender:", m.sender, "isAdmin:", isAdmin);
                 div.classList.add("msg", isAdmin ? "admin" : "user");
+                div.setAttribute("data-id", m.id);
 
                 const header = document.createElement("div");
                 header.classList.add("msg-header");
                 header.innerHTML = `<span>${m.sender}</span><span class="msg-timestamp">${formatTimestamp(m.timestamp)}</span>`;
 
                 const content = document.createElement("div");
-                content.textContent = m.content;
+                content.classList.add("msg-content");
+
+                if (m.content === "@@@##") {
+                    content.textContent = "🕓 Tin nhắn đã thu hồi";
+                    content.classList.add("recalled-msg");
+                } else {
+                    content.textContent = m.content;
+                }
 
                 div.appendChild(header);
                 div.appendChild(content);
                 chatBox.appendChild(div);
                 chatBox.scrollTop = chatBox.scrollHeight;
+            }
+
+            function markAsRecalled(messageId) {
+                const chatBox = document.getElementById("chatBox");
+                const msgDiv = chatBox.querySelector(`[data-id='${messageId}']`);
+                if (msgDiv) {
+                    const content = msgDiv.querySelector(".msg-content");
+                    content.textContent = "🕓 Tin nhắn đã thu hồi";
+                    content.classList.add("recalled-msg");
+                }
             }
 
             function formatTimestamp(timestamp) {
@@ -145,9 +244,8 @@
                 fetch(`/user/chat/history/${target}`)
                     .then(res => res.json())
                     .then(data => {
-                        console.log("Loaded history:", data);
                         const chatBox = document.getElementById("chatBox");
-                        chatBox.innerHTML = `<div class="placeholder-text"><i class="bi bi-chat-dots"></i> Lịch sử với ${target}</div>`;
+                        chatBox.innerHTML = "";
                         data.forEach(m => showMessage(m));
                     })
                     .catch(err => console.error("❌ Lỗi tải lịch sử:", err));
@@ -155,6 +253,6 @@
 
             connect();
         </script>
-    </div>
+	</div>
 </body>
 </html>

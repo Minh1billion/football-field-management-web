@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <title>💬 Hỗ trợ khách hàng</title>
 
-  <!-- Bootstrap 5 -->
+  <!-- Bootstrap -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
@@ -12,94 +12,136 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
 
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+
   <style>
-html, body {
-  height: 100%;
-  margin: 0;
-  padding: 0;
-  background: #f0f2f5;
-  font-family: "Segoe UI", sans-serif;
-  overflow: hidden; /* ✅ tránh cuộn ngoài khung */
-}
+    html, body {
+      height: 100%;
+      margin: 0;
+      background: #f1f2f6;
+      font-family: "Segoe UI", sans-serif;
+      overflow: hidden;
+    }
 
-/* Toàn khung chiếm hết iframe */
-.chat-container {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  background: white;
-  border-radius: 0;
-}
+    .chat-container {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      background: white;
+      border-radius: 0;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
 
-/* Header cố định */
-.chat-header {
-  background: linear-gradient(135deg, #007bff, #00b4d8);
-  color: white;
-  text-align: center;
-  padding: 12px;
-  font-size: 1.2rem;
-  font-weight: 600;
-}
+    .chat-header {
+      background: linear-gradient(135deg, #007bff, #00b4d8);
+      color: white;
+      text-align: center;
+      padding: 14px;
+      font-size: 1.2rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
 
-/* Khung tin nhắn co giãn theo chiều cao */
-#chatBox {
-  flex: 1; /* ✅ giúp phần giữa tự giãn theo iframe */
-  padding: 10px 15px;
-  overflow-y: auto;
-  background: #fafafa;
-  display: flex;
-  flex-direction: column;
-}
+    #chatBox {
+      flex: 1;
+      padding: 15px;
+      overflow-y: auto;
+      background: #f8f9fa;
+      display: flex;
+      flex-direction: column;
+    }
 
-/* Tin nhắn */
-.msg {
-  max-width: 75%;
-  padding: 10px 14px;
-  margin: 5px 0;
-  border-radius: 20px;
-  display: inline-block;
-  word-wrap: break-word;
-  clear: both;
-}
-.msg.user {
-  background-color: #007bff;
-  color: white;
-  align-self: flex-end;
-  border-bottom-right-radius: 5px;
-}
-.msg.admin {
-  background-color: #e9ecef;
-  color: #333;
-  align-self: flex-start;
-  border-bottom-left-radius: 5px;
-}
+    .msg {
+      max-width: 75%;
+      padding: 10px 14px;
+      margin: 6px 0;
+      border-radius: 20px;
+      display: inline-block;
+      word-wrap: break-word;
+      position: relative;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      transition: all 0.3s ease;
+    }
 
-/* Ô nhập */
-.chat-input {
-  border-top: 1px solid #dee2e6;
-  padding: 10px;
-  background: #fff;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.chat-input input {
-  flex: 1;
-  border-radius: 20px;
-  border: 1px solid #ced4da;
-  padding: 8px 14px;
-}
-.chat-input button {
-  border-radius: 20px;
-  padding: 8px 18px;
-}
-</style>
+    .msg.user {
+      background: linear-gradient(135deg, #007bff, #00b4d8);
+      color: white;
+      align-self: flex-end;
+      border-bottom-right-radius: 6px;
+    }
+
+    .msg.admin {
+      background-color: #e9ecef;
+      color: #333;
+      align-self: flex-start;
+      border-bottom-left-radius: 6px;
+    }
+
+    /* Tin nhắn đã thu hồi */
+    .msg.recalled {
+      background: #f1f3f5 !important;
+      color: gray !important;
+      font-style: italic;
+      box-shadow: none;
+    }
+
+    /* Nút thu hồi */
+    .msg button {
+      display: none;
+      position: absolute;
+      bottom: -20px;
+      right: 10px;
+      font-size: 12px;
+      background: transparent;
+      border: none;
+      color: #007bff;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+
+    .msg.user:hover button {
+      display: inline;
+    }
+
+    .chat-input {
+      border-top: 1px solid #dee2e6;
+      padding: 10px;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .chat-input input {
+      flex: 1;
+      border-radius: 25px;
+      border: 1px solid #ced4da;
+      padding: 10px 16px;
+      outline: none;
+      transition: 0.2s;
+    }
+
+    .chat-input input:focus {
+      border-color: #007bff;
+      box-shadow: 0 0 3px rgba(0,123,255,0.4);
+    }
+
+    .chat-input button {
+      border-radius: 25px;
+      padding: 10px 20px;
+      font-weight: 500;
+    }
+  </style>
 </head>
 <body>
-
 <div class="chat-container">
   <div class="chat-header">
-    💬 Hỗ trợ khách hàng
+    <i class="bi bi-chat-dots-fill"></i> Hỗ trợ khách hàng
   </div>
 
   <input type="hidden" id="usernamelogin" th:value="${usernamelogin}" />
@@ -109,13 +151,10 @@ html, body {
   <div class="chat-input">
     <input type="text" id="msgInput" placeholder="Nhập tin nhắn..." class="form-control" />
     <button id="sendBtn" class="btn btn-primary">
-      <i class="bi bi-send"></i> Gửi
+      <i class="bi bi-send-fill"></i>
     </button>
   </div>
 </div>
-
-<!-- Bootstrap Icons -->
-<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
 
 <script>
 let stompClient;
@@ -127,9 +166,8 @@ function connect() {
   stompClient = Stomp.over(socket);
   stompClient.connect({}, function () {
     console.log("✅ Kết nối thành công");
-    stompClient.subscribe(`/topic/messages/${username}`, function (msg) {
-      showMessage(JSON.parse(msg.body));
-    });
+    stompClient.subscribe(`/topic/messages/${username}`, msg => showMessage(JSON.parse(msg.body)));
+    stompClient.subscribe(`/topic/recall/${username}`, msg => handleRecall(msg.body));
     loadHistory();
   });
 }
@@ -140,7 +178,7 @@ function loadHistory() {
     .then(data => {
       const chatBox = document.getElementById("chatBox");
       chatBox.innerHTML = "";
-      data.forEach(m => showMessage(m));
+      data.forEach(showMessage);
     });
 }
 
@@ -160,15 +198,48 @@ function sendMessage() {
 function showMessage(m) {
   const chatBox = document.getElementById("chatBox");
   const div = document.createElement("div");
-  div.classList.add("msg");
-  div.classList.add(m.sender === username ? "user" : "admin");
-  div.textContent = `${m.sender}: ${m.content}`;
+  div.classList.add("msg", m.sender === username ? "user" : "admin");
+  div.setAttribute("data-id", m.id);
+
+  // ✅ Kiểm tra tin nhắn đã thu hồi
+  if (m.content === "@@@##") {
+    div.classList.add("recalled");
+    div.innerHTML = "<i>Tin nhắn đã được thu hồi</i>";
+  } else {
+    const text = document.createElement("span");
+    text.textContent = m.content;
+    div.appendChild(text);
+
+    if (m.sender === username) {
+      const recallBtn = document.createElement("button");
+      recallBtn.textContent = "Thu hồi";
+      recallBtn.onclick = () => recallMessage(m.id);
+      div.appendChild(recallBtn);
+    }
+  }
+
   chatBox.appendChild(div);
   chatBox.scrollTop = chatBox.scrollHeight;
 }
 
+function recallMessage(messageId) {
+  stompClient.send("/app/user/recall", {}, JSON.stringify({
+    messageId: messageId,
+    sender: username,
+    receiver: receiver
+  }));
+}
+
+function handleRecall(messageId) {
+  const msgDiv = document.querySelector(`.msg[data-id='${messageId}']`);
+  if (msgDiv) {
+    msgDiv.classList.add("recalled");
+    msgDiv.innerHTML = "<i>Tin nhắn đã được thu hồi</i>";
+  }
+}
+
 document.getElementById("sendBtn").onclick = sendMessage;
-document.getElementById("msgInput").addEventListener("keypress", function(e) {
+document.getElementById("msgInput").addEventListener("keypress", e => {
   if (e.key === "Enter") sendMessage();
 });
 

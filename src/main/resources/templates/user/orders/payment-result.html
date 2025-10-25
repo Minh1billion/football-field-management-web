@@ -103,9 +103,9 @@
                             <h6 class="mb-2">📞 Cần Hỗ Trợ?</h6>
                             <p class="mb-0">
                                 <small>
-                                    Liên hệ: <strong>1900-xxxx</strong> hoặc
-                                    <a href="mailto:support@utescore.com">support@utescore.com</a>
-                                </small>
+								    Liên hệ: <strong th:text="${infoConfig.phone}"></strong> hoặc
+								    <a th:href="'mailto:' + ${infoConfig.mail}" th:text="${infoConfig.mail}"></a>
+								</small>
                             </p>
                         </div>
                     </div>

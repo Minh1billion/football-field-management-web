@@ -42,9 +42,16 @@ public class ChatController {
 
     // thu hồi tin nhắn
     @MessageMapping("/user/recall")
-    public void recallMessage(@Payload Long messageId) {
+    public void recallMessage(@Payload Map<String, Object> payload) {
+        Long messageId = Long.valueOf(payload.get("messageId").toString());
+        String sender = payload.get("sender").toString();
+        String receiver = payload.get("receiver").toString();
+
         messageService.recall(messageId);
-        messagingTemplate.convertAndSend("/topic/recall", messageId);
+
+        // Gửi thông báo thu hồi đến cả hai phía
+        messagingTemplate.convertAndSend("/topic/recall/" + sender, messageId);
+        messagingTemplate.convertAndSend("/topic/recall/" + receiver, messageId);
     }
     
     @GetMapping("/user/chat/history/{user}")

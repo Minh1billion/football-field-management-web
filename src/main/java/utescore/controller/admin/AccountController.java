@@ -1,9 +1,12 @@
 package utescore.controller.admin;
 
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -14,6 +17,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import utescore.dto.RegisterRequest;
 import utescore.entity.Account;
 import utescore.service.AccountService;
+import utescore.util.WebSocketEventListener;
 
 @Controller
 @RequestMapping("/admin/accounts")
@@ -21,6 +25,11 @@ public class AccountController {
 
     @Autowired
     private AccountService accountService;
+    
+    @GetMapping("/chat")
+    public String adminChatPage() {
+        return "admin/chat"; // file: templates/admin/chat.html
+    }
 
     private String getCurrentUserRole() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -158,5 +167,10 @@ public class AccountController {
         model.addAttribute("account", account);
         model.addAttribute("currentUserRole", getCurrentUserRole());
         return "admin/accounts/view";
+    }
+    
+    @GetMapping("/api/active-users")
+    public ResponseEntity<Map<String, Map<String, Object>>> getActiveUsers() {
+        return ResponseEntity.ok(WebSocketEventListener.getActiveUsersWithTime());
     }
 }

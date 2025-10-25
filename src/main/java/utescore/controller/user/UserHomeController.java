@@ -53,4 +53,9 @@ public class UserHomeController {
 
         return "user/user-home"; // Trang tương ứng: templates/user/user-home.html
     }
+    
+    @GetMapping("/home/chat")
+    public String chatPage() {
+        return "home/chat";
+    }
 }

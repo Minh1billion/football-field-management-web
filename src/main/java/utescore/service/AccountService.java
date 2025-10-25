@@ -18,6 +18,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -215,6 +216,14 @@ public class AccountService {
 	public Page<Account> findAll(Pageable pageable) {
 		return accountRepository.findAll(pageable);
 	}
+	
+	public List<Account> getAllUsers() {
+	    return accountRepository.findAll()
+	        .stream()
+	        .filter(a -> a.getRole().toString()
+	        		.equalsIgnoreCase("USER"))
+	        .toList();
+	}
 
 	public Account findById(Long id) {
 		return accountRepository.findById(id).orElse(null);
@@ -254,5 +263,13 @@ public class AccountService {
 
 	public long countInactiveAccounts() {
 		return accountRepository.countByIsActiveFalse();
+	}
+	
+	public List<Account> findByRole(String role) {
+		try {
+			return accountRepository.findByRole(Account.Role.valueOf(role));
+		} catch (IllegalArgumentException e) {
+			return List.of();
+		}
 	}
 }

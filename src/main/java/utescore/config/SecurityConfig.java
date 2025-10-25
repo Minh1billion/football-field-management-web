@@ -52,6 +52,9 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+		        .headers(headers -> headers
+		                .frameOptions(frame -> frame.sameOrigin())
+		            )
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authz -> authz
                         // Public endpoints

@@ -83,59 +83,86 @@
       </div>
     </div>
   </div>
+  <input type="hidden" id="usernamelogin" th:value="${usernamelogin}"/>
   <!-- Section to display active users -->
   <div class="row mb-4">
     <div class="col-md-12">
       <div class="card shadow-sm border-0">
         <div class="card-body">
           <h5 class="card-title">👥 Người dùng đang online <span id="connectionStatus" class="badge bg-danger">Disconnected</span></h5>
-          <ul id="activeUsersList" class="list-group"></ul>
+          <div id="activeUsersContainer"></div>
         </div>
       </div>
     </div>
   </div>
 
-  <script>
-    // Initialize WebSocket connection
-    const socket = new SockJS('/ws');
-    const stompClient = Stomp.over(socket);
+<script>
+  const socket = new SockJS('/ws');
+  const stompClient = Stomp.over(socket);
+  const username = document.getElementById('usernamelogin').value;
+  
+  stompClient.connect({}, function (frame) {
+    console.log('Connected: ' + frame);
+    document.getElementById('connectionStatus').textContent = 'Connected';
+    document.getElementById('connectionStatus').className = 'badge bg-success';
 
-    // Connect to WebSocket (no username needed for admin dashboard)
-    stompClient.connect({}, function (frame) {
-      console.log('Connected: ' + frame);
-      document.getElementById('connectionStatus').textContent = 'Connected';
-      document.getElementById('connectionStatus').className = 'badge bg-success';
-
-      // Subscribe to /topic/activeUsers
-      stompClient.subscribe('/topic/activeUsers', function (message) {
-        const activeUsers = JSON.parse(message.body);
-        updateActiveUsersList(activeUsers);
-      });
-    }, function (error) {
-      console.error('WebSocket error: ', error);
-      document.getElementById('connectionStatus').textContent = 'Disconnected';
-      document.getElementById('connectionStatus').className = 'badge bg-danger';
+    stompClient.subscribe('/topic/activeUsers', function (message) {
+      const activeUsers = JSON.parse(message.body);
+      updateActiveUsersList(activeUsers);
     });
 
-    // Function to update the active users list in the UI
-    function updateActiveUsersList(users) {
-      const listElement = document.getElementById('activeUsersList');
-      listElement.innerHTML = '';
-      if (users.length === 0) {
-        const li = document.createElement('li');
-        li.className = 'list-group-item';
-        li.textContent = 'Không có người dùng nào đang online';
-        listElement.appendChild(li);
-      } else {
-        users.forEach(user => {
-          const li = document.createElement('li');
-          li.className = 'list-group-item';
-          li.textContent = user;
-          listElement.appendChild(li);
-        });
-      }
+    fetch('/admin/accounts/api/active-users')
+      .then(res => res.json())
+      .then(data => updateActiveUsersList(data))
+      .catch(() => {
+        document.getElementById('activeUsersContainer').innerHTML = `
+          <div class="alert alert-danger">Không thể tải danh sách người dùng.</div>`;
+      });
+  });
+
+  function updateActiveUsersList(users) {
+    const container = document.getElementById('activeUsersContainer');
+    container.innerHTML = '';
+
+    const entries = Object.entries(users);
+    if (entries.length === 0) {
+      container.innerHTML = `<p class="text-muted">Không có người dùng nào đang online.</p>`;
+      return;
     }
-  </script>
+
+    const row = document.createElement('div');
+    row.className = 'row';
+
+    entries.forEach(([username, info]) => {
+      const isOnline = info.online;
+      const time = new Date(info.time).toLocaleString('vi-VN');
+      const statusText = isOnline ? 'Thao tác gần nhất' : 'Rời lúc';
+
+      const col = document.createElement('div');
+      col.className = 'col-md-3 mb-3';
+      col.innerHTML = `
+        <div class="card shadow-sm border-0 ${isOnline ? 'bg-success-subtle' : 'bg-secondary-subtle'}">
+          <div class="card-body text-center">
+            <h5 class="card-title">${username}</h5>
+            <span class="badge bg-${isOnline ? 'success' : 'secondary'}">
+              ${isOnline ? '🟢 Online' : '⚫ Offline'}
+            </span>
+            <p class="mt-2 mb-0 text-muted">
+              ${statusText}:<br><strong>${time}</strong>
+            </p>
+          </div>
+        </div>
+      `;
+      row.appendChild(col);
+    });
+
+    container.appendChild(row);
+  }
+
+  window.onbeforeunload = function () {
+    stompClient.disconnect();
+  };
+</script>
 </div>
 
 </body>

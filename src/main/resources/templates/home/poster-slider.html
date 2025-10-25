@@ -1,0 +1,84 @@
+<div th:fragment="posterSliderFragment">
+    <div id="poster-slider">
+        <th:block th:each="poster : ${posterList}">
+            <a th:href="${poster.linkChuyenHuong}" target="_blank">
+                <img th:src="${poster.url}" th:alt="${poster.ten}">
+            </a>
+        </th:block>
+        <button class="prev" onclick="moveSlide(-1)">&#10094;</button>
+        <button class="next" onclick="moveSlide(1)">&#10095;</button>
+    </div>
+
+    <script>
+        const slides = document.querySelectorAll('#poster-slider img');
+        const slider = document.querySelector('#poster-slider');
+        let current = 0;
+
+        function showSlide(index) {
+            slides.forEach((slide, i) => {
+                slide.style.transform = `translateX(${(i - index) * 100}%)`;
+                slide.style.opacity = i === index ? '1' : '0';
+            });
+        }
+
+        function moveSlide(direction) {
+            current = (current + direction + slides.length) % slides.length;
+            showSlide(current);
+        }
+
+        if (slides.length > 0) {
+            showSlide(current);
+            // Tự động chuyển slide
+            let autoSlide = setInterval(() => moveSlide(1), 3000);
+
+            // Tạm dừng auto slide khi hover
+            slider.addEventListener('mouseenter', () => clearInterval(autoSlide));
+            slider.addEventListener('mouseleave', () => {
+                autoSlide = setInterval(() => moveSlide(1), 3000);
+            });
+        }
+    </script>
+
+    <style>
+        #poster-slider {
+            width: 100%;
+            max-width: 800px;
+            height: 300px;
+            overflow: hidden;
+            position: relative;
+            margin: auto;
+        }
+        #poster-slider img {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            object-fit: cover;
+            transition: transform 0.5s ease, opacity 0.5s ease;
+        }
+        #poster-slider .prev,
+        #poster-slider .next {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+            font-size: 18px;
+            z-index: 10;
+        }
+        #poster-slider .prev {
+            left: 10px;
+        }
+        #poster-slider .next {
+            right: 10px;
+        }
+        #poster-slider .prev:hover,
+        #poster-slider .next:hover {
+            background: rgba(0, 0, 0, 0.8);
+        }
+    </style>
+</div>

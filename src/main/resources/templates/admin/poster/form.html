@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/admin :: layout(~{::content})}">
+<body>
+<div th:fragment="content">
+    <h2 class="mb-4">🖼️ Thêm/Sửa Poster</h2>
+
+    <!-- Thông báo -->
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- Form Thêm/Sửa -->
+    <div class="card">
+        <div class="card-body">
+            <form th:action="@{/admin/poster/save}" th:object="${poster}" method="post" class="row g-3">
+                <input type="hidden" th:field="*{id}" />
+
+                <div class="col-md-6">
+                    <label for="ten" class="form-label">Tên Poster</label>
+                    <input type="text" th:field="*{ten}" class="form-control" id="ten" placeholder="Nhập tên poster..." required/>
+                </div>
+
+                <div class="col-md-6">
+                    <label for="url" class="form-label">URL Ảnh</label>
+                    <input type="text" th:field="*{url}" class="form-control" id="url" placeholder="Nhập URL ảnh..." required/>
+                </div>
+
+                <div class="col-12">
+                    <label for="linkChuyenHuong" class="form-label">Link chuyển hướng</label>
+                    <input type="text" th:field="*{linkChuyenHuong}" class="form-control" id="linkChuyenHuong" placeholder="Nhập link..." required/>
+                </div>
+
+                <div class="col-12 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">💾 Lưu</button>
+                    <a th:href="@{/admin/poster}" class="btn btn-secondary">🔙 Quay lại</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/admin :: layout(~{::content})}">
+<body>
+<div th:fragment="content">
+    <h2 class="mb-4">🖼️ Quản lý Poster</h2>
+
+    <!-- Nút Thêm Poster -->
+    <a th:href="@{/admin/poster/add}" class="btn btn-primary mb-3">➕ Thêm Poster</a>
+
+    <!-- Thông báo -->
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- Bảng Poster -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ID</th>
+                            <th>Tên</th>
+                            <th>Ảnh</th>
+                            <th>Link chuyển hướng</th>
+                            <th>Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="p : ${posterList}">
+                            <td th:text="${p.id}"></td>
+                            <td th:text="${p.ten}"></td>
+                            <td>
+                                <img th:if="${p.url != null and p.url != ''}" th:src="${p.url}" 
+                                     alt="Poster Image" style="width:100px; height:60px; object-fit:cover; border-radius:5px;">
+                                <span th:unless="${p.url != null and p.url != ''}" class="text-muted">Không có ảnh</span>
+                            </td>
+                            <td>
+                                <a th:href="${p.linkChuyenHuong}" target="_blank" class="text-decoration-none">Xem Link</a>
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a th:href="@{/admin/poster/edit/{id}(id=${p.id})}" class="btn btn-sm btn-outline-warning" title="Sửa">✏️ Sửa</a>
+                                    <a th:href="@{/admin/poster/delete/{id}(id=${p.id})}" 
+                                       class="btn btn-sm btn-outline-danger" 
+                                       onclick="return confirm('Bạn có chắc muốn xóa poster này?');" title="Xóa">🗑️ Xóa</a>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

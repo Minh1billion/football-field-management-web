@@ -423,6 +423,11 @@ public class BookingService {
         dto.setCustomerId(booking.getCustomer().getId());
         dto.setCustomerName(booking.getCustomer().getFirstName() + " " + booking.getCustomer().getLastName());
         dto.setStatus(booking.getStatus().toString());
+        if (booking.getPayment() != null) {
+            dto.setPaymentStatus(booking.getPayment().getStatus().name());
+        } else {
+            dto.setPaymentStatus("PENDING");
+        }
         dto.setFieldId(booking.getField().getId());
         dto.setFieldName(booking.getField().getName());
         dto.setBookingTime(booking.getCreatedAt().toLocalDate());

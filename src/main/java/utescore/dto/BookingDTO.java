@@ -21,6 +21,7 @@ public class BookingDTO {
     private String notes;
     private BigDecimal totalAmount;
     private String status;
+    private String paymentStatus;
     private String paymentMethod;
     private List<RentalDTO> sportWears;
     private List<RentalDTO> services;

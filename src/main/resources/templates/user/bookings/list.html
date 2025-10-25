@@ -145,16 +145,22 @@
                                 </span>
                             </td>
                             <td class="text-center">
-                                <span th:if="${b.status == 'PENDING'}" class="badge bg-danger">
+                                <!-- Check payment status thực sự -->
+                                <span th:if="${b.paymentStatus == 'PENDING'}" class="badge bg-danger">
                                     <i class="bi bi-exclamation-circle"></i> Chưa thanh toán
                                 </span>
-                                <span th:if="${b.paymentMethod == 'CASH'}" class="badge bg-success">
+                                <span th:if="${b.paymentStatus == 'COMPLETED'}" class="badge bg-success">
+                                    <i class="bi bi-check-circle"></i> Đã thanh toán
+                                </span>
+                                <span th:if="${b.paymentStatus == 'FAILED'}" class="badge bg-warning">
+                                    <i class="bi bi-x-circle"></i> Thanh toán thất bại
+                                </span>
+
+                                <!-- Payment Method -->
+                                <span th:if="${b.paymentMethod == 'CASH'}" class="badge bg-secondary ms-1">
                                     <i class="bi bi-cash"></i> Tiền mặt
                                 </span>
-                                <span th:if="${b.paymentMethod == 'COD'}" class="badge bg-primary">
-                                    <i class="bi bi-truck"></i> COD
-                                </span>
-                                <span th:if="${b.paymentMethod == 'VNPAY'}" class="badge bg-info">
+                                <span th:if="${b.paymentMethod == 'VNPAY'}" class="badge bg-info ms-1">
                                     <i class="bi bi-wallet2"></i> VNPay
                                 </span>
                             </td>

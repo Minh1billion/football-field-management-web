@@ -24,7 +24,7 @@ public class MessageService {
     public void recall(Long id) {
         Message m = repo.findById(id).orElseThrow();
         m.setRecalled(true);
-        m.setContent("Tin nhắn đã được thu hồi");
+        m.setContent("@@@##");
         repo.save(m);
     }
 

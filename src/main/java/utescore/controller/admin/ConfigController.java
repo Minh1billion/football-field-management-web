@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.ui.Model;
 
+import utescore.config.InfoConfig;
 import utescore.entity.Log;
 import utescore.service.LogService;
 
@@ -18,11 +19,25 @@ import utescore.service.LogService;
 public class ConfigController {
     @Autowired
     private LogService logService;
-
+    @Autowired
+    private InfoConfig infoConfig;
+    
+    @PostMapping("/update-info")
+    public String updateInfo(@RequestParam("mail") String mail,
+                             @RequestParam("phone") String phone,
+                             RedirectAttributes redirectAttributes) {
+        infoConfig.setMail(mail);
+        infoConfig.setPhone(phone);
+        redirectAttributes.addFlashAttribute("message", "✅ Cập nhật thông tin thành công!");
+        return "redirect:/admin/system-config";
+    }
+    
+    
     @GetMapping
     public String getPage(Model model) {
         List<Log> list = logService.findByType("MAINTENANCE");
         model.addAttribute("list", list);
+        model.addAttribute("infoConfig", infoConfig);
         return "admin/config/config";
     }
 

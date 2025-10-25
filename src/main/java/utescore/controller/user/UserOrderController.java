@@ -1,6 +1,8 @@
 package utescore.controller.user;
 
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -9,6 +11,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import utescore.config.InfoConfig;
 import utescore.dto.PaymentDTO;
 import utescore.entity.Account;
 import utescore.entity.Customer;
@@ -30,7 +34,8 @@ public class UserOrderController {
     private final VnPayService vnPayService;
     private final CustomerService customerService; // Cần thêm service này
     private final AccountService accountService; // Hoặc service này
-
+    @Autowired
+    private InfoConfig infoConfig;
     /**
      * Lấy Customer từ Authentication
      */
@@ -180,7 +185,7 @@ public class UserOrderController {
                                   RedirectAttributes redirectAttributes) {
         try {
             System.out.println("========== VNPAY CALLBACK START ==========");
-
+            model.addAttribute("infoConfig", infoConfig);
             // Validate callback từ VNPAY
             int paymentStatus = vnPayService.orderReturn(request);
             System.out.println("Payment Status từ VNPAY: " + paymentStatus);

@@ -43,14 +43,16 @@
                         <span class="badge"
                               th:text="${b.status}"
                               th:classappend="${
-                                  b.status.name() == 'PENDING'    ? ' bg-warning text-dark' :
-                                  (b.status.name() == 'CONFIRMED' ? ' bg-success' :
-                                  (b.status.name() == 'CANCELLED' ? ' bg-danger' : ' bg-secondary'))
+                                  b.status.name() == 'PENDING'     ? ' bg-warning text-dark' :
+                                  (b.status.name() == 'CONFIRMED'  ? ' bg-success' :
+                                  (b.status.name() == 'CANCELLED'  ? ' bg-danger'  :
+                                  (b.status.name() == 'COMPLETED'  ? ' bg-info text-dark' : ' bg-secondary')))
                               }">
                         </span>
                     </td>
 
                     <td class="text-center">
+                        <!-- ✅ Xác nhận -->
                         <form th:if="${b.status.name() == 'PENDING'}"
                               th:action="@{|/manager/bookings/${b.id}/confirm|}"
                               method="post"
@@ -58,12 +60,34 @@
                             <button class="btn btn-sm btn-primary">✅ Xác nhận</button>
                         </form>
 
+                        <!-- ❌ Hủy -->
                         <form th:if="${b.status.name() == 'PENDING' or b.status.name() == 'CONFIRMED'}"
                               th:action="@{|/manager/bookings/${b.id}/cancel|}"
                               method="post"
                               class="d-inline"
                               onsubmit="return confirm('Bạn có chắc chắn muốn hủy đặt sân này không?');">
                             <button class="btn btn-sm btn-danger">❌ Hủy</button>
+                        </form>
+
+                        <!-- 🏁 Hoàn tất -->
+                        <form th:if="${
+                                    b.status.name() == 'CONFIRMED'
+                                    and (
+                                        (b.payment != null
+                                            and b.payment.status != null
+                                            and b.payment.status.name() == 'COMPLETED')
+                                        or (b.payment != null
+                                            and b.payment.paymentMethod != null
+                                            and (b.payment.paymentMethod.name() == 'CASH' or b.payment.paymentMethod.name() == 'COD')
+                                            and b.payment.status != null
+                                            and b.payment.status.name() == 'PENDING')
+                                    )
+                                 }"
+                              th:action="@{|/manager/bookings/${b.id}/complete|}"
+                              method="post"
+                              class="d-inline"
+                              onsubmit="return confirm('Xác nhận hoàn tất đặt sân này (đã thanh toán hoặc COD/CASH đã thu tiền)?');">
+                            <button class="btn btn-sm btn-success">🏁 Hoàn tất</button>
                         </form>
                     </td>
                 </tr>

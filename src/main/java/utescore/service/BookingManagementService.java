@@ -9,6 +9,7 @@ import utescore.repository.*;
 
 import java.math.BigDecimal;
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -24,6 +25,7 @@ public class BookingManagementService {
     private final BookingSportWearRepository bookingSportWearRepo;
     private final ServiceRepository serviceRepo;
     private final SportWearRepository sportWearRepo;
+    private final LoyaltyRepository loyaltyRepository;
 
     private boolean isAvailable(Long fieldId, java.time.LocalDateTime start, java.time.LocalDateTime end) {
         return !bookingRepo.existsOverlap(fieldId, start, end);
@@ -33,7 +35,6 @@ public class BookingManagementService {
         FootballField field = fieldRepo.findById(req.getFieldId()).orElseThrow(() -> new IllegalArgumentException("Field not found"));
         Customer customer = customerRepo.findById(req.getCustomerId()).orElseThrow(() -> new IllegalArgumentException("Customer not found"));
 
-        // Chặn đặt sân khi sân đang tạm ngừng
         if (Boolean.FALSE.equals(field.getIsActive())) {
             throw new IllegalStateException("Field is temporarily unavailable due to maintenance");
         }
@@ -55,7 +56,6 @@ public class BookingManagementService {
 
         Booking saved = bookingRepo.save(b);
 
-        // Dịch vụ kèm theo (mặc định quantity=1)
         if (req.getServiceIds() != null) {
             for (Long sid : req.getServiceIds()) {
                 utescore.entity.Service s = serviceRepo.findById(sid).orElse(null);
@@ -73,7 +73,6 @@ public class BookingManagementService {
             }
         }
 
-        // Thuê đồ (mặc định quantity=1, rentalDays=1)
         if (req.getSportWearIds() != null) {
             for (Long wid : req.getSportWearIds()) {
                 SportWear w = sportWearRepo.findById(wid).orElse(null);
@@ -114,5 +113,63 @@ public class BookingManagementService {
 
     public List<Booking> listAll() {
         return bookingRepo.findAll();
+    }
+
+    // NEW: Hoàn tất booking (dành cho COD hoặc trường hợp cần chốt tay)
+    public Booking complete(Long bookingId) {
+        Booking b = bookingRepo.findById(bookingId)
+                .orElseThrow(() -> new IllegalArgumentException("Booking not found"));
+
+        // Không cho hoàn tất nếu đã hủy
+        if (b.getStatus() == Booking.BookingStatus.CANCELLED) {
+            throw new IllegalStateException("Cannot complete a cancelled booking");
+        }
+
+        // Đánh dấu booking hoàn tất
+        b.setStatus(Booking.BookingStatus.COMPLETED);
+
+        // Nếu thanh toán là COD còn PENDING, khi bấm Hoàn tất coi như đã thu tiền
+        if (b.getPayment() != null
+                && b.getPayment().getPaymentMethod() == Payment.PaymentMethod.COD
+                && b.getPayment().getStatus() == Payment.PaymentStatus.PENDING) {
+            b.getPayment().setStatus(Payment.PaymentStatus.COMPLETED);
+            b.getPayment().setPaidAt(LocalDateTime.now());
+        }
+        updateLoyaltyPoints(b.getPayment());
+
+        return bookingRepo.save(b);
+    }
+
+    private Customer getCustomerFromPayment(Payment payment) {
+        if (payment.getBooking() != null && payment.getBooking().getCustomer() != null) {
+            return payment.getBooking().getCustomer();
+        } else if (payment.getRentalOrder() != null && payment.getRentalOrder().getCustomer() != null) {
+            return payment.getRentalOrder().getCustomer();
+        } else if (payment.getOrder() != null && payment.getOrder().getCustomer() != null) {
+            return payment.getOrder().getCustomer();
+        }
+        return null;
+    }
+
+    private void updateLoyaltyPoints(Payment payment) {
+        Customer customer = getCustomerFromPayment(payment);
+
+        if (customer != null) {
+            Loyalty loyalty = loyaltyRepository.findByCustomer_Id(customer.getId())
+                    .orElseGet(() -> {
+                        // Tạo mới nếu chưa có
+                        Loyalty newLoyalty = new Loyalty();
+                        newLoyalty.setCustomer(customer);
+                        return loyaltyRepository.save(newLoyalty);
+                    });
+
+            int pointsToAdd = payment.getAmount().divide(BigDecimal.valueOf(1000)).intValue();
+
+            loyalty.addPoints(pointsToAdd);
+            loyalty.setTotalSpent(loyalty.getTotalSpent().add(payment.getAmount()));
+            loyalty.setTotalBookings(loyalty.getTotalBookings() + 1);
+
+            loyaltyRepository.save(loyalty);
+        }
     }
 }

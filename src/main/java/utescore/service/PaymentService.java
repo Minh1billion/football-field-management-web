@@ -6,6 +6,11 @@ import org.springframework.transaction.annotation.Transactional;
 import utescore.dto.PaymentDTO;
 import utescore.entity.*;
 import utescore.repository.LoyaltyRepository;
+import utescore.entity.Booking;
+import utescore.entity.Order;
+import utescore.entity.Payment;
+import utescore.entity.RentalOrder;
+import utescore.repository.BookingRepository;
 import utescore.repository.OrderRepository;
 import utescore.repository.PaymentRepository;
 import utescore.repository.RentalOrderRepository;
@@ -23,6 +28,7 @@ public class PaymentService {
 	private final RentalOrderRepository rentalOrderRepository;
 	private final OrderRepository orderRepository;
 	private final LoyaltyRepository loyaltyRepository;
+    private final BookingRepository bookingRepository;
 
 	public List<PaymentDTO> getAllPayments() {
 		return paymentRepository.findAll().stream().map(this::convertToDTO).toList();
@@ -59,8 +65,9 @@ public class PaymentService {
 		Payment savedPayment = paymentRepository.save(payment);
 
 		updateLoyaltyPoints(payment);
+        markBookingCompletedIfAny(savedPayment);
 
-		return savedPayment;
+        return savedPayment;
 	}
 
 
@@ -74,9 +81,13 @@ public class PaymentService {
 			payment.setPaidAt(LocalDateTime.now());
 		}
 
+		Payment saved = paymentRepository.save(payment);
 		updateLoyaltyPoints(payment);
 
-		return paymentRepository.save(payment);
+        if (status == Payment.PaymentStatus.COMPLETED) {
+            markBookingCompletedIfAny(saved);
+        }
+        return saved;
 	}
 
 	public Payment updatePaymentByRentalOrderId(Long rentalOrderId, String transactionId) {
@@ -90,7 +101,6 @@ public class PaymentService {
 
 		updateLoyaltyPoints(payment);
 
-		// Cập nhật trạng thái payment
 		payment.setStatus(Payment.PaymentStatus.COMPLETED);
 		payment.setTransactionId(transactionId);
 		payment.setPaidAt(LocalDateTime.now());
@@ -132,9 +142,14 @@ public class PaymentService {
 			payment.setPaidAt(LocalDateTime.now());
 		}
 
+		Payment saved = paymentRepository.save(payment);
 		updateLoyaltyPoints(payment);
 
-		return paymentRepository.save(payment);
+        if (status == Payment.PaymentStatus.COMPLETED) {
+            markBookingCompletedIfAny(saved);
+        }
+
+        return saved;
 	}
 
 	public Payment findById(Long id) {
@@ -158,7 +173,6 @@ public class PaymentService {
 		dto.setCreatedAt(payment.getCreatedAt());
 		dto.setPaidAt(payment.getPaidAt());
 
-		// Set các ID
 		if (payment.getOrder() != null) {
 			dto.setOrderId(payment.getOrder().getId());
 		}
@@ -169,18 +183,14 @@ public class PaymentService {
 
 		if (payment.getBooking() != null) {
 			dto.setBookingId(payment.getBooking().getId());
-
-			// Chỉ set customer info nếu booking có customer
 			if (payment.getBooking().getCustomer() != null) {
 				dto.setCustomerId(payment.getBooking().getCustomer().getId());
 				dto.setCustomerName(payment.getBooking().getCustomer().getFullName());
 			}
 		} else if (payment.getRentalOrder() != null && payment.getRentalOrder().getCustomer() != null) {
-			// Nếu là RentalOrder, lấy customer từ RentalOrder
 			dto.setCustomerId(payment.getRentalOrder().getCustomer().getId());
 			dto.setCustomerName(payment.getRentalOrder().getCustomer().getFullName());
 		} else if (payment.getOrder() != null && payment.getOrder().getCustomer() != null) {
-			// Nếu là Order, lấy customer từ Order
 			dto.setCustomerId(payment.getOrder().getCustomer().getId());
 			dto.setCustomerName(payment.getOrder().getCustomer().getFullName());
 		}
@@ -200,8 +210,6 @@ public class PaymentService {
 						return loyaltyRepository.save(newLoyalty);
 					});
 
-			// Tính điểm dựa trên số tiền thanh toán
-			// Ví dụ: 1000 VND = 1 điểm
 			int pointsToAdd = payment.getAmount().divide(BigDecimal.valueOf(1000)).intValue();
 
 			loyalty.addPoints(pointsToAdd);
@@ -224,4 +232,18 @@ public class PaymentService {
 		return null;
 	}
 
+    // Helper auto-complete Booking
+    private void markBookingCompletedIfAny(Payment payment) {
+        if (payment.getBooking() == null) return;
+
+        Booking booking = payment.getBooking();
+        try {
+            // Luôn chuyển sang COMPLETED khi thanh toán thành công
+            booking.setStatus(Booking.BookingStatus.COMPLETED);
+            bookingRepository.save(booking);
+        } catch (Exception e) {
+            // Có thể log nếu cần
+            throw new RuntimeException("Không thể cập nhật trạng thái booking sau thanh toán: " + e.getMessage(), e);
+        }
+    }
 }

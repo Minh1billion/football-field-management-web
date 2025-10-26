@@ -17,6 +17,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -123,11 +124,16 @@ public class RentalService {
     public Long createRentalOrder(CartDTO cartDTO, String username, String customerName,
                                   String customerPhone, String customerAddress, String notes,
                                   String paymentMethod) {
+        // Validate cart
+        if (cartDTO == null || cartDTO.getItems() == null || cartDTO.getItems().isEmpty()) {
+            throw new RuntimeException("Giỏ hàng trống");
+        }
+
         // Lấy thông tin account
         Account account = accountRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản"));
 
-        // ⭐ LẤY CUSTOMER TỪ ACCOUNT
+        // Lấy customer từ account
         Customer customer = account.getCustomer();
         if (customer == null) {
             throw new RuntimeException("Không tìm thấy thông tin khách hàng");
@@ -136,27 +142,57 @@ public class RentalService {
         // Tạo đơn hàng thuê (RentalOrder)
         RentalOrder rentalOrder = new RentalOrder();
         rentalOrder.setAccount(account);
-        rentalOrder.setCustomer(customer);  // ⭐ SET CUSTOMER
-        rentalOrder.setCustomerName(customerName);
-        rentalOrder.setCustomerPhone(customerPhone);
+        rentalOrder.setCustomer(customer);
+        rentalOrder.setCustomerName(customerName != null && !customerName.isBlank()
+                ? customerName
+                : customer.getFullName());
+        rentalOrder.setCustomerPhone(customerPhone != null && !customerPhone.isBlank()
+                ? customerPhone
+                : customer.getPhoneNumber());
         rentalOrder.setCustomerAddress(customerAddress);
         rentalOrder.setOrderDate(LocalDateTime.now());
+
+        // Validate và tính tổng tiền
+        BigDecimal totalAmount = BigDecimal.ZERO;
+        for (var cartItem : cartDTO.getItems()) {
+            SportWear sportWear = sportWearRepository.findById(cartItem.getSportWearId())
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm ID: " + cartItem.getSportWearId()));
+
+            // Kiểm tra tồn kho
+            if (cartItem.getQuantity() > sportWear.getStockQuantity()) {
+                throw new RuntimeException("Sản phẩm " + sportWear.getName() +
+                        " không đủ số lượng trong kho (Còn: " + sportWear.getStockQuantity() + ")");
+            }
+
+            // Kiểm tra còn cho thuê không
+            if (!sportWear.getIsAvailableForRent()) {
+                throw new RuntimeException("Sản phẩm " + sportWear.getName() + " hiện không cho thuê");
+            }
+
+            // Tính tổng tiền
+            BigDecimal itemTotal = sportWear.getRentalPricePerDay()
+                    .multiply(BigDecimal.valueOf(cartItem.getQuantity()))
+                    .multiply(BigDecimal.valueOf(cartItem.getRentalDays()));
+            totalAmount = totalAmount.add(itemTotal);
+        }
 
         // Tạo Payment
         Payment payment = new Payment();
         payment.setNotes(notes);
-        payment.setAmount(cartDTO.getTotalPrice());
-        payment.setPaymentMethod("COD".equals(paymentMethod) ? Payment.PaymentMethod.COD : Payment.PaymentMethod.VNPAY);
+        payment.setAmount(totalAmount);
 
-        // Set trạng thái payment dựa vào phương thức thanh toán
+        // Set payment method
         if ("COD".equals(paymentMethod)) {
+            payment.setPaymentMethod(Payment.PaymentMethod.COD);
             payment.setStatus(Payment.PaymentStatus.PENDING);
-            payment.setPaymentCode("COD-" + LocalDateTime.now().toString().replace(":", "").replace(".", "").substring(0, 20));
+            payment.setPaymentCode("COD-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
         } else if ("VNPAY".equals(paymentMethod)) {
-            // VNPAY sẽ được cập nhật sau khi callback thành công
+            payment.setPaymentMethod(Payment.PaymentMethod.VNPAY);
             payment.setStatus(Payment.PaymentStatus.COMPLETED);
-            payment.setPaymentCode("VNPAY-" + LocalDateTime.now().toString().replace(":", "").replace(".", "").substring(0, 20));
+            payment.setPaymentCode("VNPAY-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
             payment.setPaidAt(LocalDateTime.now());
+        } else {
+            throw new RuntimeException("Phương thức thanh toán không hợp lệ: " + paymentMethod);
         }
 
         payment.setCreatedAt(LocalDateTime.now());
@@ -173,19 +209,18 @@ public class RentalService {
             SportWear sportWear = sportWearRepository.findById(cartItem.getSportWearId())
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm ID: " + cartItem.getSportWearId()));
 
-            // Kiểm tra tồn kho
-            if (cartItem.getQuantity() > sportWear.getStockQuantity()) {
-                throw new RuntimeException("Sản phẩm " + sportWear.getName() +
-                        " không đủ số lượng trong kho");
-            }
-
             RentalOrderDetail detail = new RentalOrderDetail();
             detail.setRentalOrder(rentalOrder);
             detail.setSportWear(sportWear);
             detail.setQuantity(cartItem.getQuantity());
             detail.setRentalDays(cartItem.getRentalDays());
-            detail.setRentalPricePerDay(cartItem.getRentalPricePerDay().doubleValue());
-            detail.setSubTotal(cartItem.getRentalPricePerDay().doubleValue() * cartItem.getRentalDays() * cartItem.getQuantity());
+            detail.setRentalPricePerDay(sportWear.getRentalPricePerDay().doubleValue());
+
+            // ✅ Tính subtotal đúng: giá × số lượng × số ngày
+            double subtotal = sportWear.getRentalPricePerDay().doubleValue()
+                    * cartItem.getQuantity()
+                    * cartItem.getRentalDays();
+            detail.setSubTotal(subtotal);
 
             rentalOrderDetailRepository.save(detail);
 
@@ -197,46 +232,139 @@ public class RentalService {
         return rentalOrder.getId();
     }
 
+    @Transactional
     public void addSportWearToBooking(long bookingId, List<RentalDTO> rentals) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new RuntimeException("Booking không tồn tại"));
 
+        // Kiểm tra trạng thái booking
+        if (booking.getStatus() != Booking.BookingStatus.PENDING) {
+            throw new RuntimeException("Chỉ có thể thêm đồ thuê khi booking đang ở trạng thái PENDING");
+        }
+
+        BigDecimal additionalAmount = BigDecimal.ZERO;
+
         for (RentalDTO rental : rentals) {
             SportWear wear = sportWearService.findById(rental.getSportWearId());
-            if (wear == null) continue;
+            if (wear == null) {
+                throw new RuntimeException("Không tìm thấy sản phẩm ID: " + rental.getSportWearId());
+            }
 
+            // Kiểm tra tồn kho
+            if (rental.getQuantity() > wear.getStockQuantity()) {
+                throw new RuntimeException("Sản phẩm " + wear.getName() +
+                        " không đủ số lượng (Còn: " + wear.getStockQuantity() + ")");
+            }
+
+            // Kiểm tra còn cho thuê không
+            if (!wear.getIsAvailableForRent()) {
+                throw new RuntimeException("Sản phẩm " + wear.getName() + " hiện không cho thuê");
+            }
+
+            // Kiểm tra xem đã có trong booking chưa
+            boolean alreadyExists = booking.getBookingSportWears().stream()
+                    .anyMatch(bsw -> bsw.getSportWear().getId().equals(rental.getSportWearId()));
+
+            if (alreadyExists) {
+                throw new RuntimeException("Sản phẩm " + wear.getName() + " đã có trong booking");
+            }
+
+            // Lấy số ngày thuê (mặc định 1 nếu không có)
+            int rentalDays = rental.getRentalDays() != null && rental.getRentalDays() > 0
+                    ? rental.getRentalDays()
+                    : 1;
+
+            // Tạo BookingSportWear
             BookingSportWear bsw = new BookingSportWear();
             bsw.setBooking(booking);
             bsw.setSportWear(wear);
             bsw.setQuantity(rental.getQuantity());
-            bsw.setRentalDays(1);
+            bsw.setRentalDays(rentalDays);
             bsw.setUnitPrice(wear.getRentalPricePerDay());
-            bsw.setTotalPrice(wear.getRentalPricePerDay());
+
+            // ✅ FIX: Tính đúng công thức = giá × số lượng × số ngày
+            BigDecimal totalPrice = wear.getRentalPricePerDay()
+                    .multiply(BigDecimal.valueOf(rental.getQuantity()))
+                    .multiply(BigDecimal.valueOf(rentalDays));
+            bsw.setTotalPrice(totalPrice);
+            bsw.setStatus(BookingSportWear.RentalStatus.RENTED);
 
             booking.getBookingSportWears().add(bsw);
-            booking.setTotalAmount(booking.getTotalAmount().add(bsw.getTotalPrice()));
+            additionalAmount = additionalAmount.add(totalPrice);
+
+            // Trừ số lượng trong kho
+            wear.setStockQuantity(wear.getStockQuantity() - rental.getQuantity());
+            sportWearRepository.save(wear);
         }
 
+        // Cập nhật tổng tiền booking
+        booking.setTotalAmount(booking.getTotalAmount().add(additionalAmount));
+
+        // Cập nhật payment amount nếu có
+        if (booking.getPayment() != null) {
+            booking.getPayment().setAmount(booking.getTotalAmount());
+        }
 
         bookingRepository.save(booking);
     }
 
+    @Transactional
     public void addServiceToBooking(long bookingId, List<RentalDTO> rentals) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new RuntimeException("Booking không tồn tại"));
 
+        // Kiểm tra trạng thái booking
+        if (booking.getStatus() != Booking.BookingStatus.PENDING) {
+            throw new RuntimeException("Chỉ có thể thêm dịch vụ khi booking đang ở trạng thái PENDING");
+        }
+
+        BigDecimal additionalAmount = BigDecimal.ZERO;
+
         for (RentalDTO rental : rentals) {
             utescore.entity.Service serv = serviceService.findById(rental.getServiceId());
-            if (serv == null) continue;
+            if (serv == null) {
+                throw new RuntimeException("Không tìm thấy dịch vụ ID: " + rental.getServiceId());
+            }
+
+            // Kiểm tra service có available không
+            if (!serv.getIsAvailable()) {
+                throw new RuntimeException("Dịch vụ " + serv.getName() + " hiện không khả dụng");
+            }
+
+            // Kiểm tra xem đã có trong booking chưa
+            boolean alreadyExists = booking.getBookingServices().stream()
+                    .anyMatch(bs -> bs.getService().getId().equals(rental.getServiceId()));
+
+            if (alreadyExists) {
+                throw new RuntimeException("Dịch vụ " + serv.getName() + " đã có trong booking");
+            }
+
+            // Lấy số lượng (mặc định 1)
+            int quantity = rental.getQuantity() != null && rental.getQuantity() > 0
+                    ? rental.getQuantity()
+                    : 1;
 
             BookingService bs = new BookingService();
             bs.setBooking(booking);
             bs.setService(serv);
-            bs.setQuantity(1);
+            bs.setQuantity(quantity);
             bs.setUnitPrice(serv.getPrice());
-            bs.setTotalPrice(serv.getPrice());
+
+            // ✅ Tính đúng: giá × số lượng
+            BigDecimal totalPrice = serv.getPrice()
+                    .multiply(BigDecimal.valueOf(quantity));
+            bs.setTotalPrice(totalPrice);
 
             booking.getBookingServices().add(bs);
+            additionalAmount = additionalAmount.add(totalPrice);
+        }
+
+        // Cập nhật tổng tiền booking
+        booking.setTotalAmount(booking.getTotalAmount().add(additionalAmount));
+
+        // Cập nhật payment amount nếu có
+        if (booking.getPayment() != null) {
+            booking.getPayment().setAmount(booking.getTotalAmount());
         }
 
         bookingRepository.save(booking);

@@ -9,8 +9,8 @@ public class RentalDTO {
     private Long sportWearId;
     private String name;
     private BigDecimal rentalPricePerDay;
-    private int quantity;
-    private int rentalDays;
+    private Integer quantity;
+    private Integer rentalDays;
     private BigDecimal totalPrice;
     private String status;
 }

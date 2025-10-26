@@ -10,7 +10,7 @@ import utescore.repository.PosterRepository;
 import java.util.List;
 
 @Component
-public class MokingPoster implements CommandLineRunner {
+public class MockingPoster implements CommandLineRunner {
 
     @Autowired
     private PosterRepository posterRepository;

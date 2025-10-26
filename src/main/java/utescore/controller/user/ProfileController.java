@@ -251,7 +251,6 @@ public class ProfileController {
         return "redirect:/user/profile/friends/manage";
     }
 
-    // ADDED: Missing endpoint for "Add Friend" button in view-profile.html
     @PostMapping("/friends/add")
     public String addFriend(@RequestParam String friendUsername,
                             @RequestParam(required = false) String returnUrl,

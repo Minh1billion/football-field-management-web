@@ -9,6 +9,7 @@ import utescore.repository.*;
 
 import java.math.BigDecimal;
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -33,7 +34,6 @@ public class BookingManagementService {
         FootballField field = fieldRepo.findById(req.getFieldId()).orElseThrow(() -> new IllegalArgumentException("Field not found"));
         Customer customer = customerRepo.findById(req.getCustomerId()).orElseThrow(() -> new IllegalArgumentException("Customer not found"));
 
-        // Chặn đặt sân khi sân đang tạm ngừng
         if (Boolean.FALSE.equals(field.getIsActive())) {
             throw new IllegalStateException("Field is temporarily unavailable due to maintenance");
         }
@@ -55,7 +55,6 @@ public class BookingManagementService {
 
         Booking saved = bookingRepo.save(b);
 
-        // Dịch vụ kèm theo (mặc định quantity=1)
         if (req.getServiceIds() != null) {
             for (Long sid : req.getServiceIds()) {
                 utescore.entity.Service s = serviceRepo.findById(sid).orElse(null);
@@ -73,7 +72,6 @@ public class BookingManagementService {
             }
         }
 
-        // Thuê đồ (mặc định quantity=1, rentalDays=1)
         if (req.getSportWearIds() != null) {
             for (Long wid : req.getSportWearIds()) {
                 SportWear w = sportWearRepo.findById(wid).orElse(null);
@@ -114,5 +112,29 @@ public class BookingManagementService {
 
     public List<Booking> listAll() {
         return bookingRepo.findAll();
+    }
+
+    // NEW: Hoàn tất booking (dành cho COD hoặc trường hợp cần chốt tay)
+    public Booking complete(Long bookingId) {
+        Booking b = bookingRepo.findById(bookingId)
+                .orElseThrow(() -> new IllegalArgumentException("Booking not found"));
+
+        // Không cho hoàn tất nếu đã hủy
+        if (b.getStatus() == Booking.BookingStatus.CANCELLED) {
+            throw new IllegalStateException("Cannot complete a cancelled booking");
+        }
+
+        // Đánh dấu booking hoàn tất
+        b.setStatus(Booking.BookingStatus.COMPLETED);
+
+        // Nếu thanh toán là COD còn PENDING, khi bấm Hoàn tất coi như đã thu tiền
+        if (b.getPayment() != null
+                && b.getPayment().getPaymentMethod() == Payment.PaymentMethod.COD
+                && b.getPayment().getStatus() == Payment.PaymentStatus.PENDING) {
+            b.getPayment().setStatus(Payment.PaymentStatus.COMPLETED);
+            b.getPayment().setPaidAt(LocalDateTime.now());
+        }
+
+        return bookingRepo.save(b);
     }
 }

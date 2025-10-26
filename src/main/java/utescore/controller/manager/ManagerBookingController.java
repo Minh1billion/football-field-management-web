@@ -77,4 +77,11 @@ public class ManagerBookingController {
         bookingService.cancel(id);
         return "redirect:/manager/bookings";
     }
+
+    // NEW: Nút Hoàn tất cho trường hợp COD (và các trường hợp cần chốt thủ công)
+    @PostMapping("/{id}/complete")
+    public String complete(@PathVariable Long id) {
+        bookingService.complete(id);
+        return "redirect:/manager/bookings";
+    }
 }

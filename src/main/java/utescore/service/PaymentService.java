@@ -4,9 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import utescore.dto.PaymentDTO;
-import utescore.entity.Order;
-import utescore.entity.Payment;
-import utescore.entity.RentalOrder;
+import utescore.entity.*;
+import utescore.repository.LoyaltyRepository;
 import utescore.repository.OrderRepository;
 import utescore.repository.PaymentRepository;
 import utescore.repository.RentalOrderRepository;
@@ -23,6 +22,7 @@ public class PaymentService {
 	private final PaymentRepository paymentRepository;
 	private final RentalOrderRepository rentalOrderRepository;
 	private final OrderRepository orderRepository;
+	private final LoyaltyRepository loyaltyRepository;
 
 	public List<PaymentDTO> getAllPayments() {
 		return paymentRepository.findAll().stream().map(this::convertToDTO).toList();
@@ -56,8 +56,13 @@ public class PaymentService {
 		payment.setTransactionId(transactionId);
 		payment.setPaidAt(LocalDateTime.now());
 
-		return paymentRepository.save(payment);
+		Payment savedPayment = paymentRepository.save(payment);
+
+		updateLoyaltyPoints(payment);
+
+		return savedPayment;
 	}
+
 
 	public Payment updatePaymentStatus(Long paymentId, Payment.PaymentStatus status) {
 		Payment payment = paymentRepository.findById(paymentId)
@@ -68,6 +73,8 @@ public class PaymentService {
 		if (status == Payment.PaymentStatus.COMPLETED && payment.getPaidAt() == null) {
 			payment.setPaidAt(LocalDateTime.now());
 		}
+
+		updateLoyaltyPoints(payment);
 
 		return paymentRepository.save(payment);
 	}
@@ -80,6 +87,8 @@ public class PaymentService {
 		if (payment == null) {
 			throw new RuntimeException("Payment not found for RentalOrder ID: " + rentalOrderId);
 		}
+
+		updateLoyaltyPoints(payment);
 
 		// Cập nhật trạng thái payment
 		payment.setStatus(Payment.PaymentStatus.COMPLETED);
@@ -99,6 +108,9 @@ public class PaymentService {
 			payment.setPaymentCode(transactionId);
 			payment.setStatus(Payment.PaymentStatus.COMPLETED);
 			payment.setPaidAt(LocalDateTime.now());
+
+			updateLoyaltyPoints(payment);
+
 			paymentRepository.save(payment);
 		}
 	}
@@ -119,6 +131,8 @@ public class PaymentService {
 		if (status == Payment.PaymentStatus.COMPLETED && payment.getPaidAt() == null) {
 			payment.setPaidAt(LocalDateTime.now());
 		}
+
+		updateLoyaltyPoints(payment);
 
 		return paymentRepository.save(payment);
 	}
@@ -173,4 +187,41 @@ public class PaymentService {
 
 		return dto;
 	}
+	// Phương thức private để cập nhật điểm thưởng
+	private void updateLoyaltyPoints(Payment payment) {
+		Customer customer = getCustomerFromPayment(payment);
+
+		if (customer != null) {
+			Loyalty loyalty = loyaltyRepository.findByCustomer_Id(customer.getId())
+					.orElseGet(() -> {
+						// Tạo mới nếu chưa có
+						Loyalty newLoyalty = new Loyalty();
+						newLoyalty.setCustomer(customer);
+						return loyaltyRepository.save(newLoyalty);
+					});
+
+			// Tính điểm dựa trên số tiền thanh toán
+			// Ví dụ: 1000 VND = 1 điểm
+			int pointsToAdd = payment.getAmount().divide(BigDecimal.valueOf(1000)).intValue();
+
+			loyalty.addPoints(pointsToAdd);
+			loyalty.setTotalSpent(loyalty.getTotalSpent().add(payment.getAmount()));
+			loyalty.setTotalBookings(loyalty.getTotalBookings() + 1);
+
+			loyaltyRepository.save(loyalty);
+		}
+	}
+
+	// Phương thức helper để lấy Customer từ Payment
+	private Customer getCustomerFromPayment(Payment payment) {
+		if (payment.getBooking() != null && payment.getBooking().getCustomer() != null) {
+			return payment.getBooking().getCustomer();
+		} else if (payment.getRentalOrder() != null && payment.getRentalOrder().getCustomer() != null) {
+			return payment.getRentalOrder().getCustomer();
+		} else if (payment.getOrder() != null && payment.getOrder().getCustomer() != null) {
+			return payment.getOrder().getCustomer();
+		}
+		return null;
+	}
+
 }

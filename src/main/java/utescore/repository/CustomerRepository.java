@@ -26,4 +26,6 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
 
     // Tìm id theo tên người dùng của tài khoản khách hàng
     Customer findByAccount_Username(String username);
+
+    Optional<Customer> findByAccount_Id(Long accountId);
 }

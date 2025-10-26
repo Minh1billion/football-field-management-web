@@ -5,6 +5,8 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.beans.factory.annotation.Autowired;
 import utescore.dto.RegisterRequest;
+import utescore.repository.AccountRepository;
+import utescore.repository.CustomerRepository;
 import utescore.service.AccountService;
 
 @Component

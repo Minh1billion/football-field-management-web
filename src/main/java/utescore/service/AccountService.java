@@ -12,6 +12,7 @@ import utescore.entity.Customer;
 import utescore.entity.Loyalty;
 import utescore.repository.AccountRepository;
 import utescore.repository.CustomerRepository;
+import utescore.repository.LoyaltyRepository;
 
 import org.springframework.security.core.context.SecurityContextHolder;
 
@@ -37,6 +38,7 @@ public class AccountService {
 
     private final AccountRepository accountRepository;
     private final CustomerRepository customerRepository;
+    private final LoyaltyRepository loyaltyRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Autowired
@@ -44,9 +46,11 @@ public class AccountService {
 
     public AccountService(AccountRepository accountRepository,
                           CustomerRepository customerRepository,
+                          LoyaltyRepository loyaltyRepository,
                           PasswordEncoder passwordEncoder) {
         this.accountRepository = accountRepository;
         this.customerRepository = customerRepository;
+        this.loyaltyRepository = loyaltyRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -68,16 +72,8 @@ public class AccountService {
         Account account = buildAccount(registerRequest, Account.Role.USER);
         Account savedAccount = accountRepository.save(account);
 
-        // Create customer profile with loyalty
-        Customer customer = buildCustomer(registerRequest, savedAccount);
-        Loyalty loyalty = buildLoyalty();
-
-        // Set bidirectional relationship (IMPORTANT: set both sides)
-        loyalty.setCustomer(customer);
-        customer.setLoyalty(loyalty);
-
-        // Save customer (cascade will save loyalty)
-        customerRepository.save(customer);
+        // Create customer profile with loyalty (only if not exists)
+        createCustomerAndLoyaltyIfNotExists(savedAccount, registerRequest);
 
         logService.logAction(
                 "New user registered: " + savedAccount.getUsername(),
@@ -106,16 +102,9 @@ public class AccountService {
         Account account = buildAccount(registerRequest, roleEnum);
         Account savedAccount = accountRepository.save(account);
 
-        // If USER role, create Customer + Loyalty
+        // If USER role, create Customer + Loyalty (only if not exists)
         if (Account.Role.USER.equals(roleEnum)) {
-            Customer customer = buildCustomer(registerRequest, savedAccount);
-            Loyalty loyalty = buildLoyalty();
-
-            // Set bidirectional relationship
-            loyalty.setCustomer(customer);
-            customer.setLoyalty(loyalty);
-
-            customerRepository.save(customer);
+            createCustomerAndLoyaltyIfNotExists(savedAccount, registerRequest);
         }
 
         // Log action
@@ -131,6 +120,32 @@ public class AccountService {
         );
 
         return savedAccount;
+    }
+    
+    private void createCustomerAndLoyaltyIfNotExists(Account account, RegisterRequest request) {
+        // Check if customer already exists for this account
+        Optional<Customer> existingCustomer = customerRepository.findByAccount_Id(account.getId());
+
+        if (existingCustomer.isPresent()) {
+            System.out.println("⚠️ Customer already exists for account: " + account.getUsername());
+            return;
+        }
+
+        // Create new customer
+        Customer customer = buildCustomer(request, account);
+        Customer savedCustomer = customerRepository.save(customer);
+
+        // Check if loyalty already exists
+        Optional<Loyalty> existingLoyalty = loyaltyRepository.findByCustomer_Id(savedCustomer.getId());
+
+        if (existingLoyalty.isEmpty()) {
+            // Create new loyalty
+            Loyalty loyalty = buildLoyalty();
+            loyalty.setCustomer(savedCustomer);
+            loyaltyRepository.save(loyalty);
+        }
+
+        System.out.println("✅ Created Customer and Loyalty for: " + account.getUsername());
     }
 
     // Validation methods

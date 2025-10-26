@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/user :: layout(~{::content})}">
+<head>
+  <meta charset="UTF-8">
+  <title>Điểm Thưởng Của Tôi</title>
+  <style>
+    .tier-card {
+      border-radius: 15px;
+      padding: 30px;
+      margin-bottom: 30px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+    .tier-card.bronze {
+      background: linear-gradient(135deg, #CD7F32 0%, #8B4513 100%);
+    }
+    .tier-card.silver {
+      background: linear-gradient(135deg, #C0C0C0 0%, #808080 100%);
+    }
+    .tier-card.gold {
+      background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+    }
+    .tier-card.platinum {
+      background: linear-gradient(135deg, #E5E4E2 0%, #4A4A4A 100%);
+    }
+    .points-display {
+      font-size: 3.5rem;
+      font-weight: bold;
+      margin: 20px 0;
+    }
+    .tier-badge {
+      display: inline-block;
+      padding: 10px 25px;
+      background: rgba(255,255,255,0.3);
+      border-radius: 50px;
+      font-weight: bold;
+      font-size: 1.1rem;
+      margin-bottom: 10px;
+    }
+    .benefit-card {
+      border: none;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      transition: transform 0.3s ease;
+      margin-bottom: 20px;
+    }
+    .benefit-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+    }
+    .benefit-icon {
+      font-size: 2.5rem;
+      margin-bottom: 15px;
+    }
+    .tier-progress {
+      background: rgba(255,255,255,0.3);
+      height: 25px;
+      border-radius: 15px;
+      overflow: hidden;
+      margin-top: 15px;
+    }
+    .tier-progress-bar {
+      background: white;
+      height: 100%;
+      border-radius: 15px;
+      transition: width 0.5s ease;
+    }
+    .tier-milestone {
+      border-left: 3px solid #667eea;
+      padding-left: 20px;
+      margin-bottom: 20px;
+      position: relative;
+    }
+    .tier-milestone:before {
+      content: '';
+      position: absolute;
+      left: -8px;
+      top: 5px;
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      background: #667eea;
+    }
+    .tier-milestone.active:before {
+      background: #28a745;
+    }
+    .section-title {
+      font-size: 1.8rem;
+      font-weight: bold;
+      margin-bottom: 25px;
+      color: #333;
+      border-bottom: 3px solid #667eea;
+      padding-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+<content>
+  <div class="container py-5">
+    <!-- Card Điểm Thưởng Chính -->
+    <div th:class="'tier-card ' + ${#strings.toLowerCase(loyalty.level)}">
+      <div class="row align-items-center">
+        <div class="col-md-8">
+          <span class="tier-badge" th:text="${loyalty.level} + ' MEMBER'">BRONZE MEMBER</span>
+          <h1 class="mb-2">Điểm Thưởng Của Bạn</h1>
+          <div class="points-display">
+            <span th:text="${loyalty.points}">0</span>
+            <span style="font-size: 1.5rem;">điểm</span>
+          </div>
+
+          <!-- Thanh tiến trình lên hạng -->
+          <div th:if="${loyalty.level == 'BRONZE'}">
+            <p class="mb-2">Tích thêm <strong th:text="${2000 - loyalty.points}">2000</strong> điểm để lên hạng SILVER</p>
+            <div class="tier-progress">
+              <div class="tier-progress-bar"
+                   th:style="'width: ' + ${loyalty.points * 100 / 2000} + '%'"></div>
+            </div>
+          </div>
+          <div th:if="${loyalty.level == 'SILVER'}">
+            <p class="mb-2">Tích thêm <strong th:text="${5000 - loyalty.points}">3000</strong> điểm để lên hạng GOLD</p>
+            <div class="tier-progress">
+              <div class="tier-progress-bar"
+                   th:style="'width: ' + ${(loyalty.points - 2000) * 100 / 3000} + '%'"></div>
+            </div>
+          </div>
+          <div th:if="${loyalty.level == 'GOLD'}">
+            <p class="mb-2">Tích thêm <strong th:text="${10000 - loyalty.points}">5000</strong> điểm để lên hạng PLATINUM</p>
+            <div class="tier-progress">
+              <div class="tier-progress-bar"
+                   th:style="'width: ' + ${(loyalty.points - 5000) * 100 / 5000} + '%'"></div>
+            </div>
+          </div>
+          <div th:if="${loyalty.level == 'PLATINUM'}">
+            <p class="mb-2">🎉 Chúc mừng! Bạn đã đạt hạng cao nhất</p>
+          </div>
+        </div>
+        <div class="col-md-4 text-center">
+          <div th:if="${loyalty.level == 'BRONZE'}" style="font-size: 8rem;">🥉</div>
+          <div th:if="${loyalty.level == 'SILVER'}" style="font-size: 8rem;">🥈</div>
+          <div th:if="${loyalty.level == 'GOLD'}" style="font-size: 8rem;">🥇</div>
+          <div th:if="${loyalty.level == 'PLATINUM'}" style="font-size: 8rem;">💎</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cách Tích Điểm -->
+    <div class="mb-5">
+      <h2 class="section-title">💰 Cách Tích Điểm</h2>
+      <div class="row">
+        <div class="col-md-4">
+          <div class="card benefit-card text-center">
+            <div class="card-body">
+              <div class="benefit-icon">🎾</div>
+              <h5 class="card-title">Đặt Sân</h5>
+              <p class="card-text">Nhận <strong>1 điểm</strong> cho mỗi <strong>1,000 VND</strong> chi tiêu</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card benefit-card text-center">
+            <div class="card-body">
+              <div class="benefit-icon">🛒</div>
+              <h5 class="card-title">Mua Sản Phẩm</h5>
+              <p class="card-text">Nhận <strong>1 điểm</strong> cho mỗi <strong>1,000 VND</strong> chi tiêu</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card benefit-card text-center">
+            <div class="card-body">
+              <div class="benefit-icon">📦</div>
+              <h5 class="card-title">Thuê Thiết Bị</h5>
+              <p class="card-text">Nhận <strong>1 điểm</strong> cho mỗi <strong>1,000 VND</strong> chi tiêu</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quyền Lợi Theo Hạng -->
+    <div class="mb-5">
+      <h2 class="section-title">🎁 Quyền Lợi Theo Hạng</h2>
+      <div class="row">
+        <div class="col-md-6 col-lg-3">
+          <div class="card benefit-card">
+            <div class="card-body text-center">
+              <h3 style="color: #CD7F32;">🥉 BRONZE</h3>
+              <p class="text-muted mb-3">0 - 1,999 điểm</p>
+              <ul class="list-unstyled text-start">
+                <li>✓ Tích điểm thưởng</li>
+                <li>✓ Ưu đãi sinh nhật</li>
+                <li>✓ Thông báo ưu đãi</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+          <div class="card benefit-card">
+            <div class="card-body text-center">
+              <h3 style="color: #C0C0C0;">🥈 SILVER</h3>
+              <p class="text-muted mb-3">2,000 - 4,999 điểm</p>
+              <ul class="list-unstyled text-start">
+                <li>✓ Tất cả quyền lợi Bronze</li>
+                <li>✓ Giảm 5% tất cả dịch vụ</li>
+                <li>✓ Ưu tiên đặt sân</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+          <div class="card benefit-card">
+            <div class="card-body text-center">
+              <h3 style="color: #FFD700;">🥇 GOLD</h3>
+              <p class="text-muted mb-3">5,000 - 9,999 điểm</p>
+              <ul class="list-unstyled text-start">
+                <li>✓ Tất cả quyền lợi Silver</li>
+                <li>✓ Giảm 10% tất cả dịch vụ</li>
+                <li>✓ Miễn phí 1 giờ/tháng</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+          <div class="card benefit-card">
+            <div class="card-body text-center">
+              <h3 style="color: #4A4A4A;">💎 PLATINUM</h3>
+              <p class="text-muted mb-3">10,000+ điểm</p>
+              <ul class="list-unstyled text-start">
+                <li>✓ Tất cả quyền lợi Gold</li>
+                <li>✓ Giảm 15% tất cả dịch vụ</li>
+                <li>✓ Miễn phí 2 giờ/tháng</li>
+                <li>✓ Huấn luyện viên miễn phí</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lộ Trình Thăng Hạng -->
+    <div class="mb-5">
+      <h2 class="section-title">📈 Lộ Trình Thăng Hạng</h2>
+      <div class="card">
+        <div class="card-body">
+          <div class="tier-milestone" th:classappend="${loyalty.points >= 0 ? 'active' : ''}">
+            <h5>🥉 BRONZE</h5>
+            <p class="text-muted mb-0">Bắt đầu hành trình tích điểm</p>
+          </div>
+          <div class="tier-milestone" th:classappend="${loyalty.points >= 2000 ? 'active' : ''}">
+            <h5>🥈 SILVER - 2,000 điểm</h5>
+            <p class="text-muted mb-0">Giảm 5% + Ưu tiên đặt sân</p>
+          </div>
+          <div class="tier-milestone" th:classappend="${loyalty.points >= 5000 ? 'active' : ''}">
+            <h5>🥇 GOLD - 5,000 điểm</h5>
+            <p class="text-muted mb-0">Giảm 10% + Miễn phí 1 giờ/tháng</p>
+          </div>
+          <div class="tier-milestone" th:classappend="${loyalty.points >= 10000 ? 'active' : ''}">
+            <h5>💎 PLATINUM - 10,000 điểm</h5>
+            <p class="text-muted mb-0">Giảm 15% + Miễn phí 2 giờ/tháng + Huấn luyện viên</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Call to Action -->
+    <div class="text-center">
+      <div class="card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none;">
+        <div class="card-body py-5">
+          <h3 class="mb-3">🎯 Bắt Đầu Tích Điểm Ngay Hôm Nay!</h3>
+          <p class="mb-4">Mỗi lần đặt sân, mua sắm hay thuê thiết bị đều giúp bạn tích điểm và nhận ưu đãi</p>
+          <div class="d-flex gap-3 justify-content-center flex-wrap">
+            <a href="/user/booking" class="btn btn-light btn-lg">
+              <i class="fas fa-calendar-alt me-2"></i>Đặt Sân Ngay
+            </a>
+            <a href="/user/products" class="btn btn-outline-light btn-lg">
+              <i class="fas fa-shopping-cart me-2"></i>Mua Sản Phẩm
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</content>
+</body>
+</html>

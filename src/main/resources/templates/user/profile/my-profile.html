@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/user :: layout(~{::content})}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Profile - UTEScore</title>
+</head>
+<body>
+<content>
+  <!-- Alert Messages -->
+  <div th:if="${message}" class="container mt-3">
+    <div th:class="'alert alert-' + ${messageType} + ' alert-dismissible fade show'" role="alert">
+      <span th:text="${message}"></span>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  </div>
+
+  <!-- Profile Header -->
+  <div class="bg-primary bg-gradient text-white py-5 mb-4">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-3 text-center mb-3 mb-md-0">
+          <img th:if="${profile.avatarUrl}" th:src="${profile.avatarUrl}"
+               class="rounded-circle border border-white border-5 shadow-lg mb-3"
+               width="150" height="150" style="object-fit: cover;" alt="Avatar">
+          <img th:unless="${profile.avatarUrl}" src="/images/default-avatar.png"
+               class="rounded-circle border border-white border-5 shadow-lg mb-3"
+               width="150" height="150" style="object-fit: cover;" alt="Avatar">
+          <div>
+            <button type="button" class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#avatarModal">
+              <i class="fas fa-camera me-1"></i> Change Avatar
+            </button>
+          </div>
+        </div>
+        <div class="col-md-9">
+          <h2 class="mb-2" th:text="${profile.firstName} + ' ' + ${profile.lastName}">User Name</h2>
+          <p class="mb-2"><i class="fas fa-user me-2"></i><span th:text="'@' + ${profile.username}">@username</span></p>
+          <p class="mb-3"><i class="fas fa-envelope me-2"></i><span th:text="${profile.email}">email@example.com</span></p>
+
+          <div class="row g-3 mt-2">
+            <div class="col-md-3 col-6">
+              <div class="bg-white bg-opacity-25 rounded p-3 text-center">
+                <h3 class="mb-0">
+                  <span th:if="${profile.loyaltyPoints}" th:text="${profile.loyaltyPoints}">0</span>
+                  <span th:unless="${profile.loyaltyPoints}">0</span>
+                </h3>
+                <small>Loyalty Points</small>
+              </div>
+            </div>
+            <div class="col-md-3 col-6">
+              <div class="bg-white bg-opacity-25 rounded p-3 text-center">
+                <h3 class="mb-0">
+                  <span th:if="${profile.totalBookings}" th:text="${profile.totalBookings}">0</span>
+                  <span th:unless="${profile.totalBookings}">0</span>
+                </h3>
+                <small>Total Bookings</small>
+              </div>
+            </div>
+            <div class="col-md-3 col-6">
+              <div class="bg-white bg-opacity-25 rounded p-3 text-center">
+                <h3 class="mb-0">
+                  <span th:if="${profile.friendCount}" th:text="${profile.friendCount}">0</span>
+                  <span th:unless="${profile.friendCount}">0</span>
+                </h3>
+                <small>Friends</small>
+              </div>
+            </div>
+            <div class="col-md-3 col-6">
+              <div class="bg-white bg-opacity-25 rounded p-3 text-center">
+                <span th:if="${profile.membershipTier == 'GOLD'}" class="badge bg-warning text-dark">GOLD</span>
+                <span th:if="${profile.membershipTier == 'SILVER'}" class="badge bg-secondary">SILVER</span>
+                <span th:if="${profile.membershipTier == 'PLATINUM'}" class="badge bg-light text-dark">PLATINUM</span>
+                <span th:if="${profile.membershipTier == 'BRONZE' or !profile.membershipTier}" class="badge bg-danger">BRONZE</span>
+                <small class="d-block mt-1">Membership</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Profile Content -->
+  <div class="container mb-5">
+    <div class="row">
+      <!-- Left Column - Profile Info -->
+      <div class="col-lg-8">
+        <div class="card shadow-sm mb-4">
+          <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-user-circle me-2 text-primary"></i>Personal Information</h5>
+            <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editProfileModal">
+              <i class="fas fa-edit me-1"></i> Edit Profile
+            </button>
+          </div>
+          <div class="card-body">
+            <div class="row mb-3 pb-3 border-bottom">
+              <div class="col-sm-4">
+                <strong class="text-muted">First Name</strong>
+              </div>
+              <div class="col-sm-8">
+                <span th:text="${profile.firstName}">First Name</span>
+              </div>
+            </div>
+            <div class="row mb-3 pb-3 border-bottom">
+              <div class="col-sm-4">
+                <strong class="text-muted">Last Name</strong>
+              </div>
+              <div class="col-sm-8">
+                <span th:text="${profile.lastName}">Last Name</span>
+              </div>
+            </div>
+            <div class="row mb-3 pb-3 border-bottom">
+              <div class="col-sm-4">
+                <strong class="text-muted">Phone Number</strong>
+              </div>
+              <div class="col-sm-8">
+                <span th:if="${profile.phoneNumber}" th:text="${profile.phoneNumber}">Phone</span>
+                <span th:unless="${profile.phoneNumber}">Not set</span>
+              </div>
+            </div>
+            <div class="row mb-3 pb-3 border-bottom">
+              <div class="col-sm-4">
+                <strong class="text-muted">Date of Birth</strong>
+              </div>
+              <div class="col-sm-8">
+                <span th:if="${profile.dateOfBirth}" th:text="${profile.dateOfBirth}">DOB</span>
+                <span th:unless="${profile.dateOfBirth}">Not set</span>
+              </div>
+            </div>
+            <div class="row mb-3 pb-3 border-bottom">
+              <div class="col-sm-4">
+                <strong class="text-muted">Gender</strong>
+              </div>
+              <div class="col-sm-8">
+                <span th:if="${profile.gender}" th:text="${profile.gender}">Gender</span>
+                <span th:unless="${profile.gender}">Not set</span>
+              </div>
+            </div>
+            <div class="row mb-3 pb-3 border-bottom">
+              <div class="col-sm-4">
+                <strong class="text-muted">Address</strong>
+              </div>
+              <div class="col-sm-8">
+                <span th:if="${profile.address}" th:text="${profile.address}">Address</span>
+                <span th:unless="${profile.address}">Not set</span>
+              </div>
+            </div>
+            <div class="row mb-3 pb-3 border-bottom">
+              <div class="col-sm-4">
+                <strong class="text-muted">Emergency Contact</strong>
+              </div>
+              <div class="col-sm-8">
+                <span th:if="${profile.emergencyContact}" th:text="${profile.emergencyContact}">Emergency Contact</span>
+                <span th:unless="${profile.emergencyContact}">Not set</span>
+              </div>
+            </div>
+            <div class="row mb-0">
+              <div class="col-sm-4">
+                <strong class="text-muted">Emergency Phone</strong>
+              </div>
+              <div class="col-sm-8">
+                <span th:if="${profile.emergencyPhone}" th:text="${profile.emergencyPhone}">Emergency Phone</span>
+                <span th:unless="${profile.emergencyPhone}">Not set</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column - Friends -->
+      <div class="col-lg-4">
+        <div class="card shadow-sm">
+          <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-user-friends me-2 text-primary"></i>Friends</h5>
+            <a href="/user/profile/friends/manage" class="btn btn-sm btn-outline-primary">View All</a>
+          </div>
+          <div class="card-body">
+            <form action="/user/profile/friends/manage" method="get" class="mb-3">
+              <div class="input-group">
+                <input type="text" class="form-control" name="search" placeholder="Search users...">
+                <button class="btn btn-outline-secondary" type="submit">
+                  <i class="fas fa-search"></i>
+                </button>
+              </div>
+            </form>
+
+            <div class="text-center text-muted py-4">
+              <i class="fas fa-users fa-3x mb-3"></i>
+              <p class="mb-2">Manage your friends</p>
+              <a href="/user/profile/friends/manage" class="btn btn-primary btn-sm">
+                Go to Friends Page
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Profile Modal -->
+  <div class="modal fade" id="editProfileModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <form th:action="@{/user/profile/update}" method="post">
+          <div class="modal-header">
+            <h5 class="modal-title"><i class="fas fa-edit me-2"></i>Edit Profile</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">First Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="firstName" th:value="${profile.firstName}" required>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Last Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="lastName" th:value="${profile.lastName}" required>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Phone Number</label>
+                <input type="tel" class="form-control" name="phoneNumber" th:value="${profile.phoneNumber}" pattern="[0-9]{10,15}" placeholder="0123456789">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Date of Birth</label>
+                <input type="date" class="form-control" name="dateOfBirth" th:value="${profile.dateOfBirth}">
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Gender</label>
+              <select class="form-select" name="gender">
+                <option value="">Select Gender</option>
+                <option value="MALE" th:selected="${profile.gender != null and profile.gender.name() == 'MALE'}">Male</option>
+                <option value="FEMALE" th:selected="${profile.gender != null and profile.gender.name() == 'FEMALE'}">Female</option>
+                <option value="OTHER" th:selected="${profile.gender != null and profile.gender.name() == 'OTHER'}">Other</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Address</label>
+              <textarea class="form-control" name="address" rows="2" th:text="${profile.address}"></textarea>
+            </div>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Emergency Contact</label>
+                <input type="text" class="form-control" name="emergencyContact" th:value="${profile.emergencyContact}">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Emergency Phone</label>
+                <input type="tel" class="form-control" name="emergencyPhone" th:value="${profile.emergencyPhone}" pattern="[0-9]{10,15}">
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+              <i class="fas fa-times me-1"></i> Cancel
+            </button>
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-save me-1"></i> Save Changes
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Avatar Upload Modal -->
+  <div class="modal fade" id="avatarModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form th:action="@{/user/profile/avatar/upload}" method="post" enctype="multipart/form-data">
+          <div class="modal-header">
+            <h5 class="modal-title"><i class="fas fa-camera me-2"></i>Change Avatar</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">Select Image</label>
+              <input type="file" class="form-control" name="avatarFile" accept="image/*" required>
+              <div class="form-text">Maximum file size: 5MB. Accepted formats: JPG, PNG, GIF</div>
+            </div>
+            <div th:if="${profile.avatarUrl}" class="border-top pt-3">
+              <p class="text-muted mb-2">Current Avatar:</p>
+              <img th:src="${profile.avatarUrl}" class="rounded" width="100" height="100" style="object-fit: cover;">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-upload me-1"></i> Upload
+            </button>
+          </div>
+        </form>
+
+        <div th:if="${profile.avatarUrl}" class="modal-body border-top">
+          <form th:action="@{/user/profile/avatar/remove}" method="post">
+            <input type="hidden" name="_method" value="DELETE">
+            <button type="submit" class="btn btn-danger w-100" onclick="return confirm('Are you sure you want to remove your avatar?')">
+              <i class="fas fa-trash me-1"></i> Remove Current Avatar
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</content>
+</body>
+</html>

@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/user :: layout(~{::content})}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title th:text="${profile.firstName} + ' ' + ${profile.lastName} + ' - UTEScore'">User Profile</title>
+</head>
+<body>
+<content>
+  <!-- Alert Messages -->
+  <div th:if="${message}" class="container mt-3">
+    <div th:class="'alert alert-' + ${messageType} + ' alert-dismissible fade show'" role="alert">
+      <span th:text="${message}"></span>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  </div>
+
+  <!-- Profile Header -->
+  <div class="bg-primary bg-gradient text-white py-5 mb-4">
+    <div class="container">
+      <div class="row align-items-center">
+        <div class="col-md-3 text-center mb-3 mb-md-0">
+          <img th:if="${profile.avatarUrl}" th:src="${profile.avatarUrl}"
+               class="rounded-circle border border-white border-5 shadow-lg"
+               width="150" height="150" style="object-fit: cover;" alt="Avatar">
+          <img th:unless="${profile.avatarUrl}" src="/images/default-avatar.png"
+               class="rounded-circle border border-white border-5 shadow-lg"
+               width="150" height="150" style="object-fit: cover;" alt="Avatar">
+        </div>
+        <div class="col-md-6">
+          <h2 class="mb-2" th:text="${profile.firstName} + ' ' + ${profile.lastName}">User Name</h2>
+          <p class="mb-2"><i class="fas fa-user me-2"></i><span th:text="'@' + ${profile.username}">@username</span></p>
+
+          <div class="row g-3 mt-3">
+            <div class="col-6">
+              <div class="bg-white bg-opacity-25 rounded p-3 text-center">
+                <h4 class="mb-0">
+                  <span th:if="${profile.totalBookings}" th:text="${profile.totalBookings}">0</span>
+                  <span th:unless="${profile.totalBookings}">0</span>
+                </h4>
+                <small>Total Bookings</small>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="bg-white bg-opacity-25 rounded p-3 text-center">
+                <h4 class="mb-0">
+                  <span th:if="${profile.friendCount}" th:text="${profile.friendCount}">0</span>
+                  <span th:unless="${profile.friendCount}">0</span>
+                </h4>
+                <small>Friends</small>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3 text-center">
+          <!-- Friend Actions -->
+          <div th:if="${isFriend}">
+            <form th:action="@{/user/profile/friends/remove}" method="post" class="mb-2">
+              <input type="hidden" name="friendUsername" th:value="${profile.username}">
+              <input type="hidden" name="returnUrl" th:value="${'/user/profile/' + profile.username}">
+              <button type="submit" class="btn btn-danger w-100" onclick="return confirm('Are you sure you want to remove this friend?')">
+                <i class="fas fa-user-minus me-2"></i> Remove Friend
+              </button>
+            </form>
+            <span class="badge bg-success">
+                            <i class="fas fa-check me-1"></i> Friends
+                        </span>
+          </div>
+          <div th:unless="${isFriend}">
+            <form th:action="@{/user/profile/friends/add}" method="post">
+              <input type="hidden" name="friendUsername" th:value="${profile.username}">
+              <input type="hidden" name="returnUrl" th:value="${'/user/profile/' + profile.username}">
+              <button type="submit" class="btn btn-light w-100">
+                <i class="fas fa-user-plus me-2"></i> Add Friend
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Profile Content -->
+  <div class="container mb-5">
+    <div class="row">
+      <!-- Left Column - Basic Info -->
+      <div class="col-lg-6">
+        <div class="card shadow-sm mb-4">
+          <div class="card-header bg-white">
+            <h5 class="mb-0"><i class="fas fa-info-circle me-2 text-primary"></i>Basic Information</h5>
+          </div>
+          <div class="card-body">
+            <div class="row mb-3 pb-3 border-bottom">
+              <div class="col-5">
+                <strong class="text-muted">Full Name</strong>
+              </div>
+              <div class="col-7">
+                <span th:text="${profile.firstName} + ' ' + ${profile.lastName}">Full Name</span>
+              </div>
+            </div>
+            <div class="row mb-3 pb-3 border-bottom">
+              <div class="col-5">
+                <strong class="text-muted">Username</strong>
+              </div>
+              <div class="col-7">
+                <span th:text="'@' + ${profile.username}">@username</span>
+              </div>
+            </div>
+            <div class="row mb-3 pb-3 border-bottom">
+              <div class="col-5">
+                <strong class="text-muted">Gender</strong>
+              </div>
+              <div class="col-7">
+                <span th:if="${profile.gender}" th:text="${profile.gender}">Gender</span>
+                <span th:unless="${profile.gender}">Not specified</span>
+              </div>
+            </div>
+            <div class="row mb-0">
+              <div class="col-5">
+                <strong class="text-muted">Membership Tier</strong>
+              </div>
+              <div class="col-7">
+                <span th:if="${profile.membershipTier == 'GOLD'}" class="badge bg-warning text-dark">GOLD</span>
+                <span th:if="${profile.membershipTier == 'SILVER'}" class="badge bg-secondary">SILVER</span>
+                <span th:if="${profile.membershipTier == 'PLATINUM'}" class="badge bg-light text-dark">PLATINUM</span>
+                <span th:if="${profile.membershipTier == 'BRONZE' or !profile.membershipTier}" class="badge bg-danger">BRONZE</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column - Activity & Stats -->
+      <div class="col-lg-6">
+        <div class="card shadow-sm mb-4">
+          <div class="card-header bg-white">
+            <h5 class="mb-0"><i class="fas fa-chart-line me-2 text-primary"></i>Activity & Stats</h5>
+          </div>
+          <div class="card-body">
+            <div class="row mb-4">
+              <div class="col-6 text-center">
+                <div class="border rounded p-3">
+                  <h3 class="text-primary mb-1">
+                    <span th:if="${profile.totalBookings}" th:text="${profile.totalBookings}">0</span>
+                    <span th:unless="${profile.totalBookings}">0</span>
+                  </h3>
+                  <small class="text-muted">Total Bookings</small>
+                </div>
+              </div>
+              <div class="col-6 text-center">
+                <div class="border rounded p-3">
+                  <h3 class="text-primary mb-1">
+                    <span th:if="${profile.loyaltyPoints}" th:text="${profile.loyaltyPoints}">0</span>
+                    <span th:unless="${profile.loyaltyPoints}">0</span>
+                  </h3>
+                  <small class="text-muted">Loyalty Points</small>
+                </div>
+              </div>
+            </div>
+
+            <div class="alert alert-info mb-0">
+              <i class="fas fa-trophy me-2"></i>
+              <strong>Membership Tier:</strong>
+              <span th:if="${profile.membershipTier == 'GOLD'}" class="badge bg-warning text-dark ms-2">GOLD</span>
+              <span th:if="${profile.membershipTier == 'SILVER'}" class="badge bg-secondary ms-2">SILVER</span>
+              <span th:if="${profile.membershipTier == 'PLATINUM'}" class="badge bg-light text-dark ms-2">PLATINUM</span>
+              <span th:if="${profile.membershipTier == 'BRONZE' or !profile.membershipTier}" class="badge bg-danger ms-2">BRONZE</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions Card -->
+        <div class="card shadow-sm">
+          <div class="card-header bg-white">
+            <h5 class="mb-0"><i class="fas fa-cog me-2 text-primary"></i>Actions</h5>
+          </div>
+          <div class="card-body">
+            <div class="d-grid gap-2">
+              <a href="/user/profile/friends/manage" class="btn btn-outline-primary">
+                <i class="fas fa-user-friends me-2"></i> View All Friends
+              </a>
+              <a href="/user/profile" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i> Back to My Profile
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</content>
+</body>
+</html>

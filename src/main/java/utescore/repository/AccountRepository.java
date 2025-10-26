@@ -31,8 +31,15 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
                                                @Param("role") Account.Role role,
                                                Pageable pageable);
 
-    // New: find users by role
     List<Account> findByRole(Account.Role role);
     @Query("SELECT a.role FROM Account a WHERE a.username = :username")
     String findRoleByUsername(String username);
+
+    List<Account> findByUsernameContainingIgnoreCase(String username);
+
+    @Query("SELECT a FROM Account a WHERE a.customer IS NOT NULL AND " +
+            "(LOWER(a.username) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "LOWER(a.customer.firstName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "LOWER(a.customer.lastName) LIKE LOWER(CONCAT('%', :search, '%')))")
+    List<Account> searchUsersByNameOrUsername(@Param("search") String search);
 }

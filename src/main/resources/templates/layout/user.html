@@ -45,6 +45,8 @@
 						th:href="@{/user/notifications}">🔔 Thông báo</a></li>
 					<li class="nav-item"><a class="nav-link"
 						th:href="@{/user/profile}">👤 Hồ sơ</a></li>
+					<li class="nav-item"><a class="nav-link"
+											th:href="@{/user/chat}">👤 Chat</a></li>
 					<li class="nav-item"><a
 						class="nav-link text-warning fw-semibold" th:href="@{/logout}">🚪
 							Đăng xuất</a></li>
@@ -69,13 +71,13 @@
 	const btn = document.getElementById('openChat');
 	const frameContainer = document.getElementById('chatFrameContainer');
 	let open = false;
-	
-	
+
+
 	btn.addEventListener('click', ()=>{
 	open = !open;
 	frameContainer.style.display = open ? 'block' : 'none';
 	});
-    
+
     const username = document.getElementById('usernamelogin').value;
     console.log('Username from model:', username);
 

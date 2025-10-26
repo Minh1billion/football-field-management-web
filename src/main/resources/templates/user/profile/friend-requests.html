@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/user :: layout(~{::content})}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Friend Requests - UTEScore</title>
+</head>
+<body>
+<content>
+  <!-- Alert Messages -->
+  <div th:if="${message}" class="container mt-3">
+    <div th:class="'alert alert-' + ${messageType} + ' alert-dismissible fade show'" role="alert">
+      <span th:text="${message}"></span>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  </div>
+
+  <div class="container my-5">
+    <div class="row">
+      <!-- Received Requests -->
+      <div class="col-lg-6 mb-4">
+        <div class="card shadow-sm">
+          <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+              <i class="fas fa-inbox me-2"></i>Received Requests
+              <span class="badge bg-light text-dark ms-2" th:text="${receivedRequests.size()}">0</span>
+            </h5>
+          </div>
+          <div class="card-body" id="received-requests">
+            <div th:if="${receivedRequests.isEmpty()}" class="text-center text-muted py-5">
+              <i class="fas fa-inbox fa-4x mb-3"></i>
+              <p>No pending friend requests</p>
+            </div>
+
+            <div th:if="${!receivedRequests.isEmpty()}">
+              <div th:each="request : ${receivedRequests}"
+                   class="border-bottom pb-3 mb-3"
+                   th:attr="data-request-id=${request.id}">
+                <div class="d-flex align-items-center">
+                  <img th:if="${request.senderAvatarUrl}"
+                       th:src="${request.senderAvatarUrl}"
+                       class="rounded-circle me-3"
+                       width="60" height="60"
+                       style="object-fit: cover;" alt="Avatar">
+                  <img th:unless="${request.senderAvatarUrl}"
+                       src="/images/default-avatar.png"
+                       class="rounded-circle me-3"
+                       width="60" height="60"
+                       style="object-fit: cover;" alt="Avatar">
+                  <div class="flex-grow-1">
+                    <h6 class="mb-1">
+                      <a th:href="@{/user/profile/{username}(username=${request.senderUsername})}"
+                         th:text="${request.senderFullName != null ? request.senderFullName : request.senderUsername}">
+                        Sender Name
+                      </a>
+                    </h6>
+                    <small class="text-muted">
+                      @<span th:text="${request.senderUsername}">username</span>
+                    </small>
+                    <br>
+                    <small class="text-muted">
+                      <i class="fas fa-clock me-1"></i>
+                      <span th:text="${#temporals.format(request.createdAt, 'dd/MM/yyyy HH:mm')}">
+                                                Date
+                                            </span>
+                    </small>
+                    <span th:if="${request.mutualFriendsCount > 0}"
+                          class="badge bg-info ms-2">
+                                            <span th:text="${request.mutualFriendsCount}">0</span> mutual friends
+                                        </span>
+                  </div>
+                </div>
+                <div class="mt-2">
+                  <form th:action="@{/user/profile/friends/request/accept}"
+                        method="post" style="display: inline;">
+                    <input type="hidden" name="requestId" th:value="${request.id}">
+                    <input type="hidden" name="returnUrl" value="/user/profile/friends/requests">
+                    <button type="submit" class="btn btn-success btn-sm">
+                      <i class="fas fa-check me-1"></i> Accept
+                    </button>
+                  </form>
+                  <form th:action="@{/user/profile/friends/request/reject}"
+                        method="post" style="display: inline;">
+                    <input type="hidden" name="requestId" th:value="${request.id}">
+                    <input type="hidden" name="returnUrl" value="/user/profile/friends/requests">
+                    <button type="submit" class="btn btn-outline-danger btn-sm">
+                      <i class="fas fa-times me-1"></i> Reject
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sent Requests -->
+      <div class="col-lg-6 mb-4">
+        <div class="card shadow-sm">
+          <div class="card-header bg-secondary text-white">
+            <h5 class="mb-0">
+              <i class="fas fa-paper-plane me-2"></i>Sent Requests
+              <span class="badge bg-light text-dark ms-2" th:text="${sentRequests.size()}">0</span>
+            </h5>
+          </div>
+          <div class="card-body">
+            <div th:if="${sentRequests.isEmpty()}" class="text-center text-muted py-5">
+              <i class="fas fa-paper-plane fa-4x mb-3"></i>
+              <p>No pending sent requests</p>
+            </div>
+
+            <div th:if="${!sentRequests.isEmpty()}">
+              <div th:each="request : ${sentRequests}" class="border-bottom pb-3 mb-3">
+                <div class="d-flex align-items-center">
+                  <img th:if="${request.receiverAvatarUrl}"
+                       th:src="${request.receiverAvatarUrl}"
+                       class="rounded-circle me-3"
+                       width="60" height="60"
+                       style="object-fit: cover;" alt="Avatar">
+                  <img th:unless="${request.receiverAvatarUrl}"
+                       src="/images/default-avatar.png"
+                       class="rounded-circle me-3"
+                       width="60" height="60"
+                       style="object-fit: cover;" alt="Avatar">
+                  <div class="flex-grow-1">
+                    <h6 class="mb-1">
+                      <a th:href="@{/user/profile/{username}(username=${request.receiverUsername})}"
+                         th:text="${request.receiverFullName != null ? request.receiverFullName : request.receiverUsername}">
+                        Receiver Name
+                      </a>
+                    </h6>
+                    <small class="text-muted">
+                      @<span th:text="${request.receiverUsername}">username</span>
+                    </small>
+                    <br>
+                    <small class="text-muted">
+                      <i class="fas fa-clock me-1"></i>
+                      <span th:text="${#temporals.format(request.createdAt, 'dd/MM/yyyy HH:mm')}">
+                                                Date
+                                            </span>
+                    </small>
+                    <span class="badge bg-warning text-dark ms-2">Pending</span>
+                  </div>
+                </div>
+                <div class="mt-2">
+                  <form th:action="@{/user/profile/friends/request/cancel}"
+                        method="post" style="display: inline;">
+                    <input type="hidden" name="requestId" th:value="${request.id}">
+                    <input type="hidden" name="returnUrl" value="/user/profile/friends/requests">
+                    <button type="submit" class="btn btn-outline-secondary btn-sm">
+                      <i class="fas fa-times me-1"></i> Cancel Request
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Back Button -->
+    <div class="text-center mt-4">
+      <a href="/user/profile/friends/manage" class="btn btn-outline-primary">
+        <i class="fas fa-arrow-left me-2"></i>Back to Friends
+      </a>
+    </div>
+  </div>
+
+  <!-- WebSocket Support -->
+  <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+  <script th:inline="javascript">
+    /*<![CDATA[*/
+    var stompClient = null;
+    var currentUsername = /*[[${#authentication.principal.username}]]*/ 'user';
+
+    function connect() {
+      var socket = new SockJS('/ws');
+      stompClient = Stomp.over(socket);
+
+      stompClient.connect({}, function(frame) {
+        console.log('Connected: ' + frame);
+
+        // Subscribe to new friend requests
+        stompClient.subscribe('/topic/friend-request/' + currentUsername, function(message) {
+          var request = JSON.parse(message.body);
+          addReceivedRequest(request);
+          showNotification('New friend request from ' + request.senderUsername, 'info');
+        });
+
+        // Subscribe to friend accepted notifications
+        stompClient.subscribe('/topic/friend-accepted/' + currentUsername, function(message) {
+          var request = JSON.parse(message.body);
+          removeSentRequest(request.id);
+          showNotification(request.receiverUsername + ' accepted your friend request!', 'success');
+        });
+      });
+    }
+
+    function addReceivedRequest(request) {
+      var container = document.getElementById('received-requests');
+
+      // Remove "no requests" message if exists
+      var emptyMsg = container.querySelector('.text-center.text-muted');
+      if (emptyMsg) {
+        emptyMsg.remove();
+      }
+
+      // Create new request element
+      var requestHtml = `
+                <div class="border-bottom pb-3 mb-3" data-request-id="${request.id}">
+                    <div class="d-flex align-items-center">
+                        <img src="${request.senderAvatarUrl || '/images/default-avatar.png'}"
+                             class="rounded-circle me-3" width="60" height="60"
+                             style="object-fit: cover;" alt="Avatar">
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1">
+                                <a href="/user/profile/${request.senderUsername}">
+                                    ${request.senderFullName || request.senderUsername}
+                                </a>
+                            </h6>
+                            <small class="text-muted">@${request.senderUsername}</small>
+                            <br>
+                            <small class="text-muted">
+                                <i class="fas fa-clock me-1"></i>Just now
+                            </small>
+                            ${request.mutualFriendsCount > 0 ?
+              `<span class="badge bg-info ms-2">${request.mutualFriendsCount} mutual friends</span>` : ''}
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <form action="/user/profile/friends/request/accept" method="post" style="display: inline;">
+                            <input type="hidden" name="requestId" value="${request.id}">
+                            <input type="hidden" name="returnUrl" value="/user/profile/friends/requests">
+                            <button type="submit" class="btn btn-success btn-sm">
+                                <i class="fas fa-check me-1"></i> Accept
+                            </button>
+                        </form>
+                        <form action="/user/profile/friends/request/reject" method="post" style="display: inline;">
+                            <input type="hidden" name="requestId" value="${request.id}">
+                            <input type="hidden" name="returnUrl" value="/user/profile/friends/requests">
+                            <button type="submit" class="btn btn-outline-danger btn-sm">
+                                <i class="fas fa-times me-1"></i> Reject
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            `;
+
+      container.insertAdjacentHTML('afterbegin', requestHtml);
+      updateBadges();
+    }
+
+    function removeSentRequest(requestId) {
+      var requestElement = document.querySelector(`[data-request-id="${requestId}"]`);
+      if (requestElement) {
+        requestElement.remove();
+        updateBadges();
+      }
+    }
+
+    function updateBadges() {
+      var receivedCount = document.querySelectorAll('#received-requests .border-bottom').length;
+      var receivedBadge = document.querySelector('.card-header.bg-primary .badge');
+      if (receivedBadge) {
+        receivedBadge.textContent = receivedCount;
+      }
+    }
+
+    function showNotification(message, type) {
+      var alertDiv = document.createElement('div');
+      alertDiv.className = 'alert alert-' + type + ' alert-dismissible fade show position-fixed top-0 end-0 m-3';
+      alertDiv.style.zIndex = '9999';
+      alertDiv.innerHTML = message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+      document.body.appendChild(alertDiv);
+
+      setTimeout(function() {
+        alertDiv.remove();
+      }, 5000);
+    }
+
+    // Connect on page load
+    window.addEventListener('load', function() {
+      connect();
+    });
+    /*]]>*/
+  </script>
+</content>
+</body>
+</html>

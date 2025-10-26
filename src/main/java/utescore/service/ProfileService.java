@@ -1,19 +1,24 @@
 package utescore.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import utescore.dto.FriendDTO;
+import utescore.dto.FriendRequestDTO;
 import utescore.dto.ProfileDTO;
 import utescore.dto.UpdateProfileDTO;
 import utescore.entity.Account;
 import utescore.entity.Customer;
+import utescore.entity.FriendRequest;
 import utescore.entity.Loyalty;
 import utescore.repository.AccountRepository;
 import utescore.repository.CustomerRepository;
+import utescore.repository.FriendRequestRepository;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -24,12 +29,13 @@ public class ProfileService {
 
     private final AccountRepository accountRepository;
     private final CustomerRepository customerRepository;
+    private final FriendRequestRepository friendRequestRepository;
     private final CloudinaryService cloudinaryService;
     private final LogService logService;
+    private final SimpMessagingTemplate messagingTemplate;
 
-    /**
-     * Lấy thông tin profile của user
-     */
+    // ========== PROFILE METHODS ==========
+
     public ProfileDTO getProfile(String username) {
         Account account = accountRepository.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("Account not found"));
@@ -72,9 +78,6 @@ public class ProfileService {
         return dto;
     }
 
-    /**
-     * Cập nhật thông tin profile
-     */
     @Transactional
     public ProfileDTO updateProfile(String username, UpdateProfileDTO updateDTO) {
         Account account = accountRepository.findByUsername(username)
@@ -85,7 +88,6 @@ public class ProfileService {
             throw new IllegalArgumentException("Customer profile not found");
         }
 
-        // Update customer info
         customer.setFirstName(updateDTO.getFirstName());
         customer.setLastName(updateDTO.getLastName());
         customer.setPhoneNumber(updateDTO.getPhoneNumber());
@@ -96,28 +98,22 @@ public class ProfileService {
         customer.setEmergencyPhone(updateDTO.getEmergencyPhone());
 
         customerRepository.save(customer);
-
         logService.logAction("Profile updated", account, "USER");
 
         return getProfile(username);
     }
 
-    /**
-     * Upload và cập nhật avatar
-     */
     @Transactional
     public String updateAvatar(String username, MultipartFile avatarFile) throws IOException {
         if (avatarFile == null || avatarFile.isEmpty()) {
             throw new IllegalArgumentException("Avatar file is required");
         }
 
-        // Validate file type
         String contentType = avatarFile.getContentType();
         if (contentType == null || !contentType.startsWith("image/")) {
             throw new IllegalArgumentException("Only image files are allowed");
         }
 
-        // Validate file size (max 5MB)
         if (avatarFile.getSize() > 5 * 1024 * 1024) {
             throw new IllegalArgumentException("File size must not exceed 5MB");
         }
@@ -125,11 +121,9 @@ public class ProfileService {
         Account account = accountRepository.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("Account not found"));
 
-        // Upload to Cloudinary
         String imageName = cloudinaryService.uploadAndGetName(avatarFile);
         String imageUrl = cloudinaryService.getImageUrl(imageName);
 
-        // Update avatar URL
         account.setAvatarUrl(imageUrl);
         accountRepository.save(account);
 
@@ -138,9 +132,6 @@ public class ProfileService {
         return imageUrl;
     }
 
-    /**
-     * Xóa avatar (set về null hoặc default)
-     */
     @Transactional
     public void removeAvatar(String username) {
         Account account = accountRepository.findByUsername(username)
@@ -152,40 +143,167 @@ public class ProfileService {
         logService.logAction("Avatar removed", account, "USER");
     }
 
+    // ========== FRIEND REQUEST METHODS ==========
+
     @Transactional
-    public void addFriend(String username, String friendUsername) {
+    public void sendFriendRequest(String username, String friendUsername) {
         if (username.equals(friendUsername)) {
-            throw new IllegalArgumentException("Cannot add yourself as friend");
+            throw new IllegalArgumentException("Cannot send friend request to yourself");
         }
 
-        Account account = accountRepository.findByUsername(username)
+        Account sender = accountRepository.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("Account not found"));
 
-        Account friend = accountRepository.findByUsername(friendUsername)
+        Account receiver = accountRepository.findByUsername(friendUsername)
                 .orElseThrow(() -> new IllegalArgumentException("Friend account not found"));
 
-        // Check if already friends
-        if (account.getFriends() == null) {
-            account.setFriends(new ArrayList<>());
-        }
-
-        if (account.getFriends().contains(friend)) {
+        // Kiểm tra đã là bạn chưa
+        if (sender.getFriends() != null && sender.getFriends().contains(receiver)) {
             throw new IllegalArgumentException("Already friends with this user");
         }
 
-        // Add friend (bidirectional)
-        account.getFriends().add(friend);
-
-        if (friend.getFriends() == null) {
-            friend.setFriends(new ArrayList<>());
+        // Kiểm tra đã có lời mời pending chưa (cả 2 chiều)
+        if (friendRequestRepository.findPendingRequestBetween(
+                sender, receiver, FriendRequest.Status.PENDING).isPresent()) {
+            throw new IllegalArgumentException("Friend request already exists");
         }
-        friend.getFriends().add(account);
 
-        accountRepository.save(account);
-        accountRepository.save(friend);
+        // Tạo friend request mới
+        FriendRequest request = new FriendRequest();
+        request.setSender(sender);
+        request.setReceiver(receiver);
+        request.setStatus(FriendRequest.Status.PENDING);
+        friendRequestRepository.save(request);
 
-        logService.logAction("Added friend: " + friendUsername, account, "USER");
+        logService.logAction("Sent friend request to: " + friendUsername, sender, "USER");
+
+        // Gửi thông báo real-time qua WebSocket
+        messagingTemplate.convertAndSend(
+                "/topic/friend-request/" + friendUsername,
+                convertToDTO(request)
+        );
     }
+
+    @Transactional
+    public void acceptFriendRequest(String username, Long requestId) {
+        Account receiver = accountRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("Account not found"));
+
+        FriendRequest request = friendRequestRepository.findById(requestId)
+                .orElseThrow(() -> new IllegalArgumentException("Friend request not found"));
+
+        // Kiểm tra quyền
+        if (!request.getReceiver().equals(receiver)) {
+            throw new IllegalArgumentException("Not authorized to accept this request");
+        }
+
+        if (request.getStatus() != FriendRequest.Status.PENDING) {
+            throw new IllegalArgumentException("Request is not pending");
+        }
+
+        // Cập nhật status
+        request.setStatus(FriendRequest.Status.ACCEPTED);
+        request.setRespondedAt(LocalDateTime.now());
+        friendRequestRepository.save(request);
+
+        // Thêm vào danh sách bạn bè (bidirectional)
+        Account sender = request.getSender();
+
+        if (receiver.getFriends() == null) {
+            receiver.setFriends(new ArrayList<>());
+        }
+        if (sender.getFriends() == null) {
+            sender.setFriends(new ArrayList<>());
+        }
+
+        receiver.getFriends().add(sender);
+        sender.getFriends().add(receiver);
+
+        accountRepository.save(receiver);
+        accountRepository.save(sender);
+
+        logService.logAction("Accepted friend request from: " + sender.getUsername(), receiver, "USER");
+
+        // Thông báo cho người gửi
+        messagingTemplate.convertAndSend(
+                "/topic/friend-accepted/" + sender.getUsername(),
+                convertToDTO(request)
+        );
+    }
+
+    @Transactional
+    public void rejectFriendRequest(String username, Long requestId) {
+        Account receiver = accountRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("Account not found"));
+
+        FriendRequest request = friendRequestRepository.findById(requestId)
+                .orElseThrow(() -> new IllegalArgumentException("Friend request not found"));
+
+        if (!request.getReceiver().equals(receiver)) {
+            throw new IllegalArgumentException("Not authorized to reject this request");
+        }
+
+        if (request.getStatus() != FriendRequest.Status.PENDING) {
+            throw new IllegalArgumentException("Request is not pending");
+        }
+
+        request.setStatus(FriendRequest.Status.REJECTED);
+        request.setRespondedAt(LocalDateTime.now());
+        friendRequestRepository.save(request);
+
+        logService.logAction("Rejected friend request from: " + request.getSender().getUsername(), receiver, "USER");
+    }
+
+    @Transactional
+    public void cancelFriendRequest(String username, Long requestId) {
+        Account sender = accountRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("Account not found"));
+
+        FriendRequest request = friendRequestRepository.findById(requestId)
+                .orElseThrow(() -> new IllegalArgumentException("Friend request not found"));
+
+        if (!request.getSender().equals(sender)) {
+            throw new IllegalArgumentException("Not authorized to cancel this request");
+        }
+
+        if (request.getStatus() != FriendRequest.Status.PENDING) {
+            throw new IllegalArgumentException("Request is not pending");
+        }
+
+        friendRequestRepository.delete(request);
+        logService.logAction("Cancelled friend request to: " + request.getReceiver().getUsername(), sender, "USER");
+    }
+
+    public List<FriendRequestDTO> getReceivedRequests(String username) {
+        Account account = accountRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("Account not found"));
+
+        return friendRequestRepository
+                .findByReceiverAndStatus(account, FriendRequest.Status.PENDING)
+                .stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    public List<FriendRequestDTO> getSentRequests(String username) {
+        Account account = accountRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("Account not found"));
+
+        return friendRequestRepository
+                .findBySenderAndStatus(account, FriendRequest.Status.PENDING)
+                .stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    public long getPendingRequestCount(String username) {
+        Account account = accountRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("Account not found"));
+
+        return friendRequestRepository.countByReceiverAndStatus(account, FriendRequest.Status.PENDING);
+    }
+
+    // ========== FRIEND METHODS ==========
 
     @Transactional
     public void removeFriend(String username, String friendUsername) {
@@ -195,7 +313,6 @@ public class ProfileService {
         Account friend = accountRepository.findByUsername(friendUsername)
                 .orElseThrow(() -> new IllegalArgumentException("Friend account not found"));
 
-        // Remove friend (bidirectional)
         if (account.getFriends() != null) {
             account.getFriends().remove(friend);
         }
@@ -219,28 +336,7 @@ public class ProfileService {
         }
 
         return account.getFriends().stream()
-                .map(friend -> {
-                    FriendDTO dto = new FriendDTO();
-                    dto.setAccountId(friend.getId());
-                    dto.setUsername(friend.getUsername());
-                    dto.setAvatarUrl(friend.getAvatarUrl());
-                    dto.setFriend(true);
-
-                    if (friend.getCustomer() != null) {
-                        dto.setFullName(friend.getCustomer().getFullName());
-                    }
-
-                    // Calculate mutual friends
-                    int mutualCount = 0;
-                    if (friend.getFriends() != null) {
-                        mutualCount = (int) friend.getFriends().stream()
-                                .filter(f -> account.getFriends().contains(f))
-                                .count();
-                    }
-                    dto.setMutualFriendsCount(mutualCount);
-
-                    return dto;
-                })
+                .map(friend -> convertToFriendDTO(friend, account))
                 .collect(Collectors.toList());
     }
 
@@ -251,31 +347,25 @@ public class ProfileService {
         List<Account> accounts = accountRepository.findByUsernameContainingIgnoreCase(searchQuery);
 
         return accounts.stream()
-                .filter(account -> !account.getUsername().equals(username)) // Exclude self
-                .limit(20) // Limit results
+                .filter(account -> !account.getUsername().equals(username))
+                .limit(20)
                 .map(account -> {
-                    FriendDTO dto = new FriendDTO();
-                    dto.setAccountId(account.getId());
-                    dto.setUsername(account.getUsername());
-                    dto.setAvatarUrl(account.getAvatarUrl());
+                    FriendDTO dto = convertToFriendDTO(account, currentAccount);
 
-                    if (account.getCustomer() != null) {
-                        dto.setFullName(account.getCustomer().getFullName());
-                    }
+                    // Kiểm tra trạng thái friend request
+                    var pendingRequest = friendRequestRepository.findPendingRequestBetween(
+                            currentAccount, account, FriendRequest.Status.PENDING
+                    );
 
-                    // Check if already friend
-                    boolean isFriend = currentAccount.getFriends() != null &&
-                            currentAccount.getFriends().contains(account);
-                    dto.setFriend(isFriend);
-
-                    // Calculate mutual friends
-                    if (currentAccount.getFriends() != null && account.getFriends() != null) {
-                        int mutualCount = (int) account.getFriends().stream()
-                                .filter(f -> currentAccount.getFriends().contains(f))
-                                .count();
-                        dto.setMutualFriendsCount(mutualCount);
-                    } else {
-                        dto.setMutualFriendsCount(0);
+                    if (pendingRequest.isPresent()) {
+                        FriendRequest req = pendingRequest.get();
+                        if (req.getSender().equals(currentAccount)) {
+                            dto.setRequestStatus("SENT");
+                            dto.setRequestId(req.getId());
+                        } else {
+                            dto.setRequestStatus("RECEIVED");
+                            dto.setRequestId(req.getId());
+                        }
                     }
 
                     return dto;
@@ -291,5 +381,68 @@ public class ProfileService {
                 .orElseThrow(() -> new IllegalArgumentException("Friend account not found"));
 
         return account.getFriends() != null && account.getFriends().contains(friend);
+    }
+
+    // ========== HELPER METHODS ==========
+
+    private FriendRequestDTO convertToDTO(FriendRequest request) {
+        FriendRequestDTO dto = new FriendRequestDTO();
+        dto.setId(request.getId());
+        dto.setStatus(request.getStatus().name());
+        dto.setCreatedAt(request.getCreatedAt());
+        dto.setRespondedAt(request.getRespondedAt());
+
+        Account sender = request.getSender();
+        dto.setSenderId(sender.getId());
+        dto.setSenderUsername(sender.getUsername());
+        dto.setSenderAvatarUrl(sender.getAvatarUrl());
+        if (sender.getCustomer() != null) {
+            dto.setSenderFullName(sender.getCustomer().getFullName());
+        }
+
+        Account receiver = request.getReceiver();
+        dto.setReceiverId(receiver.getId());
+        dto.setReceiverUsername(receiver.getUsername());
+        dto.setReceiverAvatarUrl(receiver.getAvatarUrl());
+        if (receiver.getCustomer() != null) {
+            dto.setReceiverFullName(receiver.getCustomer().getFullName());
+        }
+
+        // Calculate mutual friends
+        if (sender.getFriends() != null && receiver.getFriends() != null) {
+            int mutualCount = (int) sender.getFriends().stream()
+                    .filter(f -> receiver.getFriends().contains(f))
+                    .count();
+            dto.setMutualFriendsCount(mutualCount);
+        }
+
+        return dto;
+    }
+
+    private FriendDTO convertToFriendDTO(Account friend, Account currentAccount) {
+        FriendDTO dto = new FriendDTO();
+        dto.setAccountId(friend.getId());
+        dto.setUsername(friend.getUsername());
+        dto.setAvatarUrl(friend.getAvatarUrl());
+
+        boolean isFriend = currentAccount.getFriends() != null &&
+                currentAccount.getFriends().contains(friend);
+        dto.setFriend(isFriend);
+
+        if (friend.getCustomer() != null) {
+            dto.setFullName(friend.getCustomer().getFullName());
+        }
+
+        // Calculate mutual friends
+        if (currentAccount.getFriends() != null && friend.getFriends() != null) {
+            int mutualCount = (int) friend.getFriends().stream()
+                    .filter(f -> currentAccount.getFriends().contains(f))
+                    .count();
+            dto.setMutualFriendsCount(mutualCount);
+        } else {
+            dto.setMutualFriendsCount(0);
+        }
+
+        return dto;
     }
 }

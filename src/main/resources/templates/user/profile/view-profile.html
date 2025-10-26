@@ -16,6 +16,9 @@
     </div>
   </div>
 
+  <!-- Real-time notification container -->
+  <div id="notification-container" class="position-fixed top-0 end-0 p-3" style="z-index: 9999;"></div>
+
   <!-- Profile Header -->
   <div class="bg-primary bg-gradient text-white py-5 mb-4">
     <div class="container">
@@ -64,8 +67,8 @@
               </button>
             </form>
             <span class="badge bg-success">
-                            <i class="fas fa-check me-1"></i> Friends
-                        </span>
+              <i class="fas fa-check me-1"></i> Friends
+            </span>
           </div>
           <div th:unless="${isFriend}">
             <form th:action="@{/user/profile/friends/add}" method="post">
@@ -190,6 +193,54 @@
     </div>
   </div>
 
+  <!-- WebSocket Support -->
+  <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+  <script th:inline="javascript">
+    /*<![CDATA[*/
+    var stompClient = null;
+    var currentUsername = /*[[${#authentication.principal.username}]]*/ 'user';
+
+    function connect() {
+      var socket = new SockJS('/ws');
+      stompClient = Stomp.over(socket);
+
+      stompClient.connect({}, function(frame) {
+        console.log('Connected: ' + frame);
+
+        // Subscribe to friend accepted notifications
+        stompClient.subscribe('/topic/friend-accepted/' + currentUsername, function(message) {
+          var request = JSON.parse(message.body);
+          showNotification(request.receiverUsername + ' accepted your friend request!', 'success');
+
+          // Reload page after 2 seconds if we're on their profile
+          var profileUsername = /*[[${profile.username}]]*/ '';
+          if (request.receiverUsername === profileUsername) {
+            setTimeout(function() {
+              location.reload();
+            }, 2000);
+          }
+        });
+      });
+    }
+
+    function showNotification(message, type) {
+      var container = document.getElementById('notification-container');
+      var alertDiv = document.createElement('div');
+      alertDiv.className = 'alert alert-' + type + ' alert-dismissible fade show';
+      alertDiv.innerHTML = message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+      container.appendChild(alertDiv);
+
+      setTimeout(function() {
+        alertDiv.remove();
+      }, 5000);
+    }
+
+    window.addEventListener('load', function() {
+      connect();
+    });
+    /*]]>*/
+  </script>
 </content>
 </body>
 </html>

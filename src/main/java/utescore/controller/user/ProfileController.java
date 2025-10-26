@@ -2,6 +2,7 @@ package utescore.controller.user;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -9,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import utescore.dto.FriendDTO;
+import utescore.dto.FriendRequestDTO;
 import utescore.dto.ProfileDTO;
 import utescore.dto.UpdateProfileDTO;
 import utescore.service.ProfileService;
@@ -24,22 +26,24 @@ public class ProfileController {
 
     private final ProfileService profileService;
 
-    // Xem profile của mình
     @GetMapping
     public String viewProfile(Model model) {
         String username = SecurityUtils.getCurrentUsername();
         ProfileDTO profile = profileService.getProfile(username);
+
+        // Đếm số friend request đang chờ
+        long pendingCount = profileService.getPendingRequestCount(username);
+
         model.addAttribute("profile", profile);
         model.addAttribute("updateDTO", new UpdateProfileDTO());
+        model.addAttribute("pendingRequestCount", pendingCount);
         return "user/profile/my-profile";
     }
 
-    // Xem profile của người khác
     @GetMapping("/{username}")
     public String viewUserProfile(@PathVariable String username, Model model, RedirectAttributes redirectAttributes) {
         String currentUsername = SecurityUtils.getCurrentUsername();
 
-        // Nếu xem profile của chính mình, redirect về trang profile
         if (currentUsername.equals(username)) {
             return "redirect:/user/profile";
         }
@@ -60,7 +64,6 @@ public class ProfileController {
         }
     }
 
-    // Cập nhật thông tin profile
     @PostMapping("/update")
     public String updateProfile(@Valid @ModelAttribute UpdateProfileDTO updateDTO,
                                 BindingResult result,
@@ -86,7 +89,6 @@ public class ProfileController {
         return "redirect:/user/profile";
     }
 
-    // Upload avatar
     @PostMapping("/avatar/upload")
     public String uploadAvatar(@RequestParam("avatarFile") MultipartFile avatarFile,
                                RedirectAttributes redirectAttributes) {
@@ -107,7 +109,6 @@ public class ProfileController {
         return "redirect:/user/profile";
     }
 
-    // Xóa avatar
     @PostMapping("/avatar/remove")
     public String removeAvatar(RedirectAttributes redirectAttributes) {
         try {
@@ -124,7 +125,8 @@ public class ProfileController {
         return "redirect:/user/profile";
     }
 
-    // Trang quản lý bạn bè
+    // ========== FRIEND MANAGEMENT ==========
+
     @GetMapping("/friends/manage")
     public String manageFriends(@RequestParam(required = false) String search, Model model) {
         String username = SecurityUtils.getCurrentUsername();
@@ -132,7 +134,6 @@ public class ProfileController {
         List<FriendDTO> friends = profileService.getFriends(username);
         model.addAttribute("friends", friends);
 
-        // Nếu có tìm kiếm
         if (search != null && !search.trim().isEmpty()) {
             List<FriendDTO> searchResults = profileService.searchUsers(username, search);
             model.addAttribute("searchResults", searchResults);
@@ -142,30 +143,136 @@ public class ProfileController {
         return "user/profile/friends";
     }
 
-    // Thêm bạn bè
-    @PostMapping("/friends/add")
-    public String addFriend(@RequestParam String friendUsername,
-                            @RequestParam(required = false) String returnUrl,
-                            RedirectAttributes redirectAttributes) {
+    // ========== FRIEND REQUESTS ==========
+
+    @GetMapping("/friends/requests")
+    public String friendRequests(Model model) {
+        String username = SecurityUtils.getCurrentUsername();
+
+        List<FriendRequestDTO> receivedRequests = profileService.getReceivedRequests(username);
+        List<FriendRequestDTO> sentRequests = profileService.getSentRequests(username);
+
+        model.addAttribute("receivedRequests", receivedRequests);
+        model.addAttribute("sentRequests", sentRequests);
+
+        return "user/profile/friend-requests";
+    }
+
+    // API endpoint for WebSocket badge updates
+    @GetMapping("/friends/requests/count")
+    @ResponseBody
+    public ResponseEntity<Long> getPendingRequestCount() {
+        String username = SecurityUtils.getCurrentUsername();
+        long count = profileService.getPendingRequestCount(username);
+        return ResponseEntity.ok(count);
+    }
+
+    @PostMapping("/friends/request/send")
+    public String sendFriendRequest(@RequestParam String friendUsername,
+                                    @RequestParam(required = false) String returnUrl,
+                                    RedirectAttributes redirectAttributes) {
         try {
             String username = SecurityUtils.getCurrentUsername();
-            profileService.addFriend(username, friendUsername);
+            profileService.sendFriendRequest(username, friendUsername);
 
-            redirectAttributes.addFlashAttribute("message", "Friend added successfully");
+            redirectAttributes.addFlashAttribute("message", "Friend request sent successfully");
             redirectAttributes.addFlashAttribute("messageType", "success");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("message", e.getMessage());
             redirectAttributes.addFlashAttribute("messageType", "danger");
         }
 
-        // Redirect về trang trước đó hoặc trang friends
         if (returnUrl != null && !returnUrl.isEmpty()) {
             return "redirect:" + returnUrl;
         }
         return "redirect:/user/profile/friends/manage";
     }
 
-    // Xóa bạn bè
+    @PostMapping("/friends/request/accept")
+    public String acceptFriendRequest(@RequestParam Long requestId,
+                                      @RequestParam(required = false) String returnUrl,
+                                      RedirectAttributes redirectAttributes) {
+        try {
+            String username = SecurityUtils.getCurrentUsername();
+            profileService.acceptFriendRequest(username, requestId);
+
+            redirectAttributes.addFlashAttribute("message", "Friend request accepted");
+            redirectAttributes.addFlashAttribute("messageType", "success");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("message", e.getMessage());
+            redirectAttributes.addFlashAttribute("messageType", "danger");
+        }
+
+        if (returnUrl != null && !returnUrl.isEmpty()) {
+            return "redirect:" + returnUrl;
+        }
+        return "redirect:/user/profile/friends/requests";
+    }
+
+    @PostMapping("/friends/request/reject")
+    public String rejectFriendRequest(@RequestParam Long requestId,
+                                      @RequestParam(required = false) String returnUrl,
+                                      RedirectAttributes redirectAttributes) {
+        try {
+            String username = SecurityUtils.getCurrentUsername();
+            profileService.rejectFriendRequest(username, requestId);
+
+            redirectAttributes.addFlashAttribute("message", "Friend request rejected");
+            redirectAttributes.addFlashAttribute("messageType", "success");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("message", e.getMessage());
+            redirectAttributes.addFlashAttribute("messageType", "danger");
+        }
+
+        if (returnUrl != null && !returnUrl.isEmpty()) {
+            return "redirect:" + returnUrl;
+        }
+        return "redirect:/user/profile/friends/requests";
+    }
+
+    @PostMapping("/friends/request/cancel")
+    public String cancelFriendRequest(@RequestParam Long requestId,
+                                      @RequestParam(required = false) String returnUrl,
+                                      RedirectAttributes redirectAttributes) {
+        try {
+            String username = SecurityUtils.getCurrentUsername();
+            profileService.cancelFriendRequest(username, requestId);
+
+            redirectAttributes.addFlashAttribute("message", "Friend request cancelled");
+            redirectAttributes.addFlashAttribute("messageType", "success");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("message", e.getMessage());
+            redirectAttributes.addFlashAttribute("messageType", "danger");
+        }
+
+        if (returnUrl != null && !returnUrl.isEmpty()) {
+            return "redirect:" + returnUrl;
+        }
+        return "redirect:/user/profile/friends/manage";
+    }
+
+    // ADDED: Missing endpoint for "Add Friend" button in view-profile.html
+    @PostMapping("/friends/add")
+    public String addFriend(@RequestParam String friendUsername,
+                            @RequestParam(required = false) String returnUrl,
+                            RedirectAttributes redirectAttributes) {
+        try {
+            String username = SecurityUtils.getCurrentUsername();
+            profileService.sendFriendRequest(username, friendUsername);
+
+            redirectAttributes.addFlashAttribute("message", "Friend request sent successfully");
+            redirectAttributes.addFlashAttribute("messageType", "success");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("message", e.getMessage());
+            redirectAttributes.addFlashAttribute("messageType", "danger");
+        }
+
+        if (returnUrl != null && !returnUrl.isEmpty()) {
+            return "redirect:" + returnUrl;
+        }
+        return "redirect:/user/profile/" + friendUsername;
+    }
+
     @PostMapping("/friends/remove")
     public String removeFriend(@RequestParam String friendUsername,
                                @RequestParam(required = false) String returnUrl,
@@ -181,7 +288,6 @@ public class ProfileController {
             redirectAttributes.addFlashAttribute("messageType", "danger");
         }
 
-        // Redirect về trang trước đó hoặc trang friends
         if (returnUrl != null && !returnUrl.isEmpty()) {
             return "redirect:" + returnUrl;
         }

@@ -14,4 +14,6 @@ public class FriendDTO {
     private String avatarUrl;
     private boolean isFriend;
     private Integer mutualFriendsCount;
+    private String requestStatus; // SENT, RECEIVED, null
+    private Long requestId;
 }

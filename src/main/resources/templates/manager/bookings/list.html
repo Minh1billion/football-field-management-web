@@ -11,9 +11,6 @@
 
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h2 class="text-primary">Danh sách đặt sân</h2>
-            <a th:href="@{/manager/bookings/new}" class="btn btn-success">
-                ➕ Tạo đặt sân
-            </a>
         </div>
 
         <div class="table-responsive shadow-sm rounded">
@@ -36,7 +33,6 @@
                     <td th:text="${b.customer != null ? b.customer.fullName : 'N/A'}"></td>
                     <td th:text="${b.field != null ? b.field.name : 'N/A'}"></td>
 
-                    <!-- Dùng #temporals cho LocalDateTime và viết trong 1 biểu thức -->
                     <td th:text="${b.startTime != null && b.endTime != null
                                    ? #temporals.format(b.startTime, 'yyyy-MM-dd HH:mm') + ' - ' + #temporals.format(b.endTime, 'yyyy-MM-dd HH:mm')
                                    : ''}"></td>
@@ -55,7 +51,6 @@
                     </td>
 
                     <td class="text-center">
-                        <!-- Xác nhận: chỉ khi PENDING -->
                         <form th:if="${b.status.name() == 'PENDING'}"
                               th:action="@{|/manager/bookings/${b.id}/confirm|}"
                               method="post"
@@ -63,7 +58,6 @@
                             <button class="btn btn-sm btn-primary">✅ Xác nhận</button>
                         </form>
 
-                        <!-- Hủy: cho PENDING hoặc CONFIRMED -->
                         <form th:if="${b.status.name() == 'PENDING' or b.status.name() == 'CONFIRMED'}"
                               th:action="@{|/manager/bookings/${b.id}/cancel|}"
                               method="post"

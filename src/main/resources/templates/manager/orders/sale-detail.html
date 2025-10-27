@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/manager :: layout(~{::content})}">
+<head>
+  <title>Chi tiết đơn mua</title>
+</head>
+<body>
+<div th:fragment="content">
+  <div class="container-fluid py-4">
+    <div class="row">
+      <div class="col-12">
+
+        <!-- Quay lại -->
+        <a th:href="@{/manager/orders}" class="btn btn-outline-secondary mb-3">
+          <i class="fas fa-arrow-left"></i> Quay lại
+        </a>
+
+        <!-- Thông báo -->
+        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+          <span th:text="${successMessage}"></span>
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+          <span th:text="${errorMessage}"></span>
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <!-- Thông tin đơn hàng -->
+        <div class="card mb-4">
+          <div class="card-header pb-0 d-flex justify-content-between align-items-center">
+            <h5>Chi tiết đơn mua: <span th:text="${order.orderCode}"></span></h5>
+            <span class="badge"
+                  th:classappend="${order.status.name() == 'PENDING'} ? 'bg-gradient-warning' :
+                                  (${order.status.name() == 'COMPLETED'} ? 'bg-gradient-success' : 'bg-gradient-info')"
+                  th:text="${order.status}"></span>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6">
+                <h6 class="text-sm fw-bold">Thông tin khách hàng</h6>
+                <p><strong>Tên:</strong> <span th:text="${order.customerName}"></span></p>
+                <p><strong>SĐT:</strong> <span th:text="${order.customerPhone}"></span></p>
+                <p><strong>Email:</strong> <span th:text="${order.customerEmail}"></span></p>
+                <p><strong>Địa chỉ:</strong> <span th:text="${order.customerAddress}"></span></p>
+                <p><strong>Thành phố:</strong> <span th:text="${order.customerCity}"></span></p>
+              </div>
+              <div class="col-md-6">
+                <h6 class="text-sm fw-bold">Thông tin đơn hàng</h6>
+                <p><strong>Ngày tạo:</strong>
+                  <span th:text="${#temporals.format(order.createdAt, 'dd/MM/yyyy HH:mm')}"></span>
+                </p>
+                <p th:if="${order.deliveredAt}">
+                  <strong>Ngày giao:</strong>
+                  <span th:text="${#temporals.format(order.deliveredAt, 'dd/MM/yyyy HH:mm')}"></span>
+                </p>
+                <p><strong>Phí ship:</strong>
+                  <span th:text="${#numbers.formatDecimal(order.shippingFee, 0, 'COMMA', 0, 'POINT')} + ' đ'"></span>
+                </p>
+                <p><strong>Tổng tiền:</strong>
+                  <span class="text-success fw-bold"
+                        th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' đ'"></span>
+                </p>
+                <p th:if="${order.notes}">
+                  <strong>Ghi chú:</strong> <span th:text="${order.notes}"></span>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Thanh toán -->
+        <div class="card mb-4" th:if="${order.payment}">
+          <div class="card-header pb-0">
+            <h6>Thông tin thanh toán</h6>
+          </div>
+          <div class="card-body row">
+            <div class="col-md-6">
+              <p><strong>Mã thanh toán:</strong> <span th:text="${order.payment.paymentCode}"></span></p>
+              <p><strong>Phương thức:</strong>
+                <span class="badge bg-gradient-info" th:text="${order.payment.paymentMethod}"></span>
+              </p>
+              <p><strong>Trạng thái:</strong>
+                <span class="badge"
+                      th:classappend="${order.payment.status.name() == 'PENDING'} ? 'bg-gradient-warning' : 'bg-gradient-success'"
+                      th:text="${order.payment.status}"></span>
+              </p>
+              <p th:if="${order.payment.paidAt}">
+                <strong>Ngày thanh toán:</strong>
+                <span th:text="${#temporals.format(order.payment.paidAt, 'dd/MM/yyyy HH:mm')}"></span>
+              </p>
+            </div>
+
+            <div class="col-md-6"
+                 th:if="${order.payment.paymentMethod.name() == 'COD' && order.payment.status.name() == 'PENDING'}">
+              <form th:action="@{/manager/orders/sale/{id}/confirm-payment(id=${order.id})}"
+                    method="post"
+                    onsubmit="return confirm('Xác nhận đã nhận tiền COD?')">
+                <button type="submit" class="btn btn-success">
+                  <i class="fas fa-check"></i> Xác nhận đã nhận tiền COD
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cập nhật trạng thái -->
+        <div class="card mb-4">
+          <div class="card-header pb-0">
+            <h6>Cập nhật trạng thái đơn hàng</h6>
+          </div>
+          <div class="card-body">
+            <form th:action="@{/manager/orders/sale/{id}/update-status(id=${order.id})}" method="post"
+                  class="d-flex gap-3 align-items-end">
+              <div class="flex-grow-1">
+                <label class="form-label">Trạng thái</label>
+                <select name="status" class="form-select">
+                  <option value="PENDING" th:selected="${order.status.name() == 'PENDING'}">Chờ xử lý</option>
+                  <option value="PROCESSING" th:selected="${order.status.name() == 'PROCESSING'}">Đang xử lý</option>
+                  <option value="READY" th:selected="${order.status.name() == 'READY'}">Sẵn sàng giao</option>
+                  <option value="SHIPPING" th:selected="${order.status.name() == 'SHIPPING'}">Đang giao hàng</option>
+                  <option value="DELIVERED" th:selected="${order.status.name() == 'DELIVERED'}">Đã giao hàng</option>
+                  <option value="COMPLETED" th:selected="${order.status.name() == 'COMPLETED'}">Hoàn thành</option>
+                  <option value="CANCELLED" th:selected="${order.status.name() == 'CANCELLED'}">Đã hủy</option>
+                </select>
+              </div>
+              <button type="submit" class="btn btn-primary"
+                      onclick="return confirm('Xác nhận cập nhật trạng thái đơn hàng?')">
+                <i class="fas fa-save"></i> Cập nhật
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Danh sách sản phẩm -->
+        <div class="card">
+          <div class="card-header pb-0">
+            <h6>Sản phẩm trong đơn</h6>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table align-items-center mb-0">
+                <thead>
+                <tr>
+                  <th>Sản phẩm</th>
+                  <th>Đơn giá</th>
+                  <th>Số lượng</th>
+                  <th>Thành tiền</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="item : ${order.orderItems}">
+                  <td>
+                    <div class="d-flex px-2 py-1 align-items-center">
+                      <img th:if="${item?.sportWear != null && item.sportWear.imageUrl != null}"
+                           th:src="${item.sportWear.imageUrl}"
+                           class="avatar avatar-sm me-3" alt="product">
+                      <div class="d-flex flex-column justify-content-center">
+                        <h6 class="mb-0 text-sm"
+                            th:text="${item?.sportWear != null ? item.sportWear.name : 'Sản phẩm đã bị xóa'}"></h6>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="text-sm"
+                          th:text="${#numbers.formatDecimal(item.unitPrice, 0, 'COMMA', 0, 'POINT')} + ' đ'"></span>
+                  </td>
+                  <td>
+                    <span class="text-sm fw-bold" th:text="${item.quantity}"></span>
+                  </td>
+                  <td>
+                    <span class="text-sm fw-bold text-success"
+                          th:text="${#numbers.formatDecimal(item.totalPrice, 0, 'COMMA', 0, 'POINT')} + ' đ'"></span>
+                  </td>
+                </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,10 +1,7 @@
 package utescore.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -13,12 +10,15 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
-@Entity
-@Table(name = "orders")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
+@EqualsAndHashCode(exclude = {"payment", "account", "customer", "orderItems"})
+@Entity
+@Table(name = "orders")
 public class Order {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -26,11 +26,11 @@ public class Order {
     @Column(unique = true, nullable = false)
     private String orderCode;
 
-    @Column(nullable = false, precision = 10, scale = 2)
+    @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal totalAmount;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 20)
     private OrderStatus status = OrderStatus.PENDING;
 
     @Column(columnDefinition = "TEXT")
@@ -80,13 +80,14 @@ public class Order {
     @ToString.Exclude
     private Payment payment;
 
+    // Enum trạng thái đơn hàng
     public enum OrderStatus {
         PENDING,      // Chờ xác nhận
         PROCESSING,   // Đang xử lý
         READY,        // Sẵn sàng giao
-        SHIPPING,     // Đang giao hàng (THÊM MỚI)
+        SHIPPING,     // Đang giao hàng
         DELIVERED,    // Đã giao hàng
-        COMPLETED,    // Hoàn thành (THÊM MỚI)
+        COMPLETED,    // Hoàn thành
         CANCELLED     // Đã hủy
     }
 }

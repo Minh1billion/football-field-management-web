@@ -34,4 +34,7 @@ public class RentalOrderDetail {
 
     @Column(name = "sub_total")
     private Double subTotal;
+
+    @Column(length = 50)
+    private String returnStatus = "RENTED"; // RENTED, RETURNED, DAMAGED, LOST
 }

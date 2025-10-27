@@ -6,9 +6,13 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import utescore.entity.Order;
 
+import java.util.List;
+
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
     
     @Query("SELECT COUNT(DISTINCT o) FROM Order o JOIN o.orderItems oi WHERE oi.service.id = :serviceId")
     long countByServiceId(@Param("serviceId") Long serviceId);
+
+    List<Order> findByStatus(Order.OrderStatus status);
 }

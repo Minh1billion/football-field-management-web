@@ -1,24 +1,25 @@
 package utescore.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 @Entity
 @Table(name = "sport_wears")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@ToString(exclude = {"bookingSportWears", "orderItems"})
 public class SportWear {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -67,11 +68,9 @@ public class SportWear {
     private LocalDateTime updatedAt;
 
     @OneToMany(mappedBy = "sportWear", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @ToString.Exclude
     private Set<BookingSportWear> bookingSportWears = new HashSet<>();
 
     @OneToMany(mappedBy = "sportWear", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @ToString.Exclude
     private Set<OrderItem> orderItems = new HashSet<>();
 
     public enum WearType {
@@ -80,5 +79,18 @@ public class SportWear {
 
     public enum Size {
         XS, S, M, L, XL, XXL, XXXL
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof SportWear)) return false;
+        SportWear that = (SportWear) o;
+        return id != null && id.equals(that.getId());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
     }
 }

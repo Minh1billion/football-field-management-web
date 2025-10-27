@@ -145,6 +145,9 @@ public class BookingManagementService {
         // Đánh dấu booking hoàn tất
         b.setStatus(Booking.BookingStatus.COMPLETED);
 
+        // ✅ Hoàn trả tất cả đồ thể thao đã mượn
+        returnAllSportWears(b);
+
         // ✅ Nếu là CASH/COD và payment vẫn PENDING → Chuyển sang COMPLETED + tích điểm
         if (b.getPayment() != null && b.getPayment().getStatus() == Payment.PaymentStatus.PENDING) {
             Payment.PaymentMethod method = b.getPayment().getPaymentMethod();
@@ -161,7 +164,31 @@ public class BookingManagementService {
         return bookingRepo.save(b);
     }
 
-    // Helper method để tích điểm
+    /**
+     * Hoàn trả tất cả đồ thể thao đã mượn của booking
+     */
+    private void returnAllSportWears(Booking booking) {
+        if (booking.getBookingSportWears() == null || booking.getBookingSportWears().isEmpty()) {
+            return;
+        }
+
+        for (BookingSportWear bsw : booking.getBookingSportWears()) {
+            // Chỉ hoàn trả những đồ đang ở trạng thái RENTED
+            if (bsw.getStatus() == BookingSportWear.RentalStatus.RENTED) {
+                bsw.setStatus(BookingSportWear.RentalStatus.RETURNED);
+                bookingSportWearRepo.save(bsw);
+
+                // Tùy chọn: Cập nhật lại số lượng tồn kho (nếu cần)
+                 SportWear sportWear = bsw.getSportWear();
+                 sportWear.setStockQuantity(sportWear.getStockQuantity() + bsw.getQuantity());
+                 sportWearRepo.save(sportWear);
+            }
+        }
+    }
+
+    /**
+     * Helper method để tích điểm
+     */
     private void updateLoyaltyPoints(Payment payment) {
         if (payment.getBooking() == null) return;
 

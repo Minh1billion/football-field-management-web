@@ -6,9 +6,12 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import jakarta.validation.Valid;
 import utescore.entity.Service;
 import utescore.repository.BookingServiceRepository;
 import utescore.repository.OrderRepository;
@@ -70,24 +73,40 @@ public class ServiceController {
 
     @PostMapping("/create")
     public String createService(
-            @ModelAttribute Service service,
+            @Valid @ModelAttribute("service") Service service,
+            BindingResult result,
             @RequestParam(value = "imageFile", required = false) MultipartFile imageFile,
-            RedirectAttributes redirectAttributes) {
+            RedirectAttributes redirectAttributes,
+            Model model) {
+
+        if (result.hasErrors()) {
+            model.addAttribute("serviceTypes", Service.ServiceType.values());
+            return "admin/services/create";
+        }
+
         try {
-            // Upload image to cloud if provided
             if (imageFile != null && !imageFile.isEmpty()) {
+                String contentType = imageFile.getContentType();
+                if (contentType == null || 
+                    !(contentType.equals("image/jpeg") || contentType.equals("image/png") || contentType.equals("image/gif"))) {
+                    result.rejectValue("imageUrl", "error.imageFile", "Chỉ chấp nhận file ảnh JPG, PNG hoặc GIF");
+                    model.addAttribute("serviceTypes", Service.ServiceType.values());
+                    return "admin/services/create";
+                }
+
                 String imageName = cloudinaryService.uploadAndGetName(imageFile);
                 String imageUrl = cloudinaryService.getImageUrl(imageName);
                 service.setImageUrl(imageUrl);
             }
-            
+
             serviceService.save(service);
             redirectAttributes.addFlashAttribute("successMessage", "Tạo dịch vụ thành công!");
+            return "redirect:/admin/services";
+
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Có lỗi xảy ra khi tạo dịch vụ: " + e.getMessage());
             return "redirect:/admin/services/create";
         }
-        return "redirect:/admin/services";
     }
 
     @GetMapping("/edit/{id}")
@@ -104,10 +123,16 @@ public class ServiceController {
     @PostMapping("/edit/{id}")
     public String updateService(
             @PathVariable Long id,
-            @ModelAttribute Service service,
+            @Valid @ModelAttribute("service") Service service,
+            BindingResult result,
             @RequestParam(value = "imageFile", required = false) MultipartFile imageFile,
-            RedirectAttributes redirectAttributes) {
+            RedirectAttributes redirectAttributes, Model model) {
         try {
+        		if (result.hasErrors()) {
+        			model.addAttribute("service", service);
+        	        model.addAttribute("serviceTypes", Service.ServiceType.values());
+				return "admin/services/edit";
+			}
             Service existingService = serviceService.findById(id);
             if (existingService == null) {
                 redirectAttributes.addFlashAttribute("errorMessage", "Không tìm thấy dịch vụ!");

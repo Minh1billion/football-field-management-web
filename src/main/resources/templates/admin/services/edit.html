@@ -22,6 +22,8 @@
                             <div class="col-md-6 mb-3">
                                 <label for="name" class="form-label">Tên dịch vụ <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" id="name" th:field="*{name}" required>
+                                <div class="text-danger" th:if="${#fields.hasErrors('name')}" 
+         th:errors="*{name}"></div>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="serviceType" class="form-label">Loại dịch vụ <span class="text-danger">*</span></label>
@@ -29,6 +31,8 @@
                                     <option value="">-- Chọn loại dịch vụ --</option>
                                     <option th:each="type : ${serviceTypes}" th:value="${type}" th:text="${type}"></option>
                                 </select>
+                                 <div class="text-danger" th:if="${#fields.hasErrors('serviceType')}" 
+         th:errors="*{serviceType}"></div>
                             </div>
                         </div>
 
@@ -37,17 +41,23 @@
                                 <label for="price" class="form-label">Giá (VNĐ) <span class="text-danger">*</span></label>
                                 <input type="number" class="form-control" id="price" th:field="*{price}" 
                                        step="0.01" min="0" required>
+                                <div class="text-danger" th:if="${#fields.hasErrors('price')}" 
+         th:errors="*{price}"></div>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="stockQuantity" class="form-label">Số lượng tồn kho</label>
                                 <input type="number" class="form-control" id="stockQuantity" th:field="*{stockQuantity}" min="0">
                             </div>
+                            <div class="text-danger" th:if="${#fields.hasErrors('stockQuantity')}" 
+         th:errors="*{stockQuantity}"></div>
                         </div>
 
                         <div class="mb-3">
                             <label for="description" class="form-label">Mô tả</label>
                             <textarea class="form-control" id="description" th:field="*{description}" rows="4"></textarea>
                         </div>
+                        <div class="text-danger" th:if="${#fields.hasErrors('description')}" 
+         th:errors="*{description}"></div>
 
                         <!-- Current image display -->
                         <div class="mb-3" th:if="${service.imageUrl != null and service.imageUrl != ''}">

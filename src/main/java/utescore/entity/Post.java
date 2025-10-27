@@ -1,6 +1,7 @@
 package utescore.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import lombok.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -20,6 +21,8 @@ public class Post {
     private String author;  // usernamelogin
 
     @Column(columnDefinition = "NVARCHAR(MAX)")
+    @NotBlank(message = "Nội dung không được để trống")
+    @Size(min = 3, message = "Nội dung phải có ít nhất 3 ký tự")
     private String content;
 
     @Column(columnDefinition = "NVARCHAR(500)")

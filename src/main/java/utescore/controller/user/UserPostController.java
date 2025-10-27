@@ -1,4 +1,4 @@
-package utescore.controller.user;
+	package utescore.controller.user;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
@@ -6,9 +6,11 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import utescore.entity.Comment;
 import utescore.entity.Post;
@@ -42,10 +44,16 @@ public class UserPostController {
     }
 
     @PostMapping("/create")
-    public String createPost(@ModelAttribute Post post,
-                             @RequestParam("imageFile") MultipartFile imageFile) throws IOException {
-        post.setAuthor(SecurityUtils.getCurrentUsername());
-
+    public String createPost(@Valid @ModelAttribute("newPost") Post post,
+    							BindingResult result,
+                             @RequestParam("imageFile") MultipartFile imageFile, Model model) throws IOException {
+        if (result.hasErrors()) {
+        		model.addAttribute("posts", postService.getByAuthor(SecurityUtils.getCurrentUsername()));
+			return "user/post/post";
+		}
+    	
+    		post.setAuthor(SecurityUtils.getCurrentUsername());
+        
         if (imageFile != null && !imageFile.isEmpty()) {
             String imageName = cloudinaryService.uploadAndGetName(imageFile);
             post.setImageUrl(cloudinaryService.getImageUrl(imageName));

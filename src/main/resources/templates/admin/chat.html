@@ -8,7 +8,13 @@
 </style>
 </head>
 <body>
-	<div th:fragment="content">
+	<div th:fragment="content" style="
+        display: flex;
+        justify-content: center;   /* canh giữa theo chiều ngang */
+        align-items: center;       /* canh giữa theo chiều dọc */
+        height: calc(100vh - 80px); /* trừ chiều cao navbar nếu có */
+        text-align: center;
+     ">
 		<div class="chat-wrapper">
 			<div class="chat-header">👑 Hỗ trợ khách hàng (Admin)</div>
 			<div class="chat-body">

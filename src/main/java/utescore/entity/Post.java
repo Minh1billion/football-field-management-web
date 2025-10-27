@@ -29,7 +29,6 @@ public class Post {
 
     private LocalDateTime createdAt;
 
-    // ✅ Thêm trạng thái phê duyệt
     @Enumerated(EnumType.STRING)
     private PostStatus status;
 
@@ -37,7 +36,6 @@ public class Post {
     @Builder.Default
     private List<Comment> comments = new ArrayList<>();
 
-    // ✅ Danh sách username đã like (JSON hoặc bảng riêng)
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "post_likes", joinColumns = @JoinColumn(name = "post_id"))
     @Column(name = "username")
@@ -50,9 +48,6 @@ public class Post {
         REJECTED   // Từ chối
     }
 
-    /**
-     * ✅ Tự động set giá trị mặc định khi tạo mới
-     */
     @PrePersist
     protected void onCreate() {
         if (createdAt == null) {
@@ -66,16 +61,10 @@ public class Post {
         }
     }
 
-    /**
-     * ✅ Kiểm tra user đã like chưa
-     */
     public boolean isLikedBy(String username) {
         return likedByUsers != null && likedByUsers.contains(username);
     }
 
-    /**
-     * ✅ Thêm like
-     */
     public boolean addLike(String username) {
         if (username == null || username.isBlank()) {
             return false;
@@ -91,9 +80,6 @@ public class Post {
         return false;
     }
 
-    /**
-     * ✅ Bỏ like
-     */
     public boolean removeLike(String username) {
         if (likedByUsers != null && likedByUsers.remove(username)) {
             likes = likedByUsers.size();

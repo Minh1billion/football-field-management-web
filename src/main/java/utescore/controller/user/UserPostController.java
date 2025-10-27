@@ -29,7 +29,7 @@ public class UserPostController {
 
     @Autowired
     private CloudinaryService cloudinaryService;
-    
+
     @Autowired
     private final CommentService commentService;
 
@@ -54,19 +54,22 @@ public class UserPostController {
         postService.save(post);
         return "redirect:/user/post";
     }
-    
+
     @GetMapping("/all-posts")
     public String showAllPosts(Model model) {
+        String username = SecurityUtils.getCurrentUsername();
         model.addAttribute("posts", postService.getAllApproved());
         model.addAttribute("newComment", new Comment());
+        model.addAttribute("usernamelogin", username);
         return "user/post/all-posts";
     }
 
+    // ✅ NEW: Toggle like với username
     @MessageMapping("/post/{postId}/like")
     @SendTo("/topic/post/{postId}")
-    public LikeResponse likePost(@DestinationVariable Long postId) {
-        Post post = postService.likePost(postId);
-        return new LikeResponse(post.getLikes());
+    public LikeResponse toggleLike(@DestinationVariable Long postId, LikeRequest likeRequest) {
+        PostService.LikeResult result = postService.toggleLike(postId, likeRequest.getUsername());
+        return new LikeResponse(result.getTotalLikes(), result.isLiked());
     }
 
     @MessageMapping("/post/{postId}/comment")
@@ -77,6 +80,19 @@ public class UserPostController {
         newComment.setAuthor(commentRequest.getAuthor());
         Comment savedComment = commentService.addComment(postId, newComment);
         return new CommentResponse(savedComment.getAuthor(), savedComment.getContent());
+    }
+
+    // ✅ NEW: Request cho toggle like
+    private static class LikeRequest {
+        private String username;
+
+        public String getUsername() {
+            return username;
+        }
+
+        public void setUsername(String username) {
+            this.username = username;
+        }
     }
 
     private static class CommentRequest {
@@ -90,23 +106,32 @@ public class UserPostController {
         public void setContent(String content) {
             this.content = content;
         }
+
         public String getAuthor() {
-			return author;
-		}
+            return author;
+        }
+
         public void setAuthor(String author) {
-        		this.author = author;
+            this.author = author;
         }
     }
 
+    // ✅ UPDATED: Response bao gồm cả trạng thái isLiked
     private static class LikeResponse {
         private final int likes;
+        private final boolean isLiked;
 
-        public LikeResponse(int likes) {
+        public LikeResponse(int likes, boolean isLiked) {
             this.likes = likes;
+            this.isLiked = isLiked;
         }
 
         public int getLikes() {
             return likes;
+        }
+
+        public boolean isLiked() {
+            return isLiked;
         }
     }
 

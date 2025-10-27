@@ -127,8 +127,10 @@ public class UserBookingController {
                 return "redirect:/user/bookings";
             }
 
-            if (!"PENDING".equals(booking.getStatus()) && !"CONFIRMED".equals(booking.getStatus())) {
-                redirectAttributes.addFlashAttribute("errorMessage", "Không thể chỉnh sửa booking đã hoàn thành hoặc đã hủy");
+            // ✅ Chỉ cho phép edit khi PENDING
+            if (!"PENDING".equals(booking.getStatus())) {
+                redirectAttributes.addFlashAttribute("errorMessage",
+                        "Không thể chỉnh sửa booking đã được xác nhận. Vui lòng liên hệ quản lý để thay đổi.");
                 return "redirect:/user/bookings/" + id;
             }
 
@@ -168,20 +170,17 @@ public class UserBookingController {
         }
     }
 
-    // ⭐ THÊM MỚI: Xóa sportwear khỏi booking
     @PostMapping("/{bookingId}/remove-sportwear/{sportWearId}")
     public String removeSportWearFromBooking(@PathVariable Long bookingId,
                                              @PathVariable Long sportWearId,
                                              Authentication auth,
                                              RedirectAttributes redirectAttributes) {
         try {
-            // Kiểm tra quyền sở hữu
             if (!bookingService.isBookingOwner(auth.getName(), bookingId)) {
                 redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền chỉnh sửa booking này");
                 return "redirect:/user/bookings";
             }
 
-            // Gọi service để xóa sportwear
             bookingService.removeSportWearFromBooking(bookingId, sportWearId);
 
             redirectAttributes.addFlashAttribute("successMessage", "Đã xóa đồ thuê thành công!");
@@ -219,6 +218,14 @@ public class UserBookingController {
         try {
             if (!bookingService.isBookingOwner(auth.getName(), id)) {
                 redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền hủy đặt sân này");
+                return "redirect:/user/bookings";
+            }
+
+            // ✅ Kiểm tra trạng thái trước khi hủy
+            BookingDTO booking = bookingService.getBookingById(id);
+            if ("CONFIRMED".equals(booking.getStatus()) || "COMPLETED".equals(booking.getStatus())) {
+                redirectAttributes.addFlashAttribute("errorMessage",
+                        "Không thể hủy booking đã được xác nhận hoặc hoàn tất. Vui lòng liên hệ quản lý.");
                 return "redirect:/user/bookings";
             }
 

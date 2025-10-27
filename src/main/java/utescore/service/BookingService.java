@@ -12,6 +12,7 @@ import utescore.entity.*;
 import utescore.repository.*;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -34,6 +35,36 @@ public class BookingService {
     private final ServiceRepository serviceRepo;
     private final SportWearRepository sportWearRepo;
     private final BookingSportWearRepository bookingSportWearRepo;
+    private final LoyaltyRepository loyaltyRepo;
+
+    // ===== PHƯƠNG THỨC TÍNH DISCOUNT THEO TIER =====
+    private BigDecimal getDiscountRate(Loyalty.MembershipTier tier) {
+        if (tier == null) {
+            return BigDecimal.ZERO;
+        }
+
+        return switch (tier) {
+            case BRONZE -> BigDecimal.ZERO;
+            case SILVER -> new BigDecimal("0.05"); // 5%
+            case GOLD -> new BigDecimal("0.10");   // 10%
+            case PLATINUM -> new BigDecimal("0.15"); // 15%
+        };
+    }
+
+    private BigDecimal applyDiscount(BigDecimal amount, BigDecimal discountRate) {
+        if (discountRate.compareTo(BigDecimal.ZERO) == 0) {
+            return amount;
+        }
+
+        BigDecimal discount = amount.multiply(discountRate);
+        return amount.subtract(discount).setScale(2, RoundingMode.HALF_UP);
+    }
+
+    // ===== TÍNH ĐIỂM THƯỞNG =====
+    private int calculatePointsFromAmount(BigDecimal amount) {
+        // 1 điểm cho mỗi 1,000 VND
+        return amount.divide(new BigDecimal("1000"), 0, RoundingMode.DOWN).intValue();
+    }
 
     public long countUpcomingBookings(String username) {
         return bookingRepo.countUpcomingBookings(username, LocalDateTime.now());
@@ -130,6 +161,11 @@ public class BookingService {
 
         dto.setCustomerId(customer.getId());
 
+        // Lấy thông tin loyalty để tính discount
+        Loyalty loyalty = loyaltyRepo.findByCustomer_Account_Username(username);
+        Loyalty.MembershipTier tier = loyalty != null ? loyalty.getTier() : Loyalty.MembershipTier.BRONZE;
+        BigDecimal discountRate = getDiscountRate(tier);
+
         // Validate field
         FootballField field = fieldRepo.findById(dto.getFieldId())
                 .orElseThrow(() -> new RuntimeException("Field not found"));
@@ -183,22 +219,20 @@ public class BookingService {
         BigDecimal fieldPrice = field.getPricePerHour()
                 .multiply(BigDecimal.valueOf(hours));
 
-        // Tạo booking
+        // Tạo booking NHƯNG CHƯA SAVE
         Booking booking = new Booking();
         booking.setCustomer(customer);
         booking.setBookingCode("BK-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
         booking.setField(field);
         booking.setStartTime(startDateTime);
         booking.setEndTime(endDateTime);
-        booking.setTotalAmount(fieldPrice); // Tạm thời set giá sân
         booking.setStatus(Booking.BookingStatus.PENDING);
         booking.setNotes(dto.getNotes());
         booking.setCreatedAt(LocalDateTime.now());
+        booking.setTotalAmount(fieldPrice); // Set giá sân tạm thời để tránh NULL
 
-        booking = bookingRepo.save(booking);
-
-        // Tổng tiền bắt đầu từ giá sân
-        BigDecimal totalAmount = fieldPrice;
+        // Tổng tiền trước giảm giá
+        BigDecimal subtotal = fieldPrice;
 
         // ===== XỬ LÝ SERVICES =====
         if (dto.getServices() != null && !dto.getServices().isEmpty()) {
@@ -209,12 +243,10 @@ public class BookingService {
                     utescore.entity.Service service = serviceRepo.findById(serviceDTO.getServiceId())
                             .orElseThrow(() -> new RuntimeException("Service not found: " + serviceDTO.getServiceId()));
 
-                    // Kiểm tra service có available không
                     if (!service.getIsAvailable()) {
                         throw new RuntimeException("Service is not available: " + service.getName());
                     }
 
-                    // Tạo BookingService entity
                     utescore.entity.BookingService bookingService = new utescore.entity.BookingService();
                     bookingService.setBooking(booking);
                     bookingService.setService(service);
@@ -230,7 +262,7 @@ public class BookingService {
                 }
             }
 
-            totalAmount = totalAmount.add(serviceTotal);
+            subtotal = subtotal.add(serviceTotal);
         }
 
         // ===== XỬ LÝ SPORTWEARS =====
@@ -242,18 +274,15 @@ public class BookingService {
                     SportWear sportWear = sportWearRepo.findById(sportWearDTO.getSportWearId())
                             .orElseThrow(() -> new RuntimeException("SportWear not found: " + sportWearDTO.getSportWearId()));
 
-                    // Kiểm tra tồn kho
                     if (sportWear.getStockQuantity() < sportWearDTO.getQuantity()) {
                         throw new RuntimeException("Not enough stock for " + sportWear.getName() +
                                 ". Available: " + sportWear.getStockQuantity());
                     }
 
-                    // Số ngày thuê (mặc định 1 nếu không có)
                     int rentalDays = sportWearDTO.getRentalDays() != null && sportWearDTO.getRentalDays() > 0
                             ? sportWearDTO.getRentalDays()
                             : 1;
 
-                    // Tạo BookingSportWear entity
                     BookingSportWear bookingSportWear = new BookingSportWear();
                     bookingSportWear.setBooking(booking);
                     bookingSportWear.setSportWear(sportWear);
@@ -276,11 +305,15 @@ public class BookingService {
                 }
             }
 
-            totalAmount = totalAmount.add(sportWearTotal);
+            subtotal = subtotal.add(sportWearTotal);
         }
 
-        // Cập nhật tổng tiền cuối cùng
-        booking.setTotalAmount(totalAmount);
+        // ===== ÁP DỤNG GIẢM GIÁ THEO TIER =====
+        BigDecimal finalAmount = applyDiscount(subtotal, discountRate);
+        booking.setTotalAmount(finalAmount);
+
+        // ===== LƯU BOOKING TRƯỚC KHI TẠO PAYMENT =====
+        booking = bookingRepo.save(booking);
 
         // ===== TẠO PAYMENT =====
         Payment payment = new Payment();
@@ -288,7 +321,7 @@ public class BookingService {
 
         String method = dto.getPaymentMethod();
         if (method == null || method.isBlank()) {
-            method = "CASH"; // default
+            method = "CASH";
         }
         method = method.toUpperCase().replace("-", "_");
 
@@ -301,13 +334,22 @@ public class BookingService {
 
         payment.setPaymentMethod(paymentMethod);
         payment.setCreatedAt(LocalDateTime.now());
-        payment.setAmount(totalAmount); // ✅ FIX: Dùng totalAmount đã tính đầy đủ
+        payment.setAmount(finalAmount);
         payment.setStatus(Payment.PaymentStatus.PENDING);
         payment.setNotes(dto.getNotes());
         payment.setPaymentCode(paymentMethod.name() + "-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
 
         booking.setPayment(payment);
         bookingRepo.save(booking);
+
+        // ===== TÍCH ĐIỂM THƯỞNG =====
+        if (loyalty != null) {
+            int earnedPoints = calculatePointsFromAmount(finalAmount);
+            loyalty.addPoints(earnedPoints);
+            loyalty.setTotalSpent(loyalty.getTotalSpent().add(finalAmount));
+            loyalty.setTotalBookings(loyalty.getTotalBookings() + 1);
+            loyaltyRepo.save(loyalty);
+        }
 
         return convertToDTO(booking);
     }
@@ -317,17 +359,22 @@ public class BookingService {
         Booking booking = bookingRepo.findById(dto.getId())
                 .orElseThrow(() -> new RuntimeException("Booking not found"));
 
-        // Kiểm tra trạng thái
         if (booking.getStatus() != Booking.BookingStatus.PENDING &&
                 booking.getStatus() != Booking.BookingStatus.CONFIRMED) {
             throw new RuntimeException("Cannot update completed or cancelled booking");
         }
 
+        // Lấy loyalty để tính discount
+        Customer customer = booking.getCustomer();
+        Loyalty loyalty = loyaltyRepo.findByCustomer_Account_Username(customer.getAccount().getUsername());
+        Loyalty.MembershipTier tier = loyalty != null ? loyalty.getTier() : Loyalty.MembershipTier.BRONZE;
+        BigDecimal discountRate = getDiscountRate(tier);
+
         // Xóa tất cả services cũ
         booking.getBookingServices().clear();
         bookingRepo.save(booking);
 
-        // Tính lại tổng tiền bắt đầu từ giá sân
+        // Tính lại giá sân
         long hours = java.time.Duration.between(booking.getStartTime(), booking.getEndTime()).toHours();
         if (hours <= 0) {
             hours = 1;
@@ -365,21 +412,23 @@ public class BookingService {
             }
         }
 
-        // Tính tổng tiền bao gồm cả sportwear hiện có
+        // Tính tổng sportwear
         BigDecimal sportWearTotal = booking.getBookingSportWears().stream()
                 .map(BookingSportWear::getTotalPrice)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        // Cập nhật tổng tiền = giá sân + services + sportwears
-        BigDecimal totalAmount = fieldPrice.add(serviceTotal).add(sportWearTotal);
-        booking.setTotalAmount(totalAmount);
+        // Tính subtotal
+        BigDecimal subtotal = fieldPrice.add(serviceTotal).add(sportWearTotal);
 
-        // Cập nhật payment amount nếu có
+        // Áp dụng giảm giá
+        BigDecimal finalAmount = applyDiscount(subtotal, discountRate);
+        booking.setTotalAmount(finalAmount);
+
+        // Cập nhật payment
         if (booking.getPayment() != null) {
-            booking.getPayment().setAmount(totalAmount);
+            booking.getPayment().setAmount(finalAmount);
         }
 
-        // Cập nhật notes nếu có
         if (dto.getNotes() != null) {
             booking.setNotes(dto.getNotes());
         }
@@ -391,22 +440,36 @@ public class BookingService {
         Booking booking = bookingRepo.findById(bookingId)
                 .orElseThrow(() -> new RuntimeException("Booking not found"));
 
-        // Chỉ cho phép hủy nếu đang ở trạng thái PENDING hoặc CONFIRMED
         if (booking.getStatus() != Booking.BookingStatus.PENDING &&
                 booking.getStatus() != Booking.BookingStatus.CONFIRMED) {
             throw new RuntimeException("Cannot cancel this booking");
         }
 
-        // Hoàn trả số lượng sportwear về kho
+        // Hoàn trả sportwear
         for (BookingSportWear bsw : booking.getBookingSportWears()) {
             SportWear sportWear = bsw.getSportWear();
             sportWear.setStockQuantity(sportWear.getStockQuantity() + bsw.getQuantity());
             sportWearRepo.save(sportWear);
         }
 
+        // Hoàn trả điểm loyalty nếu đã thanh toán
+        if (booking.getPayment() != null &&
+                booking.getPayment().getStatus() == Payment.PaymentStatus.COMPLETED) {
+
+            Customer customer = booking.getCustomer();
+            Loyalty loyalty = loyaltyRepo.findByCustomer_Account_Username(customer.getAccount().getUsername());
+
+            if (loyalty != null) {
+                int pointsToRefund = calculatePointsFromAmount(booking.getTotalAmount());
+                loyalty.setPoints(Math.max(0, loyalty.getPoints() - pointsToRefund));
+                loyalty.setTotalSpent(loyalty.getTotalSpent().subtract(booking.getTotalAmount()));
+                loyalty.setTotalBookings(Math.max(0, loyalty.getTotalBookings() - 1));
+                loyaltyRepo.save(loyalty);
+            }
+        }
+
         booking.setStatus(Booking.BookingStatus.CANCELLED);
 
-        // Cập nhật payment status nếu có
         if (booking.getPayment() != null) {
             booking.getPayment().setStatus(Payment.PaymentStatus.CANCELLED);
         }
@@ -420,7 +483,6 @@ public class BookingService {
 
         List<TimeSlotDTO> timeSlots = new ArrayList<>();
 
-        // Tạo các khung giờ từ 8:00 đến 22:00, mỗi khung 1 giờ
         for (int hour = 8; hour < 22; hour++) {
             LocalTime startTime = LocalTime.of(hour, 0);
             LocalTime endTime = LocalTime.of(hour + 1, 0);
@@ -428,7 +490,6 @@ public class BookingService {
             LocalDateTime startDateTime = LocalDateTime.of(date, startTime);
             LocalDateTime endDateTime = LocalDateTime.of(date, endTime);
 
-            // Kiểm tra xem khung giờ này có khả dụng không
             boolean available = isTimeSlotAvailable(fieldId, startDateTime, endDateTime);
 
             timeSlots.add(new TimeSlotDTO(
@@ -442,7 +503,6 @@ public class BookingService {
     }
 
     private boolean isTimeSlotAvailable(Long fieldId, LocalDateTime start, LocalDateTime end) {
-        // Kiểm tra sân có active không
         FootballField field = fieldRepo.findById(fieldId).orElse(null);
         if (field == null || Boolean.FALSE.equals(field.getIsActive())) {
             return false;
@@ -564,29 +624,47 @@ public class BookingService {
             throw new RuntimeException("Chỉ có thể xóa đồ thuê khi booking đang chờ xác nhận");
         }
 
-        // Tìm BookingSportWear cần xóa
+        // Lấy loyalty để tính lại discount
+        Customer customer = booking.getCustomer();
+        Loyalty loyalty = loyaltyRepo.findByCustomer_Account_Username(customer.getAccount().getUsername());
+        Loyalty.MembershipTier tier = loyalty != null ? loyalty.getTier() : Loyalty.MembershipTier.BRONZE;
+        BigDecimal discountRate = getDiscountRate(tier);
+
         BookingSportWear toRemove = booking.getBookingSportWears().stream()
                 .filter(bsw -> bsw.getSportWear().getId().equals(sportWearId))
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đồ thuê trong booking"));
 
-        // Lấy giá trước khi xóa
-        BigDecimal removedPrice = toRemove.getTotalPrice();
-
-        // Hoàn trả số lượng vào kho
+        // Hoàn trả kho
         SportWear sportWear = toRemove.getSportWear();
         sportWear.setStockQuantity(sportWear.getStockQuantity() + toRemove.getQuantity());
         sportWearRepo.save(sportWear);
 
-        // XÓA từ collection VÀ database
+        // Xóa
         booking.getBookingSportWears().remove(toRemove);
         bookingSportWearRepo.delete(toRemove);
 
-        // Cập nhật tổng tiền
-        booking.setTotalAmount(booking.getTotalAmount().subtract(removedPrice));
+        // Tính lại subtotal
+        long hours = java.time.Duration.between(booking.getStartTime(), booking.getEndTime()).toHours();
+        if (hours <= 0) hours = 1;
+
+        BigDecimal fieldPrice = booking.getField().getPricePerHour().multiply(BigDecimal.valueOf(hours));
+
+        BigDecimal serviceTotal = booking.getBookingServices().stream()
+                .map(utescore.entity.BookingService::getTotalPrice)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal sportWearTotal = booking.getBookingSportWears().stream()
+                .map(BookingSportWear::getTotalPrice)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal subtotal = fieldPrice.add(serviceTotal).add(sportWearTotal);
+        BigDecimal finalAmount = applyDiscount(subtotal, discountRate);
+
+        booking.setTotalAmount(finalAmount);
 
         if (booking.getPayment() != null) {
-            booking.getPayment().setAmount(booking.getTotalAmount());
+            booking.getPayment().setAmount(finalAmount);
         }
 
         bookingRepo.save(booking);

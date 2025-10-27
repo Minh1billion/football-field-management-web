@@ -25,11 +25,14 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     Optional<Booking> findById(Long id);
 
     @Query("""
-        select count(b) > 0 from Booking b
-        where b.field.id = :fieldId
-          and b.status in (utescore.entity.Booking.BookingStatus.PENDING, utescore.entity.Booking.BookingStatus.CONFIRMED)
-          and (b.startTime < :end and b.endTime > :start)
-        """)
+        SELECT CASE WHEN COUNT(b) > 0 THEN true ELSE false END
+        FROM Booking b
+        WHERE b.field.id = :fieldId
+          AND b.status IN ('PENDING', 'CONFIRMED', 'COMPLETED')
+          AND (
+              (b.startTime < :end AND b.endTime > :start)
+          )
+    """)
     boolean existsOverlap(@Param("fieldId") Long fieldId,
                           @Param("start") LocalDateTime start,
                           @Param("end") LocalDateTime end);

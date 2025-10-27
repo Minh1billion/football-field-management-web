@@ -28,7 +28,7 @@ public class PaymentService {
 	private final RentalOrderRepository rentalOrderRepository;
 	private final OrderRepository orderRepository;
 	private final LoyaltyRepository loyaltyRepository;
-    private final BookingRepository bookingRepository;
+	private final BookingRepository bookingRepository;
 
 	public List<PaymentDTO> getAllPayments() {
 		return paymentRepository.findAll().stream().map(this::convertToDTO).toList();
@@ -64,12 +64,13 @@ public class PaymentService {
 
 		Payment savedPayment = paymentRepository.save(payment);
 
+		// ✅ QUAN TRỌNG: Chỉ CONFIRM booking, KHÔNG auto-complete
+		confirmBookingIfPending(savedPayment);
+
 		updateLoyaltyPoints(payment);
-        markBookingCompletedIfAny(savedPayment);
 
-        return savedPayment;
+		return savedPayment;
 	}
-
 
 	public Payment updatePaymentStatus(Long paymentId, Payment.PaymentStatus status) {
 		Payment payment = paymentRepository.findById(paymentId)
@@ -82,12 +83,15 @@ public class PaymentService {
 		}
 
 		Payment saved = paymentRepository.save(payment);
+
+		if (status == Payment.PaymentStatus.COMPLETED) {
+			// ✅ Chỉ CONFIRM, không auto-complete
+			confirmBookingIfPending(saved);
+		}
+
 		updateLoyaltyPoints(payment);
 
-        if (status == Payment.PaymentStatus.COMPLETED) {
-            markBookingCompletedIfAny(saved);
-        }
-        return saved;
+		return saved;
 	}
 
 	public Payment updatePaymentByRentalOrderId(Long rentalOrderId, String transactionId) {
@@ -143,13 +147,15 @@ public class PaymentService {
 		}
 
 		Payment saved = paymentRepository.save(payment);
+
+		if (status == Payment.PaymentStatus.COMPLETED) {
+			// ✅ Chỉ CONFIRM, không auto-complete
+			confirmBookingIfPending(saved);
+		}
+
 		updateLoyaltyPoints(payment);
 
-        if (status == Payment.PaymentStatus.COMPLETED) {
-            markBookingCompletedIfAny(saved);
-        }
-
-        return saved;
+		return saved;
 	}
 
 	public Payment findById(Long id) {
@@ -197,6 +203,21 @@ public class PaymentService {
 
 		return dto;
 	}
+
+	// ✅ FIXED: Chỉ chuyển sang CONFIRMED khi thanh toán, KHÔNG auto-complete
+	private void confirmBookingIfPending(Payment payment) {
+		if (payment.getBooking() == null) return;
+
+		Booking booking = payment.getBooking();
+
+		// Chỉ chuyển từ PENDING sang CONFIRMED
+		if (booking.getStatus() == Booking.BookingStatus.PENDING) {
+			booking.setStatus(Booking.BookingStatus.CONFIRMED);
+			bookingRepository.save(booking);
+		}
+		// Không làm gì nếu đã CONFIRMED hoặc COMPLETED
+	}
+
 	// Phương thức private để cập nhật điểm thưởng
 	private void updateLoyaltyPoints(Payment payment) {
 		Customer customer = getCustomerFromPayment(payment);
@@ -231,19 +252,4 @@ public class PaymentService {
 		}
 		return null;
 	}
-
-    // Helper auto-complete Booking
-    private void markBookingCompletedIfAny(Payment payment) {
-        if (payment.getBooking() == null) return;
-
-        Booking booking = payment.getBooking();
-        try {
-            // Luôn chuyển sang COMPLETED khi thanh toán thành công
-            booking.setStatus(Booking.BookingStatus.COMPLETED);
-            bookingRepository.save(booking);
-        } catch (Exception e) {
-            // Có thể log nếu cần
-            throw new RuntimeException("Không thể cập nhật trạng thái booking sau thanh toán: " + e.getMessage(), e);
-        }
-    }
 }

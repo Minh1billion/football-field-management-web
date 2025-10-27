@@ -20,7 +20,6 @@ public class RewardService {
         Loyalty loyalty = loyaltyRepository.findByCustomer_Account_Username(username);
 
         if (loyalty == null) {
-            // Trả về thông tin mặc định nếu chưa có
             LoyaltyDTO dto = new LoyaltyDTO();
             dto.setPoints(0);
             dto.setLevel("BRONZE");

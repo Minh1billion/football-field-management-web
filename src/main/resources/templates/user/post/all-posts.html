@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Bảng tin</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1.5.1/dist/sockjs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+  <style>
+    .post-container {
+      min-height: 300px; /* Đảm bảo chiều cao tối thiểu cho bài viết và bình luận */
+    }
+    .comment-list {
+      max-height: 400px; /* Giới hạn chiều cao danh sách bình luận */
+      overflow-y: auto; /* Thêm thanh cuộn nếu bình luận quá dài */
+    }
+    .comment-section {
+      border-left: 1px solid #dee2e6; /* Đường viền phân cách giữa bài viết và bình luận */
+      padding-left: 15px;
+    }
+  </style>
+</head>
+
+<body>
+  <h3 class="mb-4 text-primary text-center fw-bold">📰 Bảng tin</h3>
+
+  <!-- Bộ lọc thời gian -->
+  <div class="d-flex justify-content-end mb-3">
+    <select id="filterTime" class="form-select w-auto">
+      <option value="all">Tất cả</option>
+      <option value="hour">1 giờ qua</option>
+      <option value="day">1 ngày qua</option>
+      <option value="week">1 tuần qua</option>
+      <option value="month">1 tháng qua</option>
+      <option value="year">1 năm qua</option>
+    </select>
+  </div>
+
+  <!-- Danh sách bài đăng -->
+  <div id="postList" class="d-flex flex-column gap-3">
+    <div th:each="p : ${posts}" class="card" th:data-createdat="${p.createdAt}" th:data-post-id="${p.id}">
+      <div class="card-body">
+        <div class="row post-container">
+          <!-- Phần bài viết (50%) -->
+          <div class="col-md-6">
+            <!-- Header -->
+            <div class="d-flex align-items-center mb-2">
+              <img src="https://cdn-icons-png.flaticon.com/512/149/149071.png" alt="avatar"
+                   class="rounded-circle me-2" style="width:40px;height:40px;">
+              <div>
+                <h6 class="mb-0 fw-bold">[[${p.author}]]</h6>
+                <small class="text-muted">🕒 [[${#temporals.format(p.createdAt, 'HH:mm dd/MM/yyyy')}]]</small>
+              </div>
+            </div>
+
+            <div th:if="${p.imageUrl}" class="mb-2">
+              <img th:src="${p.imageUrl}" alt="Ảnh bài đăng" class="img-fluid rounded">
+            </div>
+
+            <p>[[${p.content}]]</p>
+
+            <div class="d-flex gap-2 mb-2">
+              <button type="button" class="btn btn-outline-primary btn-sm like-btn">
+                👍 Thích (<span class="like-count">[[${p.likes}]]</span>)
+              </button>
+              <button type="button" class="btn btn-outline-secondary btn-sm">
+                💬 Bình luận (<span class="comment-count">[[${#lists.size(p.comments)}]]</span>)
+              </button>
+            </div>
+          </div>
+
+          <!-- Phần bình luận (50%) -->
+          <div class="col-md-6 comment-section">
+            <!-- 📝 Form nhập bình luận -->
+            <form class="comment-form mb-3" method="post">
+              <div class="input-group">
+                <input type="text" name="content" class="form-control" placeholder="Viết bình luận..." required>
+                <button type="submit" class="btn btn-success">Gửi</button>
+              </div>
+            </form>
+
+            <!-- 💬 Danh sách bình luận -->
+            <div class="comment-list">
+              <div th:each="c : ${p.comments}" class="mb-2 p-2 border rounded comment-item bg-light">
+                <div class="d-flex justify-content-between">
+                  <strong>[[${c.author}]]</strong>
+                  <small class="text-muted">[[${#temporals.format(c.createdAt, 'HH:mm dd/MM/yyyy')}]]</small>
+                </div>
+                <div>[[${c.content}]]</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <input type="hidden" id="usernamelogin" th:value="${usernamelogin}"/>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    let stompClient = null;
+
+    function connectWebSocket() {
+      const socket = new SockJS('/ws');
+      stompClient = Stomp.over(socket);
+      stompClient.connect({}, () => {
+        document.querySelectorAll("#postList .card").forEach(post => {
+          const postId = post.dataset.postId;
+          stompClient.subscribe(`/topic/post/${postId}`, (message) => {
+            const data = JSON.parse(message.body);
+            updateUI(postId, data);
+          });
+        });
+      }, (error) => {
+        console.error("WebSocket Error:", error);
+      });
+    }
+
+    // 🧩 Cập nhật UI khi nhận dữ liệu mới
+    function updateUI(postId, data) {
+      const post = document.querySelector(`.card[data-post-id="${postId}"]`);
+      if (!post) return;
+
+      // Cập nhật Like
+      if (data.likes !== undefined) {
+        const likeCountSpan = post.querySelector(".like-count");
+        if (likeCountSpan) likeCountSpan.textContent = data.likes;
+      }
+
+      // Cập nhật Bình luận
+      if (data.author && data.content) {
+        const commentList = post.querySelector(".comment-list");
+        const newComment = document.createElement("div");
+        newComment.classList.add("mb-2", "p-2", "border", "rounded", "comment-item", "bg-light");
+
+        const now = new Date();
+        const formattedTime = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+                              + " " + now.toLocaleDateString('vi-VN');
+
+        newComment.innerHTML = `
+          <div class="d-flex justify-content-between">
+            <strong>${data.author}</strong>
+            <small class="text-muted">${formattedTime}</small>
+          </div>
+          <div>${data.content}</div>
+        `;
+
+        // Thêm bình luận mới ngay DƯỚI form nhập
+        commentList.prepend(newComment);
+
+        // Cập nhật số lượng bình luận
+        const commentCountSpan = post.querySelector(".comment-count");
+        if (commentCountSpan) {
+          const currentCount = parseInt(commentCountSpan.textContent.match(/\d+/)?.[0] || 0);
+          commentCountSpan.textContent = currentCount + 1;
+        }
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      connectWebSocket();
+
+      // Gửi Like
+      document.querySelectorAll(".like-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const postId = btn.closest(".card").dataset.postId;
+          stompClient.send(`/app/post/${postId}/like`, {}, {});
+        });
+      });
+
+      // Gửi Comment
+      document.querySelectorAll(".comment-form").forEach(form => {
+        form.addEventListener("submit", (e) => {
+          e.preventDefault();
+          const postId = form.closest(".card").dataset.postId;
+          const username = document.getElementById("usernamelogin").value;
+          const content = form.querySelector("input[name='content']").value;
+          stompClient.send(`/app/post/${postId}/comment`, {}, JSON.stringify({ content, author: username }));
+          form.reset();
+        });
+      });
+
+      // Bộ lọc thời gian
+      document.getElementById("filterTime").addEventListener("change", function () {
+        const now = new Date();
+        const value = this.value;
+        const posts = document.querySelectorAll("#postList .card");
+
+        posts.forEach(post => {
+          const createdAt = new Date(post.dataset.createdat);
+          const diffHours = (now - createdAt) / 1000 / 3600;
+          let show = false;
+          switch (value) {
+            case "all": show = true; break;
+            case "hour": show = diffHours <= 1; break;
+            case "day": show = diffHours <= 24; break;
+            case "week": show = diffHours <= 24 * 7; break;
+            case "month": show = diffHours <= 24 * 30; break;
+            case "year": show = diffHours <= 24 * 365; break;
+          }
+          post.style.display = show ? "block" : "none";
+        });
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/admin :: layout(~{::content})}">
+<head>
+    <meta charset="UTF-8">
+    <title>Quản lý bài đăng</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+</head>
+<body>
+<div th:fragment="content" class="container mt-4">
+    <h2 class="mb-4">Danh sách bài viết</h2>
+
+    <!-- Bộ lọc ngày đăng -->
+    <div class="mb-3">
+        <label for="filterDate" class="form-label">Lọc theo ngày đăng:</label>
+        <div class="d-flex gap-2">
+            <input type="date" id="filterDate" class="form-control" style="max-width: 200px;">
+            <button class="btn btn-primary" onclick="filterByDate()">Lọc</button>
+            <button class="btn btn-secondary" onclick="resetFilter()">Xóa lọc</button>
+        </div>
+    </div>
+
+    <!-- Bảng -->
+    <div class="table-responsive">
+        <table class="table table-striped table-bordered table-hover" id="postTable">
+            <thead class="table-dark">
+            <tr>
+                <th>ID</th>
+                <th>Tác giả</th>
+                <th>Ảnh</th>
+                <th>Trạng thái</th>
+                <th>Thời gian đăng</th>
+                <th>Hành động</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="p : ${posts}">
+                <td>[[${p.id}]]</td>
+                <td>[[${p.author}]]</td>
+                <td>
+                    <img th:if="${p.imageUrl != null and !#strings.isEmpty(p.imageUrl)}"
+                         th:src="${p.imageUrl}" class="img-fluid rounded"
+                         style="max-width: 100px;" alt="Hình ảnh bài viết" />
+                </td>
+                <td>[[${p.status}]]</td>
+                <td class="date-cell">[[${#temporals.format(p.createdAt, 'dd/MM/yyyy HH:mm')}]]</td>
+                <td>
+                    <div class="d-flex flex-wrap gap-2 justify-content-center">
+                        <button type="button"
+                                class="btn btn-outline-info btn-sm d-flex align-items-center"
+                                th:attr="data-author=${p.author},
+                                     data-content=${p.content},
+                                     data-image=${p.imageUrl},
+                                     data-time=${#temporals.format(p.createdAt,'dd/MM/yyyy HH:mm')}"
+                                onclick="showDetailFromBtn(this)">
+                            <i class="fas fa-eye me-1"></i> Xem
+                        </button>
+
+                        <div th:if="${p.status.name() != 'APPROVED'}" class="d-inline">
+						    <form th:action="@{/admin/post/approve/{id}(id=${p.id})}" method="post" class="d-inline">
+						        <button type="submit" class="btn btn-outline-success btn-sm d-flex align-items-center">
+						            <i class="fas fa-check me-1"></i> Duyệt
+						        </button>
+						    </form>
+						</div>
+
+                        <form th:action="@{/admin/post/reject/{id}(id=${p.id})}"
+                              method="post" class="d-inline">
+                            <button type="submit"
+                                    class="btn btn-outline-warning btn-sm d-flex align-items-center"
+                                    th:disabled="${p.status == 'REJECTED'}">
+                                <i class="fas fa-times me-1"></i> Từ chối
+                            </button>
+                        </form>
+
+                        <form th:action="@{/admin/post/delete/{id}(id=${p.id})}"
+                              method="post" class="d-inline">
+                            <button type="submit"
+                                    class="btn btn-outline-danger btn-sm d-flex align-items-center"
+                                    onclick="return confirm('Bạn có chắc chắn muốn xóa bài viết này?')">
+                                <i class="fas fa-trash me-1"></i> Xóa
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Modal chi tiết -->
+    <div class="modal fade" id="postDetailModal" tabindex="-1"
+         aria-labelledby="postDetailLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="postDetailLabel">Chi tiết bài viết</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                            aria-label="Đóng"></button>
+                </div>
+                <div class="modal-body">
+                    <p><strong>Tác giả:</strong> <span id="detailAuthor"></span></p>
+                    <p><strong>Thời gian:</strong> <span id="detailTime"></span></p>
+                    <p><strong>Nội dung:</strong></p>
+                    <div class="border rounded p-2 mb-3" id="detailContent"
+                         style="white-space: pre-wrap;"></div>
+                    <div class="text-center">
+                        <img id="detailImage" src="" alt="Hình ảnh bài viết"
+                             class="img-fluid rounded"
+                             style="max-width: 400px; display: none;" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* Lọc theo ngày (client-side) */
+        function filterByDate() {
+            const filterValue = document.getElementById('filterDate').value;
+            const rows = document.querySelectorAll('#postTable tbody tr');
+            if (!filterValue) {
+                alert('Vui lòng chọn ngày để lọc!');
+                return;
+            }
+            const selectedDate = new Date(filterValue);
+            rows.forEach(row => {
+                const dateText = row.querySelector('.date-cell').textContent.trim();
+                const [day, month, year] = dateText.split(' ')[0].split('/');
+                const rowDate = new Date(`${year}-${month}-${day}`);
+                row.style.display = (rowDate.toDateString() === selectedDate.toDateString()) ? '' : 'none';
+            });
+        }
+
+        function resetFilter() {
+            document.getElementById('filterDate').value = '';
+            document.querySelectorAll('#postTable tbody tr').forEach(row => row.style.display = '');
+        }
+
+        /* Mở modal từ nút, đọc data-* attributes an toàn */
+        function showDetailFromBtn(btn) {
+            const author = btn.dataset.author || '';
+            const content = btn.dataset.content || '';
+            const image = btn.dataset.image || '';
+            const time = btn.dataset.time || '';
+
+            document.getElementById('detailAuthor').textContent = author;
+            document.getElementById('detailTime').textContent = time;
+            document.getElementById('detailContent').textContent = content;
+
+            const img = document.getElementById('detailImage');
+            if (image && image !== 'null' && image.trim() !== '') {
+                img.src = image;
+                img.style.display = 'block';
+            } else {
+                img.style.display = 'none';
+            }
+
+            const modalEl = document.getElementById('postDetailModal');
+            const modal = new bootstrap.Modal(modalEl);
+            modal.show();
+        }
+    </script>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

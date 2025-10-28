@@ -72,6 +72,7 @@ public class ManagerOrderService {
             map.put("paymentMethod", order.getPayment() != null ?
                     order.getPayment().getPaymentMethod().toString() : "N/A");
             map.put("createdAt", order.getCreatedAt());
+            map.put("allReturned", false); // Sale không có trả đồ
             return map;
         }).collect(Collectors.toList());
     }
@@ -79,29 +80,45 @@ public class ManagerOrderService {
     private List<Map<String, Object>> getRentalOrders(String status) {
         List<RentalOrder> orders = rentalOrderRepository.findAll();
 
-        return orders.stream().map(order -> {
-            Map<String, Object> map = new HashMap<>();
-            map.put("id", order.getId());
-            map.put("code", "RO-" + order.getId());
-            map.put("type", "RENTAL");
-            map.put("customerName", order.getCustomerName());
-            map.put("totalAmount", order.getPayment() != null ?
-                    order.getPayment().getAmount() : BigDecimal.ZERO);
-            map.put("status", "ACTIVE"); // RentalOrder không có status riêng
-            map.put("paymentStatus", order.getPayment() != null ?
-                    order.getPayment().getStatus().toString() : "N/A");
-            map.put("paymentMethod", order.getPayment() != null ?
-                    order.getPayment().getPaymentMethod().toString() : "N/A");
-            map.put("createdAt", order.getOrderDate());
+        return orders.stream()
+                .map(order -> {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("id", order.getId());
+                    map.put("code", "RO-" + order.getId());
+                    map.put("type", "RENTAL");
+                    map.put("customerName", order.getCustomerName());
+                    map.put("totalAmount", order.getPayment() != null ?
+                            order.getPayment().getAmount() : BigDecimal.ZERO);
 
-            // Kiểm tra trạng thái trả đồ
-            boolean allReturned = order.getOrderDetails().stream()
-                    .allMatch(detail -> detail.getReturnStatus() != null &&
-                            !"RENTED".equals(detail.getReturnStatus()));
-            map.put("allReturned", allReturned);
+                    // Kiểm tra trạng thái trả đồ
+                    boolean allReturned = order.getOrderDetails() != null &&
+                            !order.getOrderDetails().isEmpty() &&
+                            order.getOrderDetails().stream()
+                                    .allMatch(detail -> detail.getReturnStatus() != null &&
+                                            !"RENTED".equals(detail.getReturnStatus()));
+                    map.put("allReturned", allReturned);
 
-            return map;
-        }).collect(Collectors.toList());
+                    // Set trạng thái dựa trên việc trả đồ
+                    String rentalStatus = allReturned ? "COMPLETED" : "ACTIVE";
+                    map.put("status", rentalStatus);
+
+                    map.put("paymentStatus", order.getPayment() != null ?
+                            order.getPayment().getStatus().toString() : "N/A");
+                    map.put("paymentMethod", order.getPayment() != null ?
+                            order.getPayment().getPaymentMethod().toString() : "N/A");
+                    map.put("createdAt", order.getOrderDate());
+
+                    return map;
+                })
+                .filter(map -> {
+                    // Filter theo status nếu không phải "all"
+                    if ("all".equals(status)) {
+                        return true;
+                    }
+                    String orderStatus = (String) map.get("status");
+                    return status.equalsIgnoreCase(orderStatus);
+                })
+                .collect(Collectors.toList());
     }
 
     private List<Map<String, Object>> getBookings(String status) {
@@ -124,10 +141,12 @@ public class ManagerOrderService {
             map.put("createdAt", booking.getCreatedAt());
 
             // Kiểm tra trạng thái trả đồ
-            boolean allReturned = booking.getBookingSportWears().stream()
-                    .allMatch(bsw -> bsw.getStatus() == BookingSportWear.RentalStatus.RETURNED ||
-                            bsw.getStatus() == BookingSportWear.RentalStatus.DAMAGED ||
-                            bsw.getStatus() == BookingSportWear.RentalStatus.LOST);
+            boolean allReturned = booking.getBookingSportWears() != null &&
+                    !booking.getBookingSportWears().isEmpty() &&
+                    booking.getBookingSportWears().stream()
+                            .allMatch(bsw -> bsw.getStatus() == BookingSportWear.RentalStatus.RETURNED ||
+                                    bsw.getStatus() == BookingSportWear.RentalStatus.DAMAGED ||
+                                    bsw.getStatus() == BookingSportWear.RentalStatus.LOST);
             map.put("allReturned", allReturned);
 
             return map;

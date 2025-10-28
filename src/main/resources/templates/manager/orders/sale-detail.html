@@ -29,10 +29,13 @@
         <div class="card mb-4">
           <div class="card-header pb-0 d-flex justify-content-between align-items-center">
             <h5>Chi tiết đơn mua: <span th:text="${order.orderCode}"></span></h5>
-            <span class="badge"
-                  th:classappend="${order.status.name() == 'PENDING'} ? 'bg-gradient-warning' :
-                                  (${order.status.name() == 'COMPLETED'} ? 'bg-gradient-success' : 'bg-gradient-info')"
-                  th:text="${order.status}"></span>
+            <span th:if="${order.status.name() == 'PENDING'}" class="badge bg-warning text-dark" th:text="${order.status}"></span>
+            <span th:if="${order.status.name() == 'PROCESSING'}" class="badge bg-info" th:text="${order.status}"></span>
+            <span th:if="${order.status.name() == 'READY'}" class="badge bg-primary" th:text="${order.status}"></span>
+            <span th:if="${order.status.name() == 'SHIPPING'}" class="badge bg-info" th:text="${order.status}"></span>
+            <span th:if="${order.status.name() == 'DELIVERED'}" class="badge bg-success" th:text="${order.status}"></span>
+            <span th:if="${order.status.name() == 'COMPLETED'}" class="badge bg-success" th:text="${order.status}"></span>
+            <span th:if="${order.status.name() == 'CANCELLED'}" class="badge bg-secondary" th:text="${order.status}"></span>
           </div>
           <div class="card-body">
             <div class="row">
@@ -77,12 +80,12 @@
             <div class="col-md-6">
               <p><strong>Mã thanh toán:</strong> <span th:text="${order.payment.paymentCode}"></span></p>
               <p><strong>Phương thức:</strong>
-                <span class="badge bg-gradient-info" th:text="${order.payment.paymentMethod}"></span>
+                <span class="badge bg-info" th:text="${order.payment.paymentMethod}"></span>
               </p>
               <p><strong>Trạng thái:</strong>
-                <span class="badge"
-                      th:classappend="${order.payment.status.name() == 'PENDING'} ? 'bg-gradient-warning' : 'bg-gradient-success'"
-                      th:text="${order.payment.status}"></span>
+                <span th:if="${order.payment.status.name() == 'PENDING'}" class="badge bg-warning text-dark" th:text="${order.payment.status}"></span>
+                <span th:if="${order.payment.status.name() == 'COMPLETED'}" class="badge bg-success" th:text="${order.payment.status}"></span>
+                <span th:if="${order.payment.status.name() == 'FAILED'}" class="badge bg-danger" th:text="${order.payment.status}"></span>
               </p>
               <p th:if="${order.payment.paidAt}">
                 <strong>Ngày thanh toán:</strong>

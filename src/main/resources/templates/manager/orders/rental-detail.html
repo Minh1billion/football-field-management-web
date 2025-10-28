@@ -2,10 +2,234 @@
 <html xmlns:th="http://www.thymeleaf.org"
       th:replace="~{layout/manager :: layout(~{::content})}">
 <head>
-    <meta charset="UTF-8">
-    <title>Title</title>
+    <title>Chi tiết đơn thuê</title>
 </head>
 <body>
+<div th:fragment="content">
+    <div class="container-fluid py-4">
+        <div class="row">
+            <div class="col-12">
 
+                <!-- Quay lại -->
+                <a th:href="@{/manager/orders}" class="btn btn-outline-secondary mb-3">
+                    <i class="fas fa-arrow-left"></i> Quay lại
+                </a>
+
+                <!-- Thông báo -->
+                <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+                    <span th:text="${successMessage}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <span th:text="${errorMessage}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+
+                <!-- Thông tin đơn thuê -->
+                <div class="card mb-4">
+                    <div class="card-header pb-0 d-flex justify-content-between align-items-center">
+                        <h5>Chi tiết đơn thuê: <span th:text="'RO-' + ${order.id}"></span></h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="text-sm fw-bold">Thông tin khách hàng</h6>
+                                <p><strong>Tên:</strong> <span th:text="${order.customerName}"></span></p>
+                                <p><strong>SĐT:</strong> <span th:text="${order.customerPhone}"></span></p>
+                                <p th:if="${order.customerAddress}">
+                                    <strong>Địa chỉ:</strong> <span th:text="${order.customerAddress}"></span>
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-sm fw-bold">Thông tin đơn thuê</h6>
+                                <p><strong>Ngày tạo:</strong>
+                                    <span th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy HH:mm')}"></span>
+                                </p>
+                                <p><strong>Tổng tiền:</strong>
+                                    <span class="text-success fw-bold"
+                                          th:text="${order.payment != null ? (#numbers.formatDecimal(order.payment.amount, 0, 'COMMA', 0, 'POINT') + ' đ') : '0 đ'}"></span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Thanh toán -->
+                <div class="card mb-4" th:if="${order.payment != null}">
+                    <div class="card-header pb-0">
+                        <h6>Thông tin thanh toán</h6>
+                    </div>
+                    <div class="card-body row">
+                        <div class="col-md-6">
+                            <p><strong>Mã thanh toán:</strong> <span th:text="${order.payment.paymentCode}"></span></p>
+                            <p><strong>Phương thức:</strong>
+                                <span class="badge bg-gradient-info" th:text="${order.payment.paymentMethod}"></span>
+                            </p>
+                            <p><strong>Số tiền:</strong>
+                                <span class="fw-bold"
+                                      th:text="${#numbers.formatDecimal(order.payment.amount, 0, 'COMMA', 0, 'POINT')} + ' đ'"></span>
+                            </p>
+                            <p><strong>Trạng thái:</strong>
+                                <span th:if="${order.payment.status.name() == 'PENDING'}" class="badge bg-warning text-dark" th:text="${order.payment.status}"></span>
+                                <span th:if="${order.payment.status.name() == 'COMPLETED'}" class="badge bg-success" th:text="${order.payment.status}"></span>
+                                <span th:if="${order.payment.status.name() == 'FAILED'}" class="badge bg-danger" th:text="${order.payment.status}"></span>
+                            </p>
+                            <p th:if="${order.payment.paidAt != null}">
+                                <strong>Ngày thanh toán:</strong>
+                                <span th:text="${#temporals.format(order.payment.paidAt, 'dd/MM/yyyy HH:mm')}"></span>
+                            </p>
+                        </div>
+
+                        <div class="col-md-6"
+                             th:if="${order.payment.paymentMethod.name() == 'COD' and order.payment.status.name() == 'PENDING'}">
+                            <form th:action="@{/manager/orders/rental/{id}/confirm-payment(id=${order.id})}"
+                                  method="post"
+                                  onsubmit="return confirm('Xác nhận đã nhận tiền COD?')">
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-check"></i> Xác nhận đã nhận tiền COD
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Danh sách sản phẩm thuê -->
+                <div class="card">
+                    <div class="card-header pb-0 d-flex justify-content-between align-items-center">
+                        <h6>Sản phẩm trong đơn thuê</h6>
+                        <!-- Nút trả tất cả - chỉ hiện khi còn đồ chưa trả -->
+                        <div th:if="${order.orderDetails != null and !order.orderDetails.isEmpty()}">
+                            <th:block th:each="detail : ${order.orderDetails}">
+                                <form th:if="${detail.returnStatus == 'RENTED'}"
+                                      th:action="@{/manager/orders/rental/{id}/return-all(id=${order.id})}"
+                                      method="post"
+                                      onsubmit="return confirm('Xác nhận đã nhận lại TẤT CẢ đồ thuê?')">
+                                    <button type="submit" class="btn btn-success btn-sm">
+                                        <i class="fas fa-check-double"></i> Xác nhận trả tất cả
+                                    </button>
+                                </form>
+                            </th:block>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table align-items-center mb-0">
+                                <thead>
+                                <tr>
+                                    <th>Sản phẩm</th>
+                                    <th>Số lượng</th>
+                                    <th>Số ngày thuê</th>
+                                    <th>Giá thuê/ngày</th>
+                                    <th>Thành tiền</th>
+                                    <th>Trạng thái</th>
+                                    <th>Thao tác</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr th:each="item : ${order.orderDetails}">
+                                    <td>
+                                        <div class="d-flex px-2 py-1 align-items-center">
+                                            <img th:if="${item.sportWear != null and item.sportWear.imageUrl != null}"
+                                                 th:src="${item.sportWear.imageUrl}"
+                                                 class="avatar avatar-sm me-3" alt="product">
+                                            <div class="d-flex flex-column justify-content-center">
+                                                <h6 class="mb-0 text-sm"
+                                                    th:text="${item.sportWear != null ? item.sportWear.name : 'Sản phẩm đã bị xóa'}"></h6>
+                                                <p class="text-xs text-secondary mb-0"
+                                                   th:if="${item.sportWear != null}"
+                                                   th:text="${item.sportWear.size} + ' - ' + ${item.sportWear.color}"></p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="text-sm fw-bold" th:text="${item.quantity}"></span>
+                                    </td>
+                                    <td>
+                                        <span class="text-sm" th:text="${item.rentalDays} + ' ngày'"></span>
+                                    </td>
+                                    <td>
+                    <span class="text-sm"
+                          th:text="${#numbers.formatDecimal(item.rentalPricePerDay, 0, 'COMMA', 0, 'POINT')} + ' đ'"></span>
+                                    </td>
+                                    <td>
+                    <span class="text-sm fw-bold text-success"
+                          th:text="${#numbers.formatDecimal(item.subTotal, 0, 'COMMA', 0, 'POINT')} + ' đ'"></span>
+                                    </td>
+                                    <td>
+                                        <span th:if="${item.returnStatus == 'RENTED'}" class="badge badge-sm bg-warning text-dark">Đang thuê</span>
+                                        <span th:if="${item.returnStatus == 'RETURNED'}" class="badge badge-sm bg-success">Đã trả</span>
+                                        <span th:if="${item.returnStatus == 'DAMAGED'}" class="badge badge-sm bg-danger">Hư hỏng</span>
+                                        <span th:if="${item.returnStatus == 'LOST'}" class="badge badge-sm bg-secondary">Mất</span>
+                                    </td>
+                                    <td>
+                                        <div th:if="${item.returnStatus == 'RENTED'}" class="btn-group" role="group">
+                                            <!-- Trả bình thường -->
+                                            <form th:action="@{/manager/orders/rental/{orderId}/return-item/{detailId}(orderId=${order.id},detailId=${item.id})}"
+                                                  method="post"
+                                                  class="d-inline"
+                                                  onsubmit="return confirm('Xác nhận đã nhận lại đồ thuê này?')">
+                                                <input type="hidden" name="status" value="RETURNED">
+                                                <button type="submit" class="btn btn-success btn-sm">
+                                                    <i class="fas fa-check"></i> Đã trả
+                                                </button>
+                                            </form>
+
+                                            <!-- Trả hư hỏng -->
+                                            <form th:action="@{/manager/orders/rental/{orderId}/return-item/{detailId}(orderId=${order.id},detailId=${item.id})}"
+                                                  method="post"
+                                                  class="d-inline"
+                                                  onsubmit="return confirm('Xác nhận đồ thuê này bị hư hỏng?')">
+                                                <input type="hidden" name="status" value="DAMAGED">
+                                                <button type="submit" class="btn btn-warning btn-sm">
+                                                    <i class="fas fa-exclamation-triangle"></i> Hư
+                                                </button>
+                                            </form>
+
+                                            <!-- Mất đồ -->
+                                            <form th:action="@{/manager/orders/rental/{orderId}/return-item/{detailId}(orderId=${order.id},detailId=${item.id})}"
+                                                  method="post"
+                                                  class="d-inline"
+                                                  onsubmit="return confirm('Xác nhận đồ thuê này bị mất?')">
+                                                <input type="hidden" name="status" value="LOST">
+                                                <button type="submit" class="btn btn-danger btn-sm">
+                                                    <i class="fas fa-times"></i> Mất
+                                                </button>
+                                            </form>
+                                        </div>
+
+                                        <span th:unless="${item.returnStatus == 'RENTED'}" class="text-xs text-secondary">
+                      Đã xử lý
+                    </span>
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div th:if="${order.orderDetails == null or #lists.isEmpty(order.orderDetails)}"
+                             class="text-center py-5">
+                            <p class="text-secondary mb-0">Không có sản phẩm nào trong đơn thuê</p>
+                        </div>
+
+                        <!-- Tổng cộng -->
+                        <div class="mt-4 text-end" th:if="${order.orderDetails != null and !order.orderDetails.isEmpty()}">
+                            <div class="row">
+                                <div class="col-12">
+                                    <h5 class="mb-0">
+                                        Tổng cộng:
+                                        <span class="text-success"
+                                              th:text="${order.payment != null ? (#numbers.formatDecimal(order.payment.amount, 0, 'COMMA', 0, 'POINT') + ' đ') : '0 đ'}">
+                    </span>
+                                    </h5>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
 </body>
 </html>

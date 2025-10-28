@@ -74,50 +74,47 @@
                     <span class="text-sm font-weight-bold" th:text="${order.code}"></span>
                   </td>
                   <td>
-                                            <span class="badge badge-sm"
-                                                  th:classappend="${order.type == 'SALE'} ? 'bg-gradient-info' :
-                                                                 (${order.type == 'RENTAL'} ? 'bg-gradient-warning' : 'bg-gradient-primary')"
-                                                  th:text="${order.type == 'SALE'} ? 'Đơn mua' :
-                                                           (${order.type == 'RENTAL'} ? 'Đơn thuê' : 'Booking')">
-                                            </span>
+                    <span th:if="${order.type == 'SALE'}" class="badge badge-sm bg-info">Đơn mua</span>
+                    <span th:if="${order.type == 'RENTAL'}" class="badge badge-sm bg-warning text-dark">Đơn thuê</span>
+                    <span th:if="${order.type == 'BOOKING'}" class="badge badge-sm bg-primary">Booking</span>
                   </td>
                   <td>
                     <span class="text-sm" th:text="${order.customerName}"></span>
                   </td>
                   <td>
-                                            <span class="text-sm font-weight-bold"
-                                                  th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' đ'"></span>
+                    <span class="text-sm font-weight-bold"
+                          th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' đ'"></span>
                   </td>
                   <td>
-                                            <span class="badge badge-sm"
-                                                  th:classappend="${order.status == 'PENDING'} ? 'bg-gradient-warning' :
-                                                                 (${order.status == 'CONFIRMED'} ? 'bg-gradient-info' :
-                                                                 (${order.status == 'COMPLETED'} ? 'bg-gradient-success' : 'bg-gradient-secondary'))"
-                                                  th:text="${order.status}">
-                                            </span>
+                    <span th:if="${order.status == 'PENDING'}" class="badge badge-sm bg-warning text-dark" th:text="${order.status}"></span>
+                    <span th:if="${order.status == 'PROCESSING'}" class="badge badge-sm bg-info" th:text="${order.status}"></span>
+                    <span th:if="${order.status == 'CONFIRMED'}" class="badge badge-sm bg-info" th:text="${order.status}"></span>
+                    <span th:if="${order.status == 'READY'}" class="badge badge-sm bg-primary" th:text="${order.status}"></span>
+                    <span th:if="${order.status == 'SHIPPING'}" class="badge badge-sm bg-info" th:text="${order.status}"></span>
+                    <span th:if="${order.status == 'DELIVERED'}" class="badge badge-sm bg-success" th:text="${order.status}"></span>
+                    <span th:if="${order.status == 'COMPLETED'}" class="badge badge-sm bg-success" th:text="${order.status}"></span>
+                    <span th:if="${order.status == 'CANCELLED'}" class="badge badge-sm bg-secondary" th:text="${order.status}"></span>
+                    <span th:if="${order.status == 'ACTIVE'}" class="badge badge-sm bg-primary" th:text="${order.status}"></span>
                   </td>
                   <td>
                     <div class="d-flex flex-column">
-                                                <span class="badge badge-sm mb-1"
-                                                      th:classappend="${order.paymentStatus == 'PENDING'} ? 'bg-gradient-warning' :
-                                                                     (${order.paymentStatus == 'COMPLETED'} ? 'bg-gradient-success' : 'bg-gradient-secondary')"
-                                                      th:text="${order.paymentStatus}">
-                                                </span>
+                      <span th:if="${order.paymentStatus == 'PENDING'}" class="badge badge-sm bg-warning text-dark mb-1" th:text="${order.paymentStatus}"></span>
+                      <span th:if="${order.paymentStatus == 'COMPLETED'}" class="badge badge-sm bg-success mb-1" th:text="${order.paymentStatus}"></span>
+                      <span th:if="${order.paymentStatus == 'FAILED'}" class="badge badge-sm bg-danger mb-1" th:text="${order.paymentStatus}"></span>
+                      <span th:if="${order.paymentStatus == 'N/A'}" class="badge badge-sm bg-secondary mb-1" th:text="${order.paymentStatus}"></span>
                       <small class="text-xs text-secondary" th:text="${order.paymentMethod}"></small>
                     </div>
                   </td>
                   <td>
                     <span th:if="${order.type == 'SALE'}" class="text-xs text-secondary">N/A</span>
                     <span th:unless="${order.type == 'SALE'}">
-                                                <span class="badge badge-sm"
-                                                      th:classappend="${order.allReturned} ? 'bg-gradient-success' : 'bg-gradient-warning'"
-                                                      th:text="${order.allReturned} ? 'Đã trả' : 'Chưa trả'">
-                                                </span>
-                                            </span>
+                      <span th:if="${order.allReturned}" class="badge badge-sm bg-success">Đã trả</span>
+                      <span th:unless="${order.allReturned}" class="badge badge-sm bg-warning text-dark">Chưa trả</span>
+                    </span>
                   </td>
                   <td>
-                                            <span class="text-xs"
-                                                  th:text="${#temporals.format(order.createdAt, 'dd/MM/yyyy HH:mm')}"></span>
+                    <span class="text-xs"
+                          th:text="${#temporals.format(order.createdAt, 'dd/MM/yyyy HH:mm')}"></span>
                   </td>
                   <td>
                     <a th:if="${order.type == 'SALE'}"

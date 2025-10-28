@@ -46,7 +46,7 @@ public class MockingPost implements CommandLineRunner {
 
             // Gắn danh sách comment vào post
             post.setComments(comments);
-            post.setLikes(10); // Giả sử bài viết có 10 lượt thích
+            post.setLikes(0); 
 
             // Lưu post sẽ cascade lưu cả comment
             postRepository.save(post);

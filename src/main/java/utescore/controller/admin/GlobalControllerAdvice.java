@@ -5,6 +5,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
+import utescore.config.InfoConfig;
 import utescore.repository.AccountRepository;
 import utescore.service.PosterService;
 import utescore.util.SecurityUtils;
@@ -15,6 +16,7 @@ public class GlobalControllerAdvice {
 	private AccountRepository accountRepository;
 	@Autowired
 	private PosterService posterService;
+	private InfoConfig InfoConfig = new InfoConfig();
 	
 	
     @ModelAttribute
@@ -24,5 +26,7 @@ public class GlobalControllerAdvice {
         model.addAttribute("usernamelogin", username != null ? username : "");
         model.addAttribute("rolelogin", role != null ? role : "");
         model.addAttribute("posterList", posterService.getAll());
+        model.addAttribute("mailconfig", InfoConfig.getMail());
+        model.addAttribute("phoneconfig", InfoConfig.getPhone());
     }
 }

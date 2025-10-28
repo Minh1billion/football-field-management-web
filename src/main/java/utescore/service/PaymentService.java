@@ -1,8 +1,15 @@
 package utescore.service;
 
 import lombok.RequiredArgsConstructor;
+
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.io.IOException;
+import jakarta.servlet.http.HttpServletResponse;
+import utescore.dto.FullBillsDTO;
 import utescore.dto.PaymentDTO;
 import utescore.entity.*;
 import utescore.repository.LoyaltyRepository;
@@ -17,6 +24,7 @@ import utescore.repository.RentalOrderRepository;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Service
@@ -251,5 +259,87 @@ public class PaymentService {
 			return payment.getOrder().getCustomer();
 		}
 		return null;
+	}
+	
+	public List<FullBillsDTO> getlistBills(){
+		List<Payment> payments = paymentRepository.findAll();
+		
+		return payments.stream().map(payment -> {
+			FullBillsDTO dto = new FullBillsDTO();
+			dto.setPaymentId(payment.getId());
+			dto.setPaymentType(payment.getPaymentMethod().toString());
+			dto.setPaymentStatus(payment.getStatus().toString());
+			dto.setAmount(payment.getAmount());
+			dto.setCreatedAt(payment.getCreatedAt());
+			
+			if (payment.getBooking() != null) {
+				dto.setType("Booking");
+				if (payment.getBooking().getCustomer() != null) {
+					dto.setCustomerFullName(payment.getBooking().getCustomer().getFullName());
+				}
+				if (payment.getBooking().getCustomer().getAccount() != null) {
+					dto.setAccountName(payment.getBooking().getCustomer().getAccount().getUsername());
+				}
+			} else if (payment.getOrder() != null) {
+				dto.setType("Order");
+				if (payment.getOrder().getCustomer() != null) {
+					dto.setCustomerFullName(payment.getOrder().getCustomer().getFullName());
+				}
+				if (payment.getOrder().getAccount() != null) {
+					dto.setAccountName(payment.getOrder().getAccount().getUsername());
+				}
+			} else if (payment.getRentalOrder() != null) {
+				dto.setType("Rental");
+				if (payment.getRentalOrder().getCustomer() != null) {
+					dto.setCustomerFullName(payment.getRentalOrder().getCustomer().getFullName());
+				}
+				if (payment.getRentalOrder().getAccount() != null) {
+					dto.setAccountName(payment.getRentalOrder().getAccount().getUsername());
+				}
+			}	
+			return dto;
+		}).toList();
+	}
+	
+	public void exportExcel(int year, HttpServletResponse response) throws IOException {
+	    List<FullBillsDTO> data = getlistBills().stream()
+	        .filter(p -> p.getCreatedAt() != null && p.getCreatedAt().getYear() == year)
+	        .toList();
+
+	    Workbook workbook = new XSSFWorkbook();
+	    Sheet sheet = workbook.createSheet("ThongKe_" + year);
+
+	    // Header
+	    Row header = sheet.createRow(0);
+	    String[] columns = {"STT", "Khách hàng", "Loại", "Hình thức", "Trạng thái", "Số tiền", "Ngày"};
+	    for (int i = 0; i < columns.length; i++) {
+	        Cell cell = header.createCell(i);
+	        cell.setCellValue(columns[i]);
+	    }
+
+	    // Data
+	    int rowNum = 1;
+	    for (int i = 0; i < data.size(); i++) {
+	        Row row = sheet.createRow(rowNum++);
+	        FullBillsDTO p = data.get(i);
+	        row.createCell(0).setCellValue(i + 1);
+	        row.createCell(1).setCellValue(p.getCustomerFullName());
+	        row.createCell(2).setCellValue(p.getType());
+	        row.createCell(3).setCellValue(p.getPaymentType());
+	        row.createCell(4).setCellValue(p.getPaymentStatus());
+	        row.createCell(5).setCellValue(p.getAmount() != null ? p.getAmount().doubleValue() : 0);
+	        row.createCell(6).setCellValue(p.getCreatedAt().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
+	    }
+
+	    // Auto size
+	    for (int i = 0; i < columns.length; i++) {
+	        sheet.autoSizeColumn(i);
+	    }
+
+	    // Xuất file
+	    response.setContentType("application/octet-stream");
+	    response.setHeader("Content-Disposition", "attachment; filename=ThongKe_GiaoDich_" + year + ".xlsx");
+	    workbook.write(response.getOutputStream());
+	    workbook.close();
 	}
 }

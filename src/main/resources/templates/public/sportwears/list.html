@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="public/layout :: layout(~{::section})">
+<section>
+  <h1 class="mb-3">Đồ thể thao</h1>
+
+  <div class="row g-3">
+    <!-- Duyệt danh sách mà không truy cập thuộc tính cụ thể để tránh lỗi -->
+    <div class="col-md-6 col-lg-4" th:each="w, iStat : ${sportWears}">
+      <div class="card h-100">
+        <!-- Ảnh placeholder để không phụ thuộc vào thuộc tính ảnh -->
+        <img class="card-img-top"
+             src="https://via.placeholder.com/600x350?text=Sportwear"
+             alt="Sportwear"/>
+
+        <div class="card-body">
+          <!-- Hiển thị nhãn theo index để không cần thuộc tính w.name -->
+          <h5 class="card-title">
+            <span th:text="'Sản phẩm #' + (${iStat.index} + 1)">Sản phẩm #1</span>
+          </h5>
+          <p class="mb-0 text-muted">Khách có thể xem, đăng nhập để thuê/mua.</p>
+        </div>
+
+        <div class="card-footer bg-white d-flex gap-2">
+          <!-- CTA theo trạng thái đăng nhập (dùng rolelogin như bạn đã set trong GlobalControllerAdvice) -->
+          <a class="btn btn-outline-primary btn-sm"
+             th:if="${rolelogin}=='GUEST'"
+             th:href="@{/auth/login}">Đăng nhập để thuê/mua</a>
+
+          <a class="btn btn-primary btn-sm"
+             th:if="${rolelogin}!='GUEST'"
+             th:href="@{/user/rentals}">Thuê</a>
+
+          <a class="btn btn-success btn-sm"
+             th:if="${rolelogin}!='GUEST'"
+             th:href="@{/user/sales}">Mua</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Trường hợp rỗng -->
+    <div class="col-12" th:if="${#lists.isEmpty(sportWears)}">
+      <div class="alert alert-info mb-0">Chưa có đồ thể thao để hiển thị.</div>
+    </div>
+  </div>
+</section>
+</html>

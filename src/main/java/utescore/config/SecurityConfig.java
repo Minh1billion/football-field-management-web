@@ -52,47 +52,55 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-		        .headers(headers -> headers
-		                .frameOptions(frame -> frame.sameOrigin())
-		            )
-                .csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(authz -> authz
-                        // Public endpoints
-                        .requestMatchers("/", "/home","/home/public-home","/maintenance", "/auth/**", "api/auth/**", "/error").permitAll()
-                        .requestMatchers("/css/**", "/js/**", "/images/**", "/favicon.ico", "/webjars/**").permitAll()
-                        .requestMatchers("/api/public/**").permitAll()
+            .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
+            .csrf(AbstractHttpConfigurer::disable)
+            .authorizeHttpRequests(authz -> authz
+                // Public endpoints (guest xem)
+                .requestMatchers("/", "/home","/home/public-home","/maintenance",
+                                 "/auth/**", "api/auth/**", "/error").permitAll()
+                .requestMatchers("/css/**", "/js/**", "/images/**", "/favicon.ico", "/webjars/**").permitAll()
+                .requestMatchers("/api/public/**", "/public/**").permitAll()
 
-                        // Admin endpoints
-                        .requestMatchers("/admin/**", "/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/management/**").hasAnyRole("ADMIN", "MANAGER")
+                // Admin endpoints
+                .requestMatchers("/admin/**", "/api/admin/**").hasRole("ADMIN")
+                .requestMatchers("/management/**").hasAnyRole("ADMIN", "MANAGER")
 
-                        // Manager endpoints
-                        .requestMatchers("/manager/**", "/api/manager/**").hasAnyRole("ADMIN", "MANAGER")
+                // Manager endpoints
+                .requestMatchers("/manager/**", "/api/manager/**").hasAnyRole("ADMIN", "MANAGER")
 
-                        // User endpoints
-                        .requestMatchers("/user/**", "/api/user/**", "/profile/**", "/bookings/**", "/orders/**")
-                        .hasAnyRole("USER", "ADMIN", "MANAGER")
+                // User endpoints (cần đăng nhập)
+                .requestMatchers("/user/**", "/api/user/**", "/profile/**", "/bookings/**", "/orders/**")
+                .hasAnyRole("USER", "ADMIN", "MANAGER")
 
-                        // Protected API endpoints
-                        .requestMatchers("/api/fields/**", "/api/locations/**", "/api/services/**", "/api/sportwears/**")
-                        .hasAnyRole("USER", "ADMIN", "MANAGER")
+                // Protected API
+                .requestMatchers("/api/fields/**", "/api/locations/**", "/api/services/**", "/api/sportwears/**")
+                .hasAnyRole("USER", "ADMIN", "MANAGER")
 
-                        .anyRequest().authenticated()
-                )
-                .authenticationProvider(authenticationProvider())
-                    .logout(logout -> logout
-                    .logoutUrl("/logout")
-                    .logoutSuccessUrl("/home/public-home")
-                    .addLogoutHandler((request, response, authentication) -> {
-                        Cookie cookie = new Cookie("token", null);
-                        cookie.setMaxAge(0);
-                        cookie.setPath("/");
-                        response.addCookie(cookie);
-                    })
-                    .invalidateHttpSession(true)
-                    .clearAuthentication(true)
-                )
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .anyRequest().authenticated()
+            )
+
+            // Cấp authority ROLE_GUEST cho anonymous
+            .anonymous(a -> a.authorities("ROLE_GUEST"))
+
+            // Khi chưa đăng nhập mà vào endpoint yêu cầu auth -> redirect về trang login
+            .exceptionHandling(e -> e.authenticationEntryPoint(
+                (request, response, authException) -> response.sendRedirect("/auth/login?error=access_denied")
+            ))
+
+            .authenticationProvider(authenticationProvider())
+            .logout(logout -> logout
+                .logoutUrl("/logout")
+                .logoutSuccessUrl("/home/public-home")
+                .addLogoutHandler((request, response, authentication) -> {
+                    Cookie cookie = new Cookie("token", null);
+                    cookie.setMaxAge(0);
+                    cookie.setPath("/");
+                    response.addCookie(cookie);
+                })
+                .invalidateHttpSession(true)
+                .clearAuthentication(true)
+            )
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

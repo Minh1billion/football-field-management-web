@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="public/layout :: layout(~{::section})">
+<section>
+  <h1 class="mb-3">Bài viết</h1>
+  <div class="vstack gap-3">
+    <div class="card" th:each="p : ${posts}">
+      <div class="card-body">
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <div class="fw-semibold" th:text="${p.author}">author</div>
+          <div class="text-muted small ms-auto" th:text="${#temporals.format(p.createdAt, 'dd/MM/yyyy HH:mm')}">time</div>
+        </div>
+        <p th:text="${p.content}">Nội dung</p>
+        <img class="img-fluid rounded" th:if="${p.imageUrl}" th:src="${p.imageUrl}" alt=""/>
+      </div>
+      <div class="card-footer bg-white">
+        <a class="btn btn-outline-primary btn-sm" th:if="${rolelogin}=='GUEST'" th:href="@{/auth/login}">Đăng nhập để thích/bình luận</a>
+        <a class="btn btn-primary btn-sm" th:if="${rolelogin}!='GUEST'" th:href="@{/user/post/all-posts}">Xem & tương tác</a>
+      </div>
+    </div>
+  </div>
+</section>
+</html>

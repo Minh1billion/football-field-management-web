@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="public/layout :: layout(~{::section})">
+<section>
+  <h1 class="mb-3">Danh sách sân</h1>
+
+  <div class="row g-3">
+    <div class="col-md-6 col-lg-4" th:each="f : ${fields}">
+      <div class="card h-100">
+        <!-- Không dùng f.imageUrl để tránh lỗi: dùng ảnh placeholder -->
+        <img class="card-img-top"
+             src="https://via.placeholder.com/600x350?text=Football+Field"
+             alt="Field image"/>
+        <div class="card-body">
+          <h5 class="card-title" th:text="${f.name}">Tên sân</h5>
+          <div class="small text-muted" th:text="${f.locationName}">Địa điểm</div>
+          <div class="small" th:text="'Loại: ' + ${f.fieldType} + ' | Mặt sân: ' + ${f.surfaceType}">Type</div>
+          <div class="fw-semibold mt-2"
+               th:text="'Giá/giờ: ' + ${#numbers.formatDecimal(f.pricePerHour,0,'COMMA',0,'POINT')} + ' VND'">Giá</div>
+        </div>
+        <div class="card-footer bg-white">
+          <div class="d-flex gap-2">
+            <a class="btn btn-primary btn-sm"
+               th:if="${rolelogin}!='GUEST'"
+               th:href="@{'/user/bookings/new?(fieldId=' + ${f.id} + ')'}">Đặt sân</a>
+
+            <a class="btn btn-outline-primary btn-sm"
+               th:if="${rolelogin}=='GUEST'"
+               th:href="@{/auth/login}">Đăng nhập để đặt</a>
+
+            <a class="btn btn-outline-secondary btn-sm"
+               th:href="@{'/public/fields/' + ${f.id}}">Chi tiết</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+</html>

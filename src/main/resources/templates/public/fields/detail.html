@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="public/layout :: layout(~{::section})">
+<section>
+  <a class="btn btn-link px-0" th:href="@{/public/fields}">← Quay lại danh sách</a>
+  <div class="row g-4">
+    <div class="col-md-6">
+      <!-- Không dùng field.imageUrl: dùng placeholder -->
+      <img class="img-fluid rounded border"
+           src="https://via.placeholder.com/800x500?text=Football+Field"
+           alt="Field image"/>
+    </div>
+    <div class="col-md-6">
+      <h2 th:text="${field.name}">Tên sân</h2>
+      <div class="text-muted"
+           th:text="${field.locationName} + ' - ' + ${field.locationAddress}">Địa điểm</div>
+      <div class="mt-2">
+        <span class="badge text-bg-secondary" th:text="${field.fieldType}">FIELD_5V5</span>
+        <span class="badge text-bg-secondary" th:text="${field.surfaceType}">ARTIFICIAL_TURF</span>
+        <span class="badge text-bg-secondary" th:text="'Sức chứa: ' + ${field.capacity}">Capacity</span>
+      </div>
+      <div class="h5 mt-3"
+           th:text="'Giá/giờ: ' + ${#numbers.formatDecimal(field.pricePerHour,0,'COMMA',0,'POINT')} + ' VND'">Giá</div>
+
+      <div class="mt-3 d-flex gap-2">
+        <a class="btn btn-primary"
+           th:if="${rolelogin}!='GUEST'"
+           th:href="@{'/user/bookings/new?(fieldId=' + ${field.id} + ')'}">Đặt sân</a>
+        <a class="btn btn-outline-primary"
+           th:if="${rolelogin}=='GUEST'"
+           th:href="@{/auth/login}">Đăng nhập để đặt</a>
+      </div>
+    </div>
+  </div>
+</section>
+</html>

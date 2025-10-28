@@ -11,18 +11,24 @@ import utescore.util.SecurityUtils;
 
 @ControllerAdvice
 public class GlobalControllerAdvice {
-	@Autowired
-	private AccountRepository accountRepository;
-	@Autowired
-	private PosterService posterService;
-	
-	
+    @Autowired
+    private AccountRepository accountRepository;
+    @Autowired
+    private PosterService posterService;
+
     @ModelAttribute
     public void addUsernameToModel(Model model) {
         String username = SecurityUtils.getCurrentUsername();
-        String role = accountRepository.findRoleByUsername(username);
+        String role = null;
+
+        if (username != null) {
+            role = accountRepository.findRoleByUsername(username);
+        } else {
+            role = "GUEST";
+        }
+
         model.addAttribute("usernamelogin", username != null ? username : "");
-        model.addAttribute("rolelogin", role != null ? role : "");
+        model.addAttribute("rolelogin", role != null ? role : "GUEST");
         model.addAttribute("posterList", posterService.getAll());
     }
 }

@@ -1,104 +1,132 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout/admin :: layout(~{::content})}">
+<html xmlns:th="http://www.thymeleaf.org"
+	th:replace="~{layout/admin :: layout(~{::content})}">
 <body>
-<div th:fragment="content">
-    <h2 class="mb-3">➕ Thêm dịch vụ mới</h2>
+	<div th:fragment="content">
+		<h2 class="mb-3">➕ Thêm dịch vụ mới</h2>
 
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Thông tin dịch vụ</h5>
-                </div>
-                <div class="card-body">
-                    <!-- Thông báo lỗi -->
-                    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
-                        <span th:text="${errorMessage}"></span>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
+		<div class="row justify-content-center">
+			<div class="col-md-8">
+				<div class="card">
+					<div class="card-header">
+						<h5 class="mb-0">Thông tin dịch vụ</h5>
+					</div>
+					<div class="card-body">
+						<!-- Thông báo lỗi -->
+						<div th:if="${errorMessage}"
+							class="alert alert-danger alert-dismissible fade show"
+							role="alert">
+							<span th:text="${errorMessage}"></span>
+							<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+						</div>
 
-                    <form th:action="@{/admin/services/create}" th:object="${service}" method="post" enctype="multipart/form-data">
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="name" class="form-label">Tên dịch vụ <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="name" th:field="*{name}" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="serviceType" class="form-label">Loại dịch vụ <span class="text-danger">*</span></label>
-                                <select class="form-select" id="serviceType" th:field="*{serviceType}" required>
-                                    <option value="">-- Chọn loại dịch vụ --</option>
-                                    <option th:each="type : ${serviceTypes}" th:value="${type}" th:text="${type}"></option>
-                                </select>
-                            </div>
-                        </div>
+						<form th:action="@{/admin/services/create}" th:object="${service}"
+							method="post" enctype="multipart/form-data">
+							<div class="row">
+								<div class="col-md-6 mb-3">
+									<label for="name" class="form-label">Tên dịch vụ <span
+										class="text-danger">*</span></label> <input type="text"
+										class="form-control" id="name" th:field="*{name}">
+									<div class="text-danger mt-1"
+										th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+								</div>
 
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="price" class="form-label">Giá (VNĐ) <span class="text-danger">*</span></label>
-                                <input type="number" class="form-control" id="price" th:field="*{price}" 
-                                       step="0.01" min="0" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="stockQuantity" class="form-label">Số lượng tồn kho</label>
-                                <input type="number" class="form-control" id="stockQuantity" th:field="*{stockQuantity}" 
-                                       min="0" value="0">
-                            </div>
-                        </div>
+								<div class="col-md-6 mb-3">
+									<label for="serviceType" class="form-label">Loại dịch
+										vụ <span class="text-danger">*</span>
+									</label> <select class="form-select" id="serviceType"
+										th:field="*{serviceType}">
+										<option value="">-- Chọn loại dịch vụ --</option>
+										<option th:each="type : ${serviceTypes}" th:value="${type}"
+											th:text="${type}"></option>
+									</select>
+									<div class="text-danger mt-1"
+										th:if="${#fields.hasErrors('serviceType')}"
+										th:errors="*{serviceType}"></div>
+								</div>
+							</div>
 
-                        <div class="mb-3">
-                            <label for="description" class="form-label">Mô tả</label>
-                            <textarea class="form-control" id="description" th:field="*{description}" rows="4"></textarea>
-                        </div>
+							<div class="row">
+								<div class="col-md-6 mb-3">
+									<label for="price" class="form-label">Giá (VNĐ) <span
+										class="text-danger">*</span></label> <input type="number"
+										class="form-control" id="price" th:field="*{price}"
+										step="0.01" min="0">
+									<div class="text-danger mt-1"
+										th:if="${#fields.hasErrors('price')}" th:errors="*{price}"></div>
+								</div>
 
-                        <div class="mb-3">
-                            <label for="imageFile" class="form-label">Hình ảnh dịch vụ</label>
-                            <input type="file" class="form-control" id="imageFile" name="imageFile" 
-                                   accept="image/*" onchange="previewImage(this)">
-                            <div class="form-text">Chọn file ảnh để upload lên cloud (JPG, PNG, GIF)</div>
-                            <!-- Image preview -->
-                            <div id="imagePreview" class="mt-2" style="display: none;">
-                                <img id="preview" src="" alt="Preview" style="max-width: 200px; max-height: 200px; object-fit: cover; border-radius: 5px;">
-                            </div>
-                        </div>
+								<div class="col-md-6 mb-3">
+									<label for="stockQuantity" class="form-label">Số lượng
+										tồn kho</label> <input type="number" class="form-control"
+										id="stockQuantity" th:field="*{stockQuantity}" min="0"
+										value="0">
+								</div>
+							</div>
 
-                        <div class="mb-3">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="isAvailable" th:field="*{isAvailable}" checked>
-                                <label class="form-check-label" for="isAvailable">
-                                    Dịch vụ có sẵn
-                                </label>
-                            </div>
-                        </div>
+							<div class="mb-3">
+								<label for="description" class="form-label">Mô tả</label>
+								<textarea class="form-control" id="description"
+									th:field="*{description}" rows="4"></textarea>
+								<div class="text-danger mt-1"
+									th:if="${#fields.hasErrors('description')}"
+									th:errors="*{description}"></div>
+							</div>
 
-                        <div class="d-flex justify-content-between">
-                            <a th:href="@{/admin/services}" class="btn btn-secondary">🔙 Quay lại</a>
-                            <button type="submit" class="btn btn-primary">💾 Lưu dịch vụ</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
+							<!-- ✅ Upload ảnh có preview -->
+							<div class="mb-3">
+								<label for="imageFile" class="form-label">Hình ảnh dịch
+									vụ</label> <input type="file" class="form-control" id="imageFile"
+									name="imageFile" accept="image/*" onchange="previewImage(this)">
+								<div class="form-text">Chọn file ảnh để upload lên cloud
+									(JPG, PNG, GIF)</div>
 
-    <script>
-        function previewImage(input) {
-            const preview = document.getElementById('preview');
-            const previewDiv = document.getElementById('imagePreview');
-            
-            if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                
-                reader.onload = function(e) {
-                    preview.src = e.target.result;
-                    previewDiv.style.display = 'block';
-                }
-                
-                reader.readAsDataURL(input.files[0]);
-            } else {
-                previewDiv.style.display = 'none';
-            }
-        }
-    </script>
-</div>
+								<div id="imagePreview" class="mt-2" style="display: none;">
+									<img id="preview" src="" alt="Preview"
+										style="max-width: 200px; max-height: 200px; object-fit: cover; border-radius: 5px;">
+								</div>
+							</div>
+
+							<div class="mb-3">
+								<div class="form-check">
+									<input class="form-check-input" type="checkbox"
+										id="isAvailable" th:field="*{isAvailable}" checked> <label
+										class="form-check-label" for="isAvailable">Dịch vụ có
+										sẵn</label>
+								</div>
+							</div>
+
+							<div class="d-flex justify-content-between">
+								<a th:href="@{/admin/services}" class="btn btn-secondary">🔙
+									Quay lại</a>
+								<button type="submit" class="btn btn-primary">💾 Lưu
+									dịch vụ</button>
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<script>
+			function previewImage(input) {
+				const preview = document.getElementById('preview');
+				const previewDiv = document.getElementById('imagePreview');
+
+				if (input.files && input.files[0]) {
+					const reader = new FileReader();
+
+					reader.onload = function(e) {
+						preview.src = e.target.result;
+						previewDiv.style.display = 'block';
+					}
+
+					reader.readAsDataURL(input.files[0]);
+				} else {
+					previewDiv.style.display = 'none';
+				}
+			}
+		</script>
+	</div>
 </body>
 </html>

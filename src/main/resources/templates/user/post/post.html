@@ -1,30 +1,40 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout/user :: layout(~{::content})}">
+<html xmlns:th="http://www.thymeleaf.org"
+	th:replace="~{layout/user :: layout(~{::content})}">
 <body>
 	<div th:fragment="content" class="container mt-4">
 		<h2 class="mb-3">Đăng bài mới</h2>
-		<form th:action="@{/user/post/create}" method="post" enctype="multipart/form-data" class="mb-4">
-		    <div class="mb-3">
-		        <textarea name="content" class="form-control" placeholder="Nội dung bài viết..." rows="4"></textarea>
-		    </div>
-		    <div class="mb-3">
-		        <input type="file" name="imageFile" class="form-control" accept="image/*" />
-		    </div>
-		    <button type="submit" class="btn btn-primary">Đăng bài</button>
+		<form th:action="@{/user/post/create}" method="post"
+			enctype="multipart/form-data" class="mb-4" th:object="${newPost}">
+			<div class="mb-3">
+
+				<textarea th:field="*{content}" class="form-control"
+					placeholder="Nội dung bài viết..." rows="4"></textarea>
+
+				<div class="text-danger mt-1"
+					th:if="${#fields.hasErrors('content')}" th:errors="*{content}"></div>
+			</div>
+			<div class="mb-3">
+				<input type="file" name="imageFile" class="form-control"
+					accept="image/*" />
+			</div>
+			<button type="submit" class="btn btn-primary">Đăng bài</button>
 		</form>
 		<div class="mt-2">
-            <a th:href="@{/user/post/all-posts}" class="btn btn-outline-primary btn-sm">👁 Xem bài viết</a>
-        </div>
+			<a th:href="@{/user/post/all-posts}"
+				class="btn btn-outline-primary btn-sm">👁 Xem bài viết</a>
+		</div>
 		<h3 class="mb-3">Bài viết của bạn</h3>
 		<div th:each="p : ${posts}" class="card mb-3">
 			<div class="card-body">
 				<p class="card-text">
 					<b>[[${p.author}]]</b>: [[${p.content}]]
 				</p>
-				<p class="card-text text-muted">
-					Trạng thái: [[${p.status}]] | Lượt thích: [[${p.likes}]]
-				</p>
-				<img th:if="${p.imageUrl}" th:src="${p.imageUrl}" class="img-fluid rounded" style="max-width: 200px;" alt="Hình ảnh bài viết">
+				<p class="card-text text-muted">Trạng thái: [[${p.status}]] |
+					Lượt thích: [[${p.likes}]]</p>
+				<img th:if="${p.imageUrl}" th:src="${p.imageUrl}"
+					class="img-fluid rounded" style="max-width: 200px;"
+					alt="Hình ảnh bài viết">
 			</div>
 		</div>
 	</div>

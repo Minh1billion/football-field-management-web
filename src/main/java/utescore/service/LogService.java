@@ -1,6 +1,7 @@
 package utescore.service;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
@@ -9,12 +10,16 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import utescore.entity.Account;
 import utescore.entity.Log;
+import utescore.entity.Notification;
 import utescore.repository.AccountRepository;
 import utescore.repository.LogRepository;
 @Service
 public class LogService {
     @Autowired
     private LogRepository logRepository;
+    
+    @Autowired
+    private NotificationService notificationService;
 
     @Autowired
     private AccountRepository accountRepository;
@@ -69,6 +74,11 @@ public class LogService {
         log.setType("MAINTENANCE"); 
         log.setCreatedAt(s);
         log.setEndDateTime(e);
+        
+        String formattedStart = s.format(DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy"));
+        String formattedEnd = e.format(DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy"));
+        String message = String.format("Hệ thống sẽ bảo trì từ %s đến %s.", formattedStart, formattedEnd);
+        notificationService.sendToAllUsers("Thông báo bảo trì hệ thống", message, Notification.NotificationType.GENERAL);
         return logRepository.save(log);
     }
 }

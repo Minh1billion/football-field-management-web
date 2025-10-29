@@ -46,6 +46,10 @@ public class ConfigController {
                     @RequestParam("end") String end,
                     RedirectAttributes redirectAttributes) {
         try {
+        		if (LocalDateTime.parse(end).isBefore(LocalDateTime.parse(start))) {
+				redirectAttributes.addFlashAttribute("error", "❌ Thời gian kết thúc phải sau thời gian bắt đầu!");
+				return "redirect:/admin/system-config";
+			}
             LocalDateTime s = LocalDateTime.parse(start);
             LocalDateTime e = LocalDateTime.parse(end);
             logService.createLogWithUser("Thời gian bảo trì", s, e);

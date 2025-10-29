@@ -13,7 +13,7 @@ public class Log {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
+    @Column(columnDefinition = "NVARCHAR(MAX)", nullable = false)
     private String action;
     private LocalDateTime createdAt;
     private LocalDateTime endDateTime;
@@ -22,14 +22,4 @@ public class Log {
     @ManyToOne
     @JoinColumn(name = "account_id")
     private Account account;
-
-    @PrePersist
-    protected void onCreate() {
-        if (createdAt == null) {
-            createdAt = LocalDateTime.now();
-        }
-        if (endDateTime == null) {
-            endDateTime = createdAt;
-        }
-    }
 }

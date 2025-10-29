@@ -1,265 +1,297 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org"
-	th:replace="~{layout/admin :: layout(~{::content})}">
+      th:replace="~{layout/admin :: layout(~{::content})}">
 <head>
 <meta charset="UTF-8" />
-<title>👑 Admin Chat Hỗ trợ khách hàng</title>
-<style>
-</style>
+<title>Admin Chat Hỗ trợ khách hàng</title>
 </head>
 <body>
-	<div th:fragment="content" style="
-        display: flex;
-        justify-content: center;   /* canh giữa theo chiều ngang */
-        align-items: center;       /* canh giữa theo chiều dọc */
-        height: calc(100vh - 80px); /* trừ chiều cao navbar nếu có */
-        text-align: center;
-     ">
-		<div class="chat-wrapper">
-			<div class="chat-header">👑 Hỗ trợ khách hàng (Admin)</div>
-			<div class="chat-body">
-				<div class="user-select-container mb-3">
-					<label>📋 Chọn người dùng:</label> <select id="userSelect">
-						<option value="">-- Chọn người dùng --</option>
-					</select>
-				</div>
+<div th:fragment="content" style="display:flex;justify-content:center;align-items:center;height:calc(100vh - 80px);">
+    <div class="chat-wrapper">
+        <!-- CỘT DANH SÁCH USER -->
+        <div class="user-list">
+            <div class="user-list-header">Người dùng</div>
+            <div id="userListContainer"></div>
+        </div>
 
-				<div id="chatBox">
-					<div class="placeholder-text">
-						<i class="bi bi-chat-dots"></i> Chưa có cuộc trò chuyện nào
-					</div>
-				</div>
+        <!-- KHUNG CHAT CHÍNH -->
+        <div class="chat-body">
+            <div class="chat-header">Hỗ trợ khách hàng (Admin)</div>
+            <div id="chatBox">
+                <div class="placeholder-text">
+                    Chưa có cuộc trò chuyện nào
+                </div>
+            </div>
+            <div class="chat-controls">
+                <input type="text" id="msgInput" placeholder="Nhập tin nhắn..." autocomplete="off">
+                <button id="sendBtn">Gửi</button>
+            </div>
+        </div>
+    </div>
 
-				<div class="chat-controls">
-					<input type="text" id="msgInput" placeholder="Nhập tin nhắn...">
-					<button id="sendBtn">
-						<i class="bi bi-send-fill"></i> Gửi
-					</button>
-				</div>
-			</div>
-		</div>
-		<input type="hidden" id="mailconfig" th:value="${mailconfig}">
-		<input type="hidden" id="phoneconfig" th:value="${phoneconfig}">
-		<!-- SocketJS + STOMP -->
-		<script
-			src="https://cdn.jsdelivr.net/npm/sockjs-client@1.6.1/dist/sockjs.min.js"></script>
-		<script
-			src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+    <input type="hidden" id="mailconfig" th:value="${mailconfig}">
+    <input type="hidden" id="phoneconfig" th:value="${phoneconfig}">
 
-		<script>
-			
-            let stompClient;
-            const currentUser = "ADMIN";
-            let selectedUser = null;
-            const autoResponse = {};
-            
-            
+    <!-- SocketJS + STOMP -->
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1.6.1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
 
-            function connect() {
-                const socket = new SockJS("/ws");
-                stompClient = Stomp.over(socket);
-                stompClient.connect({}, () => {
-                    console.log("Kết nối WebSocket thành công");
+    <!-- Âm thanh thông báo -->
+    <audio id="notificationSound" src="https://assets.mixkit.co/sfx/preview/mixkit-software-interface-notification-2580.mp3" preload="auto"></audio>
 
-                    // Nhận tin nhắn
-                    stompClient.subscribe(`/topic/messages/${currentUser}`, (msg) => {
-                        const message = JSON.parse(msg.body);
-                        showMessage(message);
+    <script>
+        let stompClient;
+        const currentUser = "ADMIN";
+        let selectedUser = null;
 
-                        // 👇 Nếu là tin nhắn từ user => gửi phản hồi tự động
-                        if (message.sender !== currentUser) {
-                            handleAutoReply(message);
+        // ĐẾM TIN NHẮN CHƯA TRẢ LỜI
+        const unreadCount = {};
+
+        // Âm thanh
+        const notificationSound = document.getElementById("notificationSound");
+
+        function connect() {
+            const socket = new SockJS("/ws");
+            stompClient = Stomp.over(socket);
+            stompClient.connect({}, () => {
+                console.log("Kết nối WebSocket thành công");
+
+                stompClient.subscribe(`/topic/messages/${currentUser}`, (msg) => {
+                    const message = JSON.parse(msg.body);
+
+                    // Nếu là tin từ user → tăng badge + phát âm thanh
+                    if (message.sender !== currentUser && message.receiver === currentUser) {
+                        const sender = message.sender;
+                        unreadCount[sender] = (unreadCount[sender] || 0) + 1;
+                        updateUserListBadge(sender, unreadCount[sender]);
+
+                        // Phát âm thanh
+                        notificationSound.currentTime = 0;
+                        notificationSound.play().catch(() => {});
+                    }
+
+                    showMessage(message);
+
+                    if (message.sender !== currentUser) {
+                        handleAutoReply(message);
+                    }
+                });
+
+                stompClient.subscribe(`/topic/recall/${currentUser}`, (msg) => {
+                    const recalledId = JSON.parse(msg.body);
+                    markAsRecalled(recalledId);
+                });
+
+                loadUsers();
+            }, (error) => {
+                console.error("WebSocket lỗi:", error);
+            });
+        }
+
+        function loadUsers() {
+            fetch("/user/chat/api/accounts")
+                .then(res => res.json())
+                .then(users => {
+                    const container = document.getElementById("userListContainer");
+                    container.innerHTML = "";
+                    users.forEach(u => {
+                        if (u.username !== currentUser) {
+                            const div = document.createElement("div");
+                            div.classList.add("user-item");
+                            div.textContent = u.username;
+
+                            const count = unreadCount[u.username] || 0;
+                            if (count > 0) {
+                                const badge = document.createElement("span");
+                                badge.classList.add("badge");
+                                badge.textContent = count > 99 ? "99+" : count;
+                                div.appendChild(badge);
+                            }
+
+                            div.addEventListener("click", () => {
+                                selectUser(u.username, div);
+                                delete unreadCount[u.username];
+                                updateUserListBadge(u.username, 0);
+                            });
+
+                            container.appendChild(div);
                         }
                     });
-
-                    // Nhận thông báo thu hồi
-                    stompClient.subscribe(`/topic/recall/${currentUser}`, (msg) => {
-                        const recalledId = JSON.parse(msg.body);
-                        markAsRecalled(recalledId);
-                    });
-
-                    loadUsers();
-                }, (error) => {
-                    console.error("WebSocket connection error:", error);
                 });
+        }
+
+        function updateUserListBadge(username, count) {
+            const userItem = Array.from(document.querySelectorAll(".user-item"))
+                .find(el => el.textContent.includes(username));
+            if (!userItem) return;
+
+            const oldBadge = userItem.querySelector(".badge");
+            if (oldBadge) oldBadge.remove();
+
+            if (count > 0) {
+                const badge = document.createElement("span");
+                badge.classList.add("badge");
+                badge.textContent = count > 99 ? "99+" : count;
+                userItem.appendChild(badge);
+            }
+        }
+
+        function selectUser(username, el) {
+            selectedUser = username;
+            document.querySelectorAll(".user-item").forEach(x => x.classList.remove("active"));
+            el.classList.add("active");
+
+            const chatBox = document.getElementById("chatBox");
+            chatBox.innerHTML = `<div class="placeholder-text">Đang chat với <b>${selectedUser}</b></div>`;
+            loadHistory(selectedUser);
+        }
+
+        document.getElementById("sendBtn").addEventListener("click", sendMessage);
+        document.getElementById("msgInput").addEventListener("keypress", (e) => {
+            if (e.key === "Enter") sendMessage();
+        });
+
+        function sendMessage() {
+            const content = document.getElementById("msgInput").value.trim();
+            if (!content || !selectedUser) return;
+
+            const message = {
+                sender: currentUser,
+                receiver: selectedUser,
+                content: content,
+                timestamp: new Date().toISOString()
+            };
+
+            stompClient.send("/app/user/chat", {}, JSON.stringify(message));
+            document.getElementById("msgInput").value = "";
+        }
+
+        function handleAutoReply(msg) {
+            const user = msg.sender;
+            const text = msg.content.trim();
+
+            if (text === "0") {
+                showHelpMenu(user);
+            } else if (text === "1") {
+                const mail = document.getElementById("mailconfig").value;
+                const phone = document.getElementById("phoneconfig").value;
+                showHelpMenu1(user, mail, phone);
+            } else if (text === "2") {
+                sendAutoMessage(user, "Vui lòng nhập câu hỏi");
+            }
+        }
+
+        async function showHelpMenu(user) {
+            const messages = [
+                "Bạn cần giúp đỡ gì ?",
+                "0 : Hiện lại danh sách hỗ trợ",
+                "1 : Thông tin liên hệ chủ sân ?",
+                "2 : Khác ?"
+            ];
+            for (const msg of messages) {
+                sendAutoMessage(user, msg);
+                await sleep(500);
+            }
+        }
+
+        async function showHelpMenu1(user, mail, phone) {
+            const messages = [
+                "Hệ thống đang truy xuất dữ liệu !",
+                `Email liên hệ: ${mail}`,
+                `Số điện thoại hỗ trợ: ${phone}`
+            ];
+            for (const msg of messages) {
+                sendAutoMessage(user, msg);
+                await sleep(1000);
+            }
+        }
+
+        function sendAutoMessage(to, text) {
+            if (!selectedUser || selectedUser !== to) {
+                const userItem = Array.from(document.querySelectorAll(".user-item"))
+                    .find(el => el.textContent === to);
+                if (userItem) userItem.click();
             }
 
-            function loadUsers() {
-                fetch("/user/chat/api/accounts")
-                    .then(res => res.json())
-                    .then(users => {
-                        const select = document.getElementById("userSelect");
-                        select.innerHTML = '<option value="">-- Chọn người dùng --</option>';
-                        users.forEach(u => {
-                            if (u.username !== currentUser) {
-                                const opt = document.createElement("option");
-                                opt.value = u.username;
-                                opt.textContent = u.username;
-                                select.appendChild(opt);
-                            }
-                        });
-                    })
-                    .catch(err => console.error("❌ Lỗi tải user:", err));
+            setTimeout(() => {
+                const input = document.getElementById("msgInput");
+                input.value = text;
+                sendMessage();
+            }, 100);
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        function showMessage(m) {
+            if (m.sender !== selectedUser && m.receiver !== selectedUser) return;
+
+            const chatBox = document.getElementById("chatBox");
+            const div = document.createElement("div");
+            const isAdmin = m.sender === currentUser;
+            div.classList.add("msg", isAdmin ? "admin" : "user");
+            if (m.id) div.setAttribute("data-id", m.id);
+
+            const header = document.createElement("div");
+            header.classList.add("msg-header");
+            const formattedTime = formatFullTimestamp(m.time);
+            header.innerHTML = `<span>${m.sender}</span><span>${formattedTime}</span>`;
+
+            const content = document.createElement("div");
+            content.classList.add("msg-content");
+            content.textContent = m.content === "@@@##" ? "Tin nhắn đã thu hồi" : m.content;
+            if (m.content === "@@@##") content.classList.add("recalled-msg");
+
+            div.appendChild(header);
+            div.appendChild(content);
+            chatBox.appendChild(div);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function markAsRecalled(messageId) {
+            const msgDiv = document.querySelector(`[data-id='${messageId}']`);
+            if (msgDiv) {
+                const content = msgDiv.querySelector(".msg-content");
+                content.textContent = "Tin nhắn đã thu hồi";
+                content.classList.add("recalled-msg");
+            }
+        }
+
+        function formatFullTimestamp(ts) {
+            if (!ts) return "??:?? ????";
+
+            if (typeof ts === 'string' && ts.includes(' ') && ts.includes('-')) {
+                const [datePart, timePart] = ts.split(' ');
+                const [year, month, day] = datePart.split('-').map(Number);
+                const [hour, minute] = timePart.split(':').map(Number);
+
+                const pad = n => n.toString().padStart(2, '0');
+                return `${pad(hour)}:${pad(minute)} ${pad(day)}/${pad(month)}/${year}`;
             }
 
-            document.getElementById("userSelect").addEventListener("change", (e) => {
-                selectedUser = e.target.value;
-                const chatBox = document.getElementById("chatBox");
-                if (selectedUser) {
-                    chatBox.innerHTML = `<div class="placeholder-text"><i class="bi bi-chat-dots"></i> Đang chat với ${selectedUser}</div>`;
-                    loadHistory(selectedUser);
-                } else {
-                    chatBox.innerHTML = `<div class="placeholder-text"><i class="bi bi-chat-dots"></i> Chưa có cuộc trò chuyện nào</div>`;
-                }
-            });
-
-            document.getElementById("sendBtn").addEventListener("click", () => {
-                const content = document.getElementById("msgInput").value.trim();
-                if (!content || !selectedUser) return;
-
-                const message = {
-                    sender: currentUser,
-                    receiver: selectedUser,
-                    content: content,
-                    timestamp: new Date().toISOString()
-                };
-
-                stompClient.send("/app/user/chat", {}, JSON.stringify(message));
-                document.getElementById("msgInput").value = "";
-            });
-
-            function handleAutoReply(msg) {
-                const user = msg.sender;
-                const text = msg.content.trim();
-
-                // Nếu user nhập 0 => hiện lại menu
-                if (text === "0") {
-                    showHelpMenu(user);
-                } 
-                // Nếu user nhập 1 => thông tin liên hệ
-                else if (text === "1") {
-                    const mail = document.getElementById("mailconfig").value;
-                    const phone = document.getElementById("phoneconfig").value;
-                    showHelpMenu1(user, mail, phone);
-                }
-                // Nếu user nhập 2
-                else if (text === "2") {
-                    sendAutoMessage(user, "💬 Vui lòng nhập câu hỏi");
-                }
+            const d = new Date(ts);
+            if (!isNaN(d)) {
+                const pad = n => n.toString().padStart(2, '0');
+                return `${pad(d.getHours())}:${pad(d.getMinutes())} ${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
             }
 
+            return "??:?? ????";
+        }
 
-            // Gửi danh sách hỗ trợ
-            function sleep(ms) {
-			    return new Promise(resolve => setTimeout(resolve, ms));
-			}
-			
-            async function showHelpMenu1(user, mail, phone) {
-                const messages = [
-                    "Hệ thống đang truy xuất dữ liệu ! 🏟️",
-                    `📧 Email liên hệ: ${mail}`,
-                    `📞 Số điện thoại hỗ trợ: ${phone}`
-                ];
+        function loadHistory(target) {
+            fetch(`/user/chat/history/${target}`)
+                .then(res => res.json())
+                .then(data => {
+                    const chatBox = document.getElementById("chatBox");
+                    chatBox.innerHTML = "";
+                    data.forEach(m => showMessage(m));
+                })
+                .catch(err => console.error("Lỗi load history:", err));
+        }
 
-                for (const msg of messages) {
-                    sendAutoMessage(user, msg);
-                    await sleep(1000); // chờ 1s mới gửi tiếp
-                }
-            }
-			
-			async function showHelpMenu(user) {
-			    const messages = [
-			        "Bạn cần giúp đỡ gì ?",
-			        "0️⃣ : Hiện lại danh sách hỗ trợ",
-			        "1️⃣ : Thông tin liên hệ chủ sân ?",
-			        "2️⃣ : Khác ?"
-			    ];
-			
-			    for (const msg of messages) {
-			        sendAutoMessage(user, msg);
-			        await sleep(500); // chờ 0.5s mới gửi tiếp
-			    }
-			}
-
-            // Gửi tin nhắn tự động từ Admin
-            function sendAutoMessage(to, text) {
-			    if (!selectedUser || selectedUser !== to) {
-			        // Chọn người dùng nếu chưa chọn hoặc khác
-			        const userSelect = document.getElementById("userSelect");
-			        userSelect.value = to;
-			        selectedUser = to;
-			        const chatBox = document.getElementById("chatBox");
-			        chatBox.innerHTML = `<div class="placeholder-text"><i class="bi bi-chat-dots"></i> Đang chat với ${to}</div>`;
-			        loadHistory(to);
-			    }
-			
-			    // Điền text vào khung input
-			    const msgInput = document.getElementById("msgInput");
-			    msgInput.value = text;
-			
-			    // "Bấm nút gửi" bằng code
-			    document.getElementById("sendBtn").click();
-			}
-
-            // Hiển thị tin nhắn
-            function showMessage(m) {
-                const chatBox = document.getElementById("chatBox");
-                if (m.sender !== selectedUser && m.receiver !== selectedUser) return;
-
-                const div = document.createElement("div");
-                const isAdmin = m.sender === currentUser;
-                div.classList.add("msg", isAdmin ? "admin" : "user");
-                div.setAttribute("data-id", m.id);
-
-                const header = document.createElement("div");
-                header.classList.add("msg-header");
-                header.innerHTML = `<span>${m.sender}</span><span class="msg-timestamp">${formatTimestamp(m.timestamp)}</span>`;
-
-                const content = document.createElement("div");
-                content.classList.add("msg-content");
-
-                if (m.content === "@@@##") {
-                    content.textContent = "🕓 Tin nhắn đã thu hồi";
-                    content.classList.add("recalled-msg");
-                } else {
-                    content.textContent = m.content;
-                }
-
-                div.appendChild(header);
-                div.appendChild(content);
-                chatBox.appendChild(div);
-                chatBox.scrollTop = chatBox.scrollHeight;
-            }
-
-            function markAsRecalled(messageId) {
-                const chatBox = document.getElementById("chatBox");
-                const msgDiv = chatBox.querySelector(`[data-id='${messageId}']`);
-                if (msgDiv) {
-                    const content = msgDiv.querySelector(".msg-content");
-                    content.textContent = "🕓 Tin nhắn đã thu hồi";
-                    content.classList.add("recalled-msg");
-                }
-            }
-
-            function formatTimestamp(timestamp) {
-                if (!timestamp) return "";
-                const date = new Date(timestamp);
-                return date.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
-            }
-
-            function loadHistory(target) {
-                fetch(`/user/chat/history/${target}`)
-                    .then(res => res.json())
-                    .then(data => {
-                        const chatBox = document.getElementById("chatBox");
-                        chatBox.innerHTML = "";
-                        data.forEach(m => showMessage(m));
-                    })
-                    .catch(err => console.error("❌ Lỗi tải lịch sử:", err));
-            }
-			
-            connect();
-        </script>
-	</div>
+        connect();
+    </script>
+</div>
 </body>
 </html>

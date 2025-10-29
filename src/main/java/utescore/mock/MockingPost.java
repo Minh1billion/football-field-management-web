@@ -7,6 +7,7 @@ import utescore.entity.Comment;
 import utescore.repository.PostRepository;
 import utescore.repository.CommentRepository;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,6 +40,7 @@ public class MockingPost implements CommandLineRunner {
                 Comment comment = Comment.builder()
                         .author("user")
                         .content("012932139" + i)
+                        .createdAt(LocalDateTime.now())
                         .post(post) // liên kết với post
                         .build();
                 comments.add(comment);

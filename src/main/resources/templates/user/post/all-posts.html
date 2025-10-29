@@ -7,23 +7,12 @@
   <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1.5.1/dist/sockjs.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
   <style>
-    .post-container {
-      min-height: 300px;
-    }
-    .comment-list {
-      max-height: 400px;
-      overflow-y: auto;
-    }
-    .comment-section {
-      border-left: 1px solid #dee2e6;
-      padding-left: 15px;
-    }
-    /* Hiệu ứng khi đã like */
-    .like-btn.liked {
-      background-color: #0d6efd;
-      color: white;
-      border-color: #0d6efd;
-    }
+    .post-container { min-height: 300px; }
+    .comment-list { max-height: 400px; overflow-y: auto; }
+    .comment-section { border-left: 1px solid #dee2e6; padding-left: 15px; }
+    .like-btn.liked { background-color: #0d6efd; color: white; border-color: #0d6efd; }
+    .spinner-border-sm { width: 1rem; height: 1rem; border-width: 0.15em; }
+    .warning-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 9999; max-width: 500px; width: 90%; }
   </style>
 </head>
 
@@ -43,11 +32,11 @@
 <button class="btn btn-primary mb-3" onclick="window.location.href='/user/post'">
   ⬅️ Quay lại trang đăng bài
 </button>
+
 <div id="postList" class="d-flex flex-column gap-3">
   <div th:each="p : ${posts}" class="card" th:data-createdat="${p.createdAt}" th:data-post-id="${p.id}">
     <div class="card-body">
       <div class="row post-container">
-        <!-- Phần bài viết (50%) -->
         <div class="col-md-6">
           <div class="d-flex align-items-center mb-2">
             <img src="https://cdn-icons-png.flaticon.com/512/149/149071.png" alt="avatar"
@@ -65,7 +54,6 @@
           <p>[[${p.content}]]</p>
 
           <div class="d-flex gap-2 mb-2">
-            <!-- ✅ Thêm class 'liked' nếu user đã like -->
             <button type="button"
                     class="btn btn-outline-primary btn-sm like-btn"
                     th:classappend="${p.isLikedBy(usernamelogin)} ? 'liked' : ''"
@@ -79,12 +67,14 @@
           </div>
         </div>
 
-        <!-- Phần bình luận (50%) -->
         <div class="col-md-6 comment-section">
           <form class="comment-form mb-3" method="post">
             <div class="input-group">
               <input type="text" name="content" class="form-control" placeholder="Viết bình luận..." required>
-              <button type="submit" class="btn btn-success">Gửi</button>
+              <button type="submit" class="btn btn-success">
+                <span class="submit-text">Gửi</span>
+                <span class="spinner-border spinner-border-sm d-none" role="status"></span>
+              </button>
             </div>
           </form>
 
@@ -105,6 +95,24 @@
 
 <input type="hidden" id="usernamelogin" th:value="${usernamelogin}"/>
 
+<!-- Modal cảnh báo -->
+<div id="warningModal" class="d-none">
+  <div class="modal-backdrop show"></div>
+  <div class="card warning-modal shadow-lg">
+    <div class="card-header bg-danger text-white">
+      <h5 class="mb-0">⚠️ Cảnh báo nội dung vi phạm</h5>
+    </div>
+    <div class="card-body">
+      <p class="mb-2"><strong>Bình luận của bạn chứa nội dung không phù hợp:</strong></p>
+      <p id="warningReason" class="text-muted fst-italic"></p>
+      <p class="mb-0 text-danger"><small>Vui lòng chỉnh sửa và thử lại.</small></p>
+    </div>
+    <div class="card-footer text-end">
+      <button class="btn btn-secondary" onclick="closeWarningModal()">Đóng</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
   let stompClient = null;
@@ -120,102 +128,138 @@
           updateUI(postId, data);
         });
       });
-    }, (error) => {
-      console.error("WebSocket Error:", error);
-    });
+    }, (error) => console.error("WebSocket Error:", error));
   }
 
-  // ✅ Cập nhật UI khi nhận dữ liệu mới
   function updateUI(postId, data) {
     const post = document.querySelector(`.card[data-post-id="${postId}"]`);
     if (!post) return;
 
-    // ✅ Cập nhật Like với trạng thái toggle
     if (data.likes !== undefined) {
       const likeBtn = post.querySelector(".like-btn");
       const likeCountSpan = post.querySelector(".like-count");
       const likeText = post.querySelector(".like-text");
-
       if (likeCountSpan) likeCountSpan.textContent = data.likes;
-
-      // Cập nhật trạng thái nút like
       if (likeBtn && data.isLiked !== undefined) {
-        if (data.isLiked) {
-          likeBtn.classList.add("liked");
-          if (likeText) likeText.textContent = "Đã thích";
-        } else {
-          likeBtn.classList.remove("liked");
-          if (likeText) likeText.textContent = "Thích";
-        }
+        likeBtn.classList.toggle("liked", data.isLiked);
+        likeText.textContent = data.isLiked ? "Đã thích" : "Thích";
         likeBtn.dataset.isLiked = data.isLiked;
       }
     }
 
-    // Cập nhật Bình luận
     if (data.author && data.content) {
       const commentList = post.querySelector(".comment-list");
       const newComment = document.createElement("div");
       newComment.classList.add("mb-2", "p-2", "border", "rounded", "comment-item", "bg-light");
-
       const now = new Date();
       const formattedTime = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
-              + " " + now.toLocaleDateString('vi-VN');
-
+            + " " + now.toLocaleDateString('vi-VN');
       newComment.innerHTML = `
-          <div class="d-flex justify-content-between">
-            <strong>${data.author}</strong>
-            <small class="text-muted">${formattedTime}</small>
-          </div>
-          <div>${data.content}</div>
-        `;
-
+        <div class="d-flex justify-content-between">
+          <strong>${data.author}</strong>
+          <small class="text-muted">${formattedTime}</small>
+        </div>
+        <div>${data.content}</div>
+      `;
       commentList.prepend(newComment);
-
       const commentCountSpan = post.querySelector(".comment-count");
       if (commentCountSpan) {
-        const currentCount = parseInt(commentCountSpan.textContent.match(/\d+/)?.[0] || 0);
-        commentCountSpan.textContent = currentCount + 1;
+        commentCountSpan.textContent = parseInt(commentCountSpan.textContent) + 1;
       }
     }
+  }
+
+  // ✅ Hàm kiểm tra nội dung với Gemini API
+  async function checkCommentWithGemini(content) {
+    try {
+      const response = await fetch('/user/api/check-comment-gemini', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content })
+      });
+
+      if (!response.ok) {
+        console.error('API error:', response.status);
+        return { flagged: false, reason: 'Lỗi kết nối API' };
+      }
+
+      const result = await response.json();
+      if (result.error) {
+        console.warn('Gemini API Error:', result.error);
+        return { flagged: false, reason: 'Gemini API lỗi' };
+      }
+
+      return {
+        flagged: result.flagged === true || result.flagged === "true",
+        reason: result.reason || 'Nội dung chứa ngôn từ không phù hợp.'
+      };
+    } catch (error) {
+      console.error('Lỗi kiểm tra nội dung:', error);
+      return { flagged: false, reason: 'Lỗi xử lý phía client' };
+    }
+  }
+
+  function showWarningModal(reason) {
+    const modal = document.getElementById('warningModal');
+    document.getElementById('warningReason').textContent = reason || 'Nội dung chứa ngôn từ không phù hợp.';
+    modal.classList.remove('d-none');
+  }
+
+  function closeWarningModal() {
+    document.getElementById('warningModal').classList.add('d-none');
+  }
+
+  function setFormLoading(form, isLoading) {
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const submitText = submitBtn.querySelector('.submit-text');
+    const spinner = submitBtn.querySelector('.spinner-border');
+    const input = form.querySelector('input[name="content"]');
+    submitBtn.disabled = input.disabled = isLoading;
+    submitText.classList.toggle('d-none', isLoading);
+    spinner.classList.toggle('d-none', !isLoading);
   }
 
   document.addEventListener("DOMContentLoaded", () => {
     connectWebSocket();
 
-    // ✅ Gửi Toggle Like
     document.querySelectorAll(".like-btn").forEach(btn => {
       btn.addEventListener("click", () => {
         const postId = btn.closest(".card").dataset.postId;
         const username = document.getElementById("usernamelogin").value;
-
-        // Gửi request với username
         stompClient.send(`/app/post/${postId}/like`, {}, JSON.stringify({ username }));
       });
     });
 
-    // Gửi Comment
     document.querySelectorAll(".comment-form").forEach(form => {
-      form.addEventListener("submit", (e) => {
+      form.addEventListener("submit", async (e) => {
         e.preventDefault();
         const postId = form.closest(".card").dataset.postId;
         const username = document.getElementById("usernamelogin").value;
-        const content = form.querySelector("input[name='content']").value;
+        const content = form.querySelector("input[name='content']").value.trim();
+        if (!content) return;
+        setFormLoading(form, true);
+
+        const moderationResult = await checkCommentWithGemini(content);
+        setFormLoading(form, false);
+
+        if (moderationResult.flagged) {
+          showWarningModal(moderationResult.reason);
+          return;
+        }
+
         stompClient.send(`/app/post/${postId}/comment`, {}, JSON.stringify({ content, author: username }));
         form.reset();
       });
     });
 
-    // Bộ lọc thời gian
     document.getElementById("filterTime").addEventListener("change", function () {
       const now = new Date();
-      const value = this.value;
       const posts = document.querySelectorAll("#postList .card");
-
       posts.forEach(post => {
         const createdAt = new Date(post.dataset.createdat);
         const diffHours = (now - createdAt) / 1000 / 3600;
         let show = false;
-        switch (value) {
+        switch (this.value) {
           case "all": show = true; break;
           case "hour": show = diffHours <= 1; break;
           case "day": show = diffHours <= 24; break;

@@ -40,7 +40,9 @@
     <option value="year">1 năm qua</option>
   </select>
 </div>
-
+<button class="btn btn-primary mb-3" onclick="window.location.href='/user/post'">
+  ⬅️ Quay lại trang đăng bài
+</button>
 <div id="postList" class="d-flex flex-column gap-3">
   <div th:each="p : ${posts}" class="card" th:data-createdat="${p.createdAt}" th:data-post-id="${p.id}">
     <div class="card-body">

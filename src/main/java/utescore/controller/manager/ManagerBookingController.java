@@ -78,10 +78,19 @@ public class ManagerBookingController {
         return "redirect:/manager/bookings";
     }
 
-    // NEW: Nút Hoàn tất cho trường hợp COD (và các trường hợp cần chốt thủ công)
     @PostMapping("/{id}/complete")
     public String complete(@PathVariable Long id) {
         bookingService.complete(id);
         return "redirect:/manager/bookings";
+    }
+    @GetMapping("/{id}")
+    public String view(@PathVariable Long id, Model model) {
+        var booking = bookingService.listAll()
+                                    .stream()
+                                    .filter(b -> b.getId().equals(id))
+                                    .findFirst()
+                                    .orElseThrow(() -> new IllegalArgumentException("Booking not found"));
+        model.addAttribute("booking", booking);
+        return "manager/bookings/detail";
     }
 }

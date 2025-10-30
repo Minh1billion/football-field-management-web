@@ -12,8 +12,11 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import jakarta.validation.Valid;
 import utescore.dto.RegisterRequest;
 import utescore.entity.Account;
 import utescore.service.AccountService;
@@ -81,21 +84,38 @@ public class AccountController {
     @PostMapping("/create")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
     public String createAccount(
-            @ModelAttribute RegisterRequest registerRequest,
+            @Valid @ModelAttribute("registerRequest") RegisterRequest registerRequest,
+            BindingResult bindingResult,
             @RequestParam String role,
+            Model model,
             RedirectAttributes redirectAttributes) {
+
+        // Nếu có lỗi validation → quay lại form
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("roles", Account.Role.values());
+            model.addAttribute("currentUserRole", getCurrentUserRole());
+            return "admin/accounts/create";
+        }
+
+        // Kiểm tra xác nhận mật khẩu
+        if (!registerRequest.getPassword().equals(registerRequest.getConfirmPassword())) {
+            model.addAttribute("errorMessage", "Mật khẩu xác nhận không khớp!");
+            model.addAttribute("roles", Account.Role.values());
+            model.addAttribute("currentUserRole", getCurrentUserRole());
+            return "admin/accounts/create";
+        }
+
         try {
             accountService.createAccountByRole(registerRequest, role);
             redirectAttributes.addFlashAttribute("successMessage", "Tạo tài khoản thành công!");
         } catch (IllegalArgumentException e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
             return "redirect:/admin/accounts/create";
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Đã xảy ra lỗi khi tạo tài khoản!");
             return "redirect:/admin/accounts/create";
         }
-        
+
         return "redirect:/admin/accounts";
     }
 

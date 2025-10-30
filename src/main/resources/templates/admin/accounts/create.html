@@ -11,37 +11,57 @@
 		<form th:action="@{/admin/accounts/create}" method="post"
 			th:object="${registerRequest}" class="card p-4 shadow-sm">
 			<div class="mb-3">
-				<label class="form-label">Tên đăng nhập</label> 
-				<input type="text" class="form-control" th:field="*{username}" required>
+				<label class="form-label">Tên đăng nhập</label> <input type="text"
+					class="form-control" th:field="*{username}">
+				<div class="text-danger" th:if="${#fields.hasErrors('username')}"
+					th:errors="*{username}"></div>
 			</div>
 			<div class="mb-3">
-				<label class="form-label">Email</label> 
-				<input type="email" class="form-control" th:field="*{email}" required>
+				<label class="form-label">Họ</label> <input type="text"
+					class="form-control" th:field="*{lastName}">
+				<div class="text-danger" th:if="${#fields.hasErrors('lastName')}"
+					th:errors="*{lastName}"></div>
+			</div>
+
+			<div class="mb-3">
+				<label class="form-label">Tên</label> <input type="text"
+					class="form-control" th:field="*{firstName}">
+				<div class="text-danger" th:if="${#fields.hasErrors('firstName')}"
+					th:errors="*{firstName}"></div>
 			</div>
 			<div class="mb-3">
-				<label class="form-label">Mật khẩu</label> 
-				<input type="password" class="form-control" th:field="*{password}" required>
+				<label class="form-label">Email</label> <input type="email"
+					class="form-control" th:field="*{email}">
+				<div class="text-danger" th:if="${#fields.hasErrors('email')}"
+					th:errors="*{email}"></div>
+			</div>
+
+			<div class="mb-3">
+				<label class="form-label">Mật khẩu</label> <input type="password"
+					class="form-control" th:field="*{password}">
+				<div class="text-danger" th:if="${#fields.hasErrors('password')}"
+					th:errors="*{password}"></div>
+			</div>
+
+			<div class="mb-3">
+				<label class="form-label">Nhập lại mật khẩu</label> <input
+					type="password" class="form-control" th:field="*{confirmPassword}"
+					required>
 			</div>
 			<div class="mb-3">
-				<label class="form-label">Nhập lại mật khẩu</label> 
-				<input type="password" class="form-control" th:field="*{confirmPassword}" required>
-			</div>
-			<div class="mb-3">
-				<label for="role" class="form-label">Vai trò</label> 
-				<select class="form-select" id="role" name="role" required>
+				<label for="role" class="form-label">Vai trò</label> <select
+					class="form-select" id="role" name="role" required>
 					<option value="">-- Chọn vai trò --</option>
 					<!-- Chỉ hiển thị ADMIN và MANAGER, bỏ quyền USER -->
-					<option th:each="r : ${roles}" 
-							th:if="${r.toString() != 'USER'}"
-							th:value="${r}" th:text="${r}">
-					</option>
-				</select>
-				<small class="form-text text-muted">
-					💡 Chỉ có thể tạo tài khoản Admin và Manager
-				</small>
+					<option th:each="r : ${roles}" th:if="${r.toString() != 'USER'}"
+						th:value="${r}" th:text="${r}"></option>
+				</select> <small class="form-text text-muted"> 💡 Chỉ có thể tạo tài
+					khoản Admin và Manager </small>
 			</div>
-			<button type="submit" class="btn btn-success">💾 Tạo tài khoản</button>
-			<a th:href="@{/admin/accounts}" class="btn btn-secondary">⬅ Quay lại</a>
+			<button type="submit" class="btn btn-success">💾 Tạo tài
+				khoản</button>
+			<a th:href="@{/admin/accounts}" class="btn btn-secondary">⬅ Quay
+				lại</a>
 		</form>
 	</div>
 </body>

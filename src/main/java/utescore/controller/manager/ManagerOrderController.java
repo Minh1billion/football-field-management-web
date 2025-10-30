@@ -21,14 +21,20 @@ public class ManagerOrderController {
      * Hiển thị danh sách tất cả đơn hàng (Order, RentalOrder, Booking)
      */
     @GetMapping
-    public String viewOrders(@RequestParam(defaultValue = "all") String type,
-                             @RequestParam(defaultValue = "all") String status,
-                             Model model) {
-        log.info("Viewing orders: type={}, status={}", type, status);
+    public String viewOrders(
+        @RequestParam(defaultValue = "all") String type,
+        @RequestParam(defaultValue = "all") String status,
+        @RequestParam(required = false) String phone,
+        @RequestParam(required = false) String email,
+        Model model) 
+    {
+        log.info("Viewing orders: type={}, status={}, phone={}, email={}", type, status, phone, email);
 
         model.addAttribute("type", type);
         model.addAttribute("status", status);
-        model.addAttribute("orders", managerOrderService.getAllOrders(type, status));
+        model.addAttribute("phone", phone);
+        model.addAttribute("email", email);
+        model.addAttribute("orders", managerOrderService.getAllOrders(type, status, phone, email));
 
         return "manager/orders/list";
     }

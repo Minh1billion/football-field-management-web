@@ -19,7 +19,7 @@
           <!-- Filters -->
           <div class="card-body pb-2">
             <form method="get" th:action="@{/manager/orders}" class="row g-3">
-              <div class="col-md-4">
+              <div class="col-md-3">
                 <label class="form-label">Loại đơn</label>
                 <select name="type" class="form-select" onchange="this.form.submit()">
                   <option value="all" th:selected="${type == 'all'}">Tất cả</option>
@@ -28,7 +28,7 @@
                   <option value="booking" th:selected="${type == 'booking'}">Booking sân</option>
                 </select>
               </div>
-              <div class="col-md-4">
+              <div class="col-md-3">
                 <label class="form-label">Trạng thái</label>
                 <select name="status" class="form-select" onchange="this.form.submit()">
                   <option value="all" th:selected="${status == 'all'}">Tất cả</option>
@@ -37,6 +37,24 @@
                   <option value="completed" th:selected="${status == 'completed'}">Hoàn thành</option>
                   <option value="cancelled" th:selected="${status == 'cancelled'}">Đã hủy</option>
                 </select>
+              </div>
+              <!-- THÊM INPUT TÌM KIẾM SỐ ĐIỆN THOẠI -->
+              <div class="col-md-3">
+                <label class="form-label">Số điện thoại</label>
+                <input name="phone" type="text" class="form-control" th:value="${phone}" placeholder="Nhập số điện thoại">
+              </div>
+              <!-- THÊM INPUT TÌM KIẾM EMAIL -->
+              <div class="col-md-3">
+                <label class="form-label">Email</label>
+                <input name="email" type="text" class="form-control" th:value="${email}" placeholder="Nhập email">
+              </div>
+              <div class="col-12 d-flex justify-content-end">
+                <button type="submit" class="btn btn-primary mt-2">
+                  <i class="fas fa-search"></i> Tìm kiếm
+                </button>
+                <a th:href="@{/manager/orders}" class="btn btn-secondary mt-2 ms-2">
+                  <i class="fas fa-eraser"></i> Làm mới
+                </a>
               </div>
             </form>
           </div>
@@ -60,6 +78,8 @@
                   <th class="text-uppercase text-secondary text-xxs font-weight-bolder">Mã đơn</th>
                   <th class="text-uppercase text-secondary text-xxs font-weight-bolder">Loại</th>
                   <th class="text-uppercase text-secondary text-xxs font-weight-bolder">Khách hàng</th>
+                  <th class="text-uppercase text-secondary text-xxs font-weight-bolder">SĐT</th>
+                  <th class="text-uppercase text-secondary text-xxs font-weight-bolder">Email</th>
                   <th class="text-uppercase text-secondary text-xxs font-weight-bolder">Tổng tiền</th>
                   <th class="text-uppercase text-secondary text-xxs font-weight-bolder">Trạng thái đơn</th>
                   <th class="text-uppercase text-secondary text-xxs font-weight-bolder">Thanh toán</th>
@@ -80,6 +100,12 @@
                   </td>
                   <td>
                     <span class="text-sm" th:text="${order.customerName}"></span>
+                  </td>
+                  <td>
+                    <span class="text-sm" th:text="${order.customerPhone}"></span>
+                  </td>
+                  <td>
+                    <span class="text-sm" th:text="${order.customerEmail}"></span>
                   </td>
                   <td>
                     <span class="text-sm font-weight-bold"

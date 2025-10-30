@@ -121,6 +121,7 @@ UTE Score là nền tảng quản lý sân bóng đá hiện đại được thi
 | **Cloudinary** | Lưu trữ hình ảnh trên cloud |
 | **Gmail SMTP** | Dịch vụ gửi email |
 | **JWT** | Xác thực token |
+| **GEMINI** | Ngăn chặn bình luận tiêu cực |
 
 ## 📁 Cấu Trúc Dự Án
 
@@ -220,6 +221,9 @@ vnpay.return-url=http://localhost:8080/payment/vnpay-return
 # JWT Configuration
 jwt.secret=your_jwt_secret_key_min_256_bits
 jwt.expiration=86400000
+
+# Hỗ trợ AI giải quyết bình luận tiêu cực
+gemini.api.key=AIzaSyBQOSOKdsIKsxzSRzQAXhdpZuvizNOyqzc
 ```
 
 ### 4️⃣ Build và Chạy Ứng Dụng
@@ -250,16 +254,16 @@ http://localhost:8080
 
 | Vai Trò | Email | Mật Khẩu | Mô Tả |
 |---------|-------|----------|-------|
-| **Admin** | admin@utescore.com | admin123 | Quản trị viên hệ thống |
-| **Manager** | manager@utescore.com | manager123 | Quản lý sân bóng |
-| **User** | user@utescore.com | user123 | Người dùng thông thường |
+| **Admin** | admin@utescore.com | User@123 | Quản trị viên hệ thống |
+| **Manager** | manager@utescore.com | User@123 | Quản lý sân bóng |
+| **User** | user@utescore.com | User@123 | Người dùng thông thường |
 
 ## 👨‍💻 Thành Viên Nhóm
 
 | Họ và Tên | MSSV | Vai Trò | Email |
 |-----------|------|---------|-------|
 | **Trần Quang Minh** | 23110269 | Team Leader, Backend Developer | minh.tq@student.ute.edu.vn |
-| **Huỳnh Duy Nguyên** | 23110270 | Backend Developer, Database Designer | nguyen.hd@student.ute.edu.vn |
+| **Huỳnh Duy Nguyên** | 23110270 | Backend Developer, Database Designer | nguyenhuynh.663459@gmail.com,23110270@student.ute.edu.vn |
 | **Trần Trí Tình** | 23110341 | Frontend Developer, UI/UX Designer | tinh.tt@student.ute.edu.vn |
 
 ## 📞 Liên Hệ
@@ -270,11 +274,7 @@ http://localhost:8080
 
 ## 🙏 Lời Cảm Ơn
 
-- Spring Boot Team vì framework tuyệt vời
-- Thymeleaf Team vì template engine mạnh mẽ
-- VNPay vì cổng thanh toán đáng tin cậy
-- Cloudinary vì dịch vụ lưu trữ hình ảnh
-- Tất cả các thư viện mã nguồn mở đã được sử dụng
+- Cảm ơn mọi người đã đọc lời viết này !!!
 
 ---
 

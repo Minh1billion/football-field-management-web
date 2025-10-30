@@ -14,6 +14,7 @@ import utescore.entity.RentalOrder;
 import utescore.repository.*;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -30,6 +31,30 @@ public class RentalService {
     private final RentalOrderDetailRepository rentalOrderDetailRepository;
     private final SportWearService sportWearService;
     private final ServiceService serviceService;
+    private final LoyaltyRepository loyaltyRepository;
+
+    // ===== PHƯƠNG THỨC TÍNH DISCOUNT THEO TIER =====
+    private BigDecimal getDiscountRate(Loyalty.MembershipTier tier) {
+        if (tier == null) {
+            return BigDecimal.ZERO;
+        }
+
+        return switch (tier) {
+            case BRONZE -> BigDecimal.ZERO;
+            case SILVER -> new BigDecimal("0.05"); // 5%
+            case GOLD -> new BigDecimal("0.10");   // 10%
+            case PLATINUM -> new BigDecimal("0.15"); // 15%
+        };
+    }
+
+    private BigDecimal applyDiscount(BigDecimal amount, BigDecimal discountRate) {
+        if (discountRate.compareTo(BigDecimal.ZERO) == 0) {
+            return amount;
+        }
+
+        BigDecimal discount = amount.multiply(discountRate);
+        return amount.subtract(discount).setScale(2, RoundingMode.HALF_UP);
+    }
 
     public long countActiveRentals(String username) {
         return rentalRepository.countActiveRentals(username);
@@ -139,6 +164,11 @@ public class RentalService {
             throw new RuntimeException("Không tìm thấy thông tin khách hàng");
         }
 
+        // Lấy thông tin loyalty để tính discount
+        Loyalty loyalty = loyaltyRepository.findByCustomer_Account_Username(username);
+        Loyalty.MembershipTier tier = loyalty != null ? loyalty.getTier() : Loyalty.MembershipTier.BRONZE;
+        BigDecimal discountRate = getDiscountRate(tier);
+
         // Tạo đơn hàng thuê (RentalOrder)
         RentalOrder rentalOrder = new RentalOrder();
         rentalOrder.setAccount(account);
@@ -152,8 +182,8 @@ public class RentalService {
         rentalOrder.setCustomerAddress(customerAddress);
         rentalOrder.setOrderDate(LocalDateTime.now());
 
-        // Validate và tính tổng tiền
-        BigDecimal totalAmount = BigDecimal.ZERO;
+        // Validate và tính subtotal (TRƯỚC khi áp dụng discount)
+        BigDecimal subtotal = BigDecimal.ZERO;
         for (var cartItem : cartDTO.getItems()) {
             SportWear sportWear = sportWearRepository.findById(cartItem.getSportWearId())
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm ID: " + cartItem.getSportWearId()));
@@ -169,12 +199,15 @@ public class RentalService {
                 throw new RuntimeException("Sản phẩm " + sportWear.getName() + " hiện không cho thuê");
             }
 
-            // Tính tổng tiền
+            // Tính subtotal
             BigDecimal itemTotal = sportWear.getRentalPricePerDay()
                     .multiply(BigDecimal.valueOf(cartItem.getQuantity()))
                     .multiply(BigDecimal.valueOf(cartItem.getRentalDays()));
-            totalAmount = totalAmount.add(itemTotal);
+            subtotal = subtotal.add(itemTotal);
         }
+
+        // ✅ Áp dụng discount theo tier
+        BigDecimal totalAmount = applyDiscount(subtotal, discountRate);
 
         // Tạo Payment
         Payment payment = new Payment();
@@ -216,11 +249,11 @@ public class RentalService {
             detail.setRentalDays(cartItem.getRentalDays());
             detail.setRentalPricePerDay(sportWear.getRentalPricePerDay().doubleValue());
 
-            // ✅ Tính subtotal đúng: giá × số lượng × số ngày
-            double subtotal = sportWear.getRentalPricePerDay().doubleValue()
+            // Tính subtotal đúng: giá × số lượng × số ngày
+            double subtotalItem = sportWear.getRentalPricePerDay().doubleValue()
                     * cartItem.getQuantity()
                     * cartItem.getRentalDays();
-            detail.setSubTotal(subtotal);
+            detail.setSubTotal(subtotalItem);
 
             rentalOrderDetailRepository.save(detail);
 
@@ -242,7 +275,28 @@ public class RentalService {
             throw new RuntimeException("Chỉ có thể thêm đồ thuê khi booking đang ở trạng thái PENDING");
         }
 
-        BigDecimal additionalAmount = BigDecimal.ZERO;
+        // Lấy thông tin loyalty để tính discount
+        Customer customer = booking.getCustomer();
+        Loyalty loyalty = loyaltyRepository.findByCustomer_Account_Username(customer.getAccount().getUsername());
+        Loyalty.MembershipTier tier = loyalty != null ? loyalty.getTier() : Loyalty.MembershipTier.BRONZE;
+        BigDecimal discountRate = getDiscountRate(tier);
+
+        // Tính giá sân
+        long hours = java.time.Duration.between(booking.getStartTime(), booking.getEndTime()).toHours();
+        if (hours <= 0) hours = 1;
+        BigDecimal fieldPrice = booking.getField().getPricePerHour().multiply(BigDecimal.valueOf(hours));
+
+        // Tính tổng services
+        BigDecimal serviceTotal = booking.getBookingServices().stream()
+                .map(BookingService::getTotalPrice)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Tính tổng sportwear hiện tại
+        BigDecimal currentSportWearTotal = booking.getBookingSportWears().stream()
+                .map(BookingSportWear::getTotalPrice)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal additionalSportWearTotal = BigDecimal.ZERO;
 
         for (RentalDTO rental : rentals) {
             SportWear wear = sportWearService.findById(rental.getSportWearId());
@@ -282,7 +336,7 @@ public class RentalService {
             bsw.setRentalDays(rentalDays);
             bsw.setUnitPrice(wear.getRentalPricePerDay());
 
-            // ✅ FIX: Tính đúng công thức = giá × số lượng × số ngày
+            // Tính đúng công thức = giá × số lượng × số ngày
             BigDecimal totalPrice = wear.getRentalPricePerDay()
                     .multiply(BigDecimal.valueOf(rental.getQuantity()))
                     .multiply(BigDecimal.valueOf(rentalDays));
@@ -290,19 +344,21 @@ public class RentalService {
             bsw.setStatus(BookingSportWear.RentalStatus.RENTED);
 
             booking.getBookingSportWears().add(bsw);
-            additionalAmount = additionalAmount.add(totalPrice);
+            additionalSportWearTotal = additionalSportWearTotal.add(totalPrice);
 
             // Trừ số lượng trong kho
             wear.setStockQuantity(wear.getStockQuantity() - rental.getQuantity());
             sportWearRepository.save(wear);
         }
 
-        // Cập nhật tổng tiền booking
-        booking.setTotalAmount(booking.getTotalAmount().add(additionalAmount));
+        // ✅ Tính lại tổng tiền VỚI DISCOUNT
+        BigDecimal subtotal = fieldPrice.add(serviceTotal).add(currentSportWearTotal).add(additionalSportWearTotal);
+        BigDecimal finalAmount = applyDiscount(subtotal, discountRate);
+        booking.setTotalAmount(finalAmount);
 
         // Cập nhật payment amount nếu có
         if (booking.getPayment() != null) {
-            booking.getPayment().setAmount(booking.getTotalAmount());
+            booking.getPayment().setAmount(finalAmount);
         }
 
         bookingRepository.save(booking);
@@ -318,7 +374,28 @@ public class RentalService {
             throw new RuntimeException("Chỉ có thể thêm dịch vụ khi booking đang ở trạng thái PENDING");
         }
 
-        BigDecimal additionalAmount = BigDecimal.ZERO;
+        // Lấy thông tin loyalty để tính discount
+        Customer customer = booking.getCustomer();
+        Loyalty loyalty = loyaltyRepository.findByCustomer_Account_Username(customer.getAccount().getUsername());
+        Loyalty.MembershipTier tier = loyalty != null ? loyalty.getTier() : Loyalty.MembershipTier.BRONZE;
+        BigDecimal discountRate = getDiscountRate(tier);
+
+        // Tính giá sân
+        long hours = java.time.Duration.between(booking.getStartTime(), booking.getEndTime()).toHours();
+        if (hours <= 0) hours = 1;
+        BigDecimal fieldPrice = booking.getField().getPricePerHour().multiply(BigDecimal.valueOf(hours));
+
+        // Tính tổng services hiện tại
+        BigDecimal currentServiceTotal = booking.getBookingServices().stream()
+                .map(BookingService::getTotalPrice)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Tính tổng sportwear
+        BigDecimal sportWearTotal = booking.getBookingSportWears().stream()
+                .map(BookingSportWear::getTotalPrice)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal additionalServiceTotal = BigDecimal.ZERO;
 
         for (RentalDTO rental : rentals) {
             utescore.entity.Service serv = serviceService.findById(rental.getServiceId());
@@ -350,21 +427,23 @@ public class RentalService {
             bs.setQuantity(quantity);
             bs.setUnitPrice(serv.getPrice());
 
-            // ✅ Tính đúng: giá × số lượng
+            // Tính đúng: giá × số lượng
             BigDecimal totalPrice = serv.getPrice()
                     .multiply(BigDecimal.valueOf(quantity));
             bs.setTotalPrice(totalPrice);
 
             booking.getBookingServices().add(bs);
-            additionalAmount = additionalAmount.add(totalPrice);
+            additionalServiceTotal = additionalServiceTotal.add(totalPrice);
         }
 
-        // Cập nhật tổng tiền booking
-        booking.setTotalAmount(booking.getTotalAmount().add(additionalAmount));
+        // ✅ Tính lại tổng tiền VỚI DISCOUNT
+        BigDecimal subtotal = fieldPrice.add(currentServiceTotal).add(additionalServiceTotal).add(sportWearTotal);
+        BigDecimal finalAmount = applyDiscount(subtotal, discountRate);
+        booking.setTotalAmount(finalAmount);
 
         // Cập nhật payment amount nếu có
         if (booking.getPayment() != null) {
-            booking.getPayment().setAmount(booking.getTotalAmount());
+            booking.getPayment().setAmount(finalAmount);
         }
 
         bookingRepository.save(booking);

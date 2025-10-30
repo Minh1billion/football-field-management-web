@@ -13,6 +13,7 @@ import utescore.entity.*;
 import utescore.repository.*;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Optional;
@@ -30,6 +31,30 @@ public class SaleService {
     private final AccountRepository accountRepository;
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
+    private final LoyaltyRepository loyaltyRepository;
+
+    // ===== PHƯƠNG THỨC TÍNH DISCOUNT THEO TIER =====
+    private BigDecimal getDiscountRate(Loyalty.MembershipTier tier) {
+        if (tier == null) {
+            return BigDecimal.ZERO;
+        }
+
+        return switch (tier) {
+            case BRONZE -> BigDecimal.ZERO;
+            case SILVER -> new BigDecimal("0.05"); // 5%
+            case GOLD -> new BigDecimal("0.10");   // 10%
+            case PLATINUM -> new BigDecimal("0.15"); // 15%
+        };
+    }
+
+    private BigDecimal applyDiscount(BigDecimal amount, BigDecimal discountRate) {
+        if (discountRate.compareTo(BigDecimal.ZERO) == 0) {
+            return amount;
+        }
+
+        BigDecimal discount = amount.multiply(discountRate);
+        return amount.subtract(discount).setScale(2, RoundingMode.HALF_UP);
+    }
 
     public Iterable<SportWear> getAvailableSportWearsForSale(Pageable pageable) {
         log.debug("Fetching available sport wears for sale, page: {}", pageable.getPageNumber());
@@ -163,38 +188,54 @@ public class SaleService {
             }
             log.debug("✅ Found customer: id={}", customer.getId());
 
-            // 2. Tính toán số tiền
+            // 2. Lấy thông tin loyalty để tính discount
+            Loyalty loyalty = loyaltyRepository.findByCustomer_Account_Username(username);
+            Loyalty.MembershipTier tier = loyalty != null ? loyalty.getTier() : Loyalty.MembershipTier.BRONZE;
+            BigDecimal discountRate = getDiscountRate(tier);
+
+            log.info("💳 Customer tier: {}, discount rate: {}%", tier, discountRate.multiply(BigDecimal.valueOf(100)));
+
+            // 3. Tính toán số tiền TRƯỚC khi áp dụng discount
             BigDecimal subtotal = cartDTO.getTotalPrice();
+
+            // Áp dụng discount theo tier
+            BigDecimal discountedSubtotal = applyDiscount(subtotal, discountRate);
+
+            // Tính phí ship (áp dụng TRƯỚC discount)
             BigDecimal shippingFee = subtotal.compareTo(FREE_SHIPPING_THRESHOLD) < 0
                     ? SHIPPING_FEE
                     : BigDecimal.ZERO;
-            BigDecimal totalAmount = subtotal.add(shippingFee);
 
-            log.info("💰 Order amounts: subtotal={}, shippingFee={}, total={}",
-                    subtotal, shippingFee, totalAmount);
+            // Tổng tiền cuối cùng = subtotal sau discount + phí ship
+            BigDecimal totalAmount = discountedSubtotal.add(shippingFee);
 
-            // 3. Tạo Order
+            log.info("💰 Order amounts: subtotal={}, discount={}%, afterDiscount={}, shippingFee={}, total={}",
+                    subtotal, discountRate.multiply(BigDecimal.valueOf(100)),
+                    discountedSubtotal, shippingFee, totalAmount);
+
+            // 4. Tạo Order
             String orderCode = generateOrderCode();
             Order order = buildOrder(account, customer, orderCode, customerName, customerPhone,
                     customerEmail, customerCity, customerAddress, notes, shippingFee, totalAmount);
 
             log.debug("📦 Order created: code={}", orderCode);
 
-            // 4. Tạo Payment
+            // 5. Tạo Payment
             Payment payment = buildPayment(orderCode, notes, totalAmount, paymentMethod);
 
-            // 5. Link Order và Payment
+            // 6. Link Order và Payment
             order.setPayment(payment);
             payment.setOrder(order);
 
-            // 6. Save Order (cascade save Payment)
+            // 7. Save Order (cascade save Payment)
             order = orderRepository.save(order);
             log.info("✅ Order saved: id={}, code={}", order.getId(), orderCode);
 
-            // 7. Tạo OrderItems và cập nhật stock
+            // 8. Tạo OrderItems và cập nhật stock
             createOrderItemsAndUpdateStock(order, cartDTO);
 
-            log.info("🎉 Sale order created successfully: id={}, code={}", order.getId(), orderCode);
+            log.info("🎉 Sale order created successfully: id={}, code={}, discount applied: {}%",
+                    order.getId(), orderCode, discountRate.multiply(BigDecimal.valueOf(100)));
             return order.getId();
 
         } catch (Exception e) {

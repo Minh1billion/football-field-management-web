@@ -1,73 +1,402 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register - UTE Score</title>
+    <title>Đăng Ký - UTE Score</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            padding: 20px 0;
+        }
+        .register-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        .register-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .register-header h2 {
+            margin: 0;
+            font-weight: bold;
+        }
+        .register-body {
+            padding: 30px;
+        }
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        .btn-register {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 12px;
+            font-weight: bold;
+            transition: transform 0.2s;
+        }
+        .btn-register:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .is-invalid {
+            border-color: #dc3545;
+        }
+        .invalid-feedback {
+            display: block;
+            color: #dc3545;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+        .alert {
+            border-radius: 10px;
+            border: none;
+        }
+        .form-label {
+            font-weight: 500;
+            color: #333;
+        }
+        .password-strength {
+            height: 5px;
+            border-radius: 5px;
+            margin-top: 5px;
+            background: #e9ecef;
+            overflow: hidden;
+        }
+        .password-strength-bar {
+            height: 100%;
+            transition: width 0.3s, background-color 0.3s;
+        }
+        .strength-weak { background-color: #dc3545; }
+        .strength-medium { background-color: #ffc107; }
+        .strength-strong { background-color: #28a745; }
+    </style>
 </head>
-<body class="bg-light">
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-md-8">
-                <div class="card mt-5">
-                    <div class="card-body">
-                        <h2 class="card-title text-center mb-4">Register</h2>
-                        
-                        <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
-                        <div th:if="${message}" class="alert alert-success" th:text="${message}"></div>
-                        
-                        <form th:action="@{/auth/register}" th:object="${registerRequest}" method="post">
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label for="firstName" class="form-label">First Name</label>
-                                    <input type="text" class="form-control" id="firstName" 
-                                           th:field="*{firstName}" required>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="lastName" class="form-label">Last Name</label>
-                                    <input type="text" class="form-control" id="lastName" 
-                                           th:field="*{lastName}" required>
-                                </div>
+<body>
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-10 col-lg-8">
+            <div class="register-card">
+                <div class="register-header">
+                    <i class="fas fa-user-plus fa-3x mb-3"></i>
+                    <h2>Đăng Ký Tài Khoản</h2>
+                    <p class="mb-0">Tạo tài khoản mới để trải nghiệm dịch vụ</p>
+                </div>
+
+                <div class="register-body">
+                    <!-- Global Error Alert -->
+                    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        <strong>Lỗi!</strong> <span th:text="${error}"></span>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+
+                    <!-- Success Message -->
+                    <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert">
+                        <i class="fas fa-check-circle me-2"></i>
+                        <span th:text="${message}"></span>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+
+                    <form th:action="@{/auth/register}" th:object="${registerRequest}" method="post" id="registerForm">
+                        <!-- Personal Information -->
+                        <h5 class="mb-3 text-primary">
+                            <i class="fas fa-user me-2"></i>Thông Tin Cá Nhân
+                        </h5>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="firstName" class="form-label">
+                                    Họ <span class="text-danger">*</span>
+                                </label>
+                                <input type="text"
+                                       class="form-control"
+                                       id="firstName"
+                                       th:field="*{firstName}"
+                                       th:classappend="${#fields.hasErrors('firstName')} ? 'is-invalid'"
+                                       placeholder="Nguyễn"
+                                       required>
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('firstName')}" th:errors="*{firstName}"></div>
                             </div>
-                            
-                            <div class="mb-3">
-                                <label for="username" class="form-label">Username</label>
-                                <input type="text" class="form-control" id="username" 
-                                       th:field="*{username}" required>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="lastName" class="form-label">
+                                    Tên <span class="text-danger">*</span>
+                                </label>
+                                <input type="text"
+                                       class="form-control"
+                                       id="lastName"
+                                       th:field="*{lastName}"
+                                       th:classappend="${#fields.hasErrors('lastName')} ? 'is-invalid'"
+                                       placeholder="Văn A"
+                                       required>
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('lastName')}" th:errors="*{lastName}"></div>
                             </div>
-                            
-                            <div class="mb-3">
-                                <label for="email" class="form-label">Email</label>
-                                <input type="email" class="form-control" id="email" 
-                                       th:field="*{email}" required>
-                            </div>
-                            
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label for="password" class="form-label">Password</label>
-                                    <input type="password" class="form-control" id="password" 
-                                           th:field="*{password}" required>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="confirmPassword" class="form-label">Confirm Password</label>
-                                    <input type="password" class="form-control" id="confirmPassword" 
-                                           th:field="*{confirmPassword}" required>
-                                </div>
-                            </div>
-                            
-                            <div class="d-grid">
-                                <button type="submit" class="btn btn-primary">Register</button>
-                            </div>
-                        </form>
-                        
-                        <div class="text-center mt-3">
-                            <p>Already have an account? <a th:href="@{/auth/login}">Login here</a></p>
                         </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="phoneNumber" class="form-label">
+                                    Số Điện Thoại
+                                </label>
+                                <input type="tel"
+                                       class="form-control"
+                                       id="phoneNumber"
+                                       th:field="*{phoneNumber}"
+                                       th:classappend="${#fields.hasErrors('phoneNumber')} ? 'is-invalid'"
+                                       placeholder="0912345678"
+                                       pattern="[0-9]{10,11}">
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('phoneNumber')}" th:errors="*{phoneNumber}"></div>
+                                <small class="form-text text-muted">10-11 chữ số</small>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="dateOfBirth" class="form-label">
+                                    Ngày Sinh
+                                </label>
+                                <input type="date"
+                                       class="form-control"
+                                       id="dateOfBirth"
+                                       th:field="*{dateOfBirth}"
+                                       th:classappend="${#fields.hasErrors('dateOfBirth')} ? 'is-invalid'">
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('dateOfBirth')}" th:errors="*{dateOfBirth}"></div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="gender" class="form-label">Giới Tính</label>
+                                <select class="form-select" id="gender" th:field="*{gender}">
+                                    <option value="">-- Chọn --</option>
+                                    <option value="MALE">Nam</option>
+                                    <option value="FEMALE">Nữ</option>
+                                    <option value="OTHER">Khác</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="address" class="form-label">Địa Chỉ</label>
+                                <input type="text"
+                                       class="form-control"
+                                       id="address"
+                                       th:field="*{address}"
+                                       placeholder="123 Đường ABC, Quận 1, TP.HCM">
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <!-- Account Information -->
+                        <h5 class="mb-3 text-primary">
+                            <i class="fas fa-lock me-2"></i>Thông Tin Tài Khoản
+                        </h5>
+
+                        <div class="mb-3">
+                            <label for="username" class="form-label">
+                                Tên Đăng Nhập <span class="text-danger">*</span>
+                            </label>
+                            <input type="text"
+                                   class="form-control"
+                                   id="username"
+                                   th:field="*{username}"
+                                   th:classappend="${#fields.hasErrors('username')} ? 'is-invalid'"
+                                   placeholder="username123"
+                                   required
+                                   minlength="4">
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></div>
+                            <small class="form-text text-muted">Tối thiểu 4 ký tự, chỉ chữ cái và số</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="email" class="form-label">
+                                Email <span class="text-danger">*</span>
+                            </label>
+                            <input type="email"
+                                   class="form-control"
+                                   id="email"
+                                   th:field="*{email}"
+                                   th:classappend="${#fields.hasErrors('email')} ? 'is-invalid'"
+                                   placeholder="example@email.com"
+                                   required>
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
+                            <small class="form-text text-muted">Dùng để xác thực tài khoản và nhận thông báo</small>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="password" class="form-label">
+                                    Mật Khẩu <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <input type="password"
+                                           class="form-control"
+                                           id="password"
+                                           th:field="*{password}"
+                                           th:classappend="${#fields.hasErrors('password')} ? 'is-invalid'"
+                                           placeholder="••••••••"
+                                           required
+                                           minlength="8">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('password')">
+                                        <i class="fas fa-eye" id="togglePasswordIcon"></i>
+                                    </button>
+                                </div>
+                                <div class="password-strength" id="passwordStrength">
+                                    <div class="password-strength-bar"></div>
+                                </div>
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
+                                <small class="form-text text-muted">Tối thiểu 8 ký tự, nên có chữ hoa, số và ký tự đặc biệt</small>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="confirmPassword" class="form-label">
+                                    Xác Nhận Mật Khẩu <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <input type="password"
+                                           class="form-control"
+                                           id="confirmPassword"
+                                           th:field="*{confirmPassword}"
+                                           th:classappend="${#fields.hasErrors('confirmPassword')} ? 'is-invalid'"
+                                           placeholder="••••••••"
+                                           required
+                                           minlength="8">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('confirmPassword')">
+                                        <i class="fas fa-eye" id="toggleConfirmPasswordIcon"></i>
+                                    </button>
+                                </div>
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('confirmPassword')}" th:errors="*{confirmPassword}"></div>
+                                <div class="invalid-feedback" id="passwordMatchError" style="display: none;">
+                                    Mật khẩu không khớp
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <!-- Emergency Contact (Optional) -->
+                        <h5 class="mb-3 text-primary">
+                            <i class="fas fa-phone-alt me-2"></i>Liên Hệ Khẩn Cấp (Tùy chọn)
+                        </h5>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="emergencyContact" class="form-label">Tên Người Liên Hệ</label>
+                                <input type="text"
+                                       class="form-control"
+                                       id="emergencyContact"
+                                       th:field="*{emergencyContact}"
+                                       placeholder="Nguyễn Văn B">
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="emergencyPhone" class="form-label">Số Điện Thoại Khẩn Cấp</label>
+                                <input type="tel"
+                                       class="form-control"
+                                       id="emergencyPhone"
+                                       th:field="*{emergencyPhone}"
+                                       placeholder="0987654321"
+                                       pattern="[0-9]{10,11}">
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary btn-register btn-lg">
+                                <i class="fas fa-user-plus me-2"></i>Đăng Ký
+                            </button>
+                        </div>
+                    </form>
+
+                    <div class="text-center mt-4">
+                        <p class="mb-0">
+                            Đã có tài khoản?
+                            <a th:href="@{/auth/login}" class="text-decoration-none fw-bold">
+                                Đăng nhập ngay
+                            </a>
+                        </p>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Toggle password visibility
+    function togglePassword(inputId) {
+        const input = document.getElementById(inputId);
+        const icon = document.getElementById('toggle' + inputId.charAt(0).toUpperCase() + inputId.slice(1) + 'Icon');
+
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            input.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    }
+
+    // Password strength indicator
+    const passwordInput = document.getElementById('password');
+    const strengthBar = document.querySelector('.password-strength-bar');
+
+    passwordInput.addEventListener('input', function() {
+        const password = this.value;
+        let strength = 0;
+
+        if (password.length >= 8) strength++;
+        if (password.match(/[a-z]/) && password.match(/[A-Z]/)) strength++;
+        if (password.match(/[0-9]/)) strength++;
+        if (password.match(/[^a-zA-Z0-9]/)) strength++;
+
+        strengthBar.style.width = (strength * 25) + '%';
+
+        if (strength <= 1) {
+            strengthBar.className = 'password-strength-bar strength-weak';
+        } else if (strength <= 2) {
+            strengthBar.className = 'password-strength-bar strength-medium';
+        } else {
+            strengthBar.className = 'password-strength-bar strength-strong';
+        }
+    });
+
+    // Password match validation
+    const confirmPasswordInput = document.getElementById('confirmPassword');
+    const passwordMatchError = document.getElementById('passwordMatchError');
+
+    function checkPasswordMatch() {
+        if (confirmPasswordInput.value && passwordInput.value !== confirmPasswordInput.value) {
+            confirmPasswordInput.classList.add('is-invalid');
+            passwordMatchError.style.display = 'block';
+        } else {
+            confirmPasswordInput.classList.remove('is-invalid');
+            passwordMatchError.style.display = 'none';
+        }
+    }
+
+    passwordInput.addEventListener('input', checkPasswordMatch);
+    confirmPasswordInput.addEventListener('input', checkPasswordMatch);
+
+    // Form validation before submit
+    document.getElementById('registerForm').addEventListener('submit', function(e) {
+        if (passwordInput.value !== confirmPasswordInput.value) {
+            e.preventDefault();
+            confirmPasswordInput.classList.add('is-invalid');
+            passwordMatchError.style.display = 'block';
+            confirmPasswordInput.focus();
+        }
+    });
+</script>
 </body>
 </html>

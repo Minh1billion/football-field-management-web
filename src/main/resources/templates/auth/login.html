@@ -1,62 +1,324 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - UTE Score</title>
+    <title>Đăng Nhập - UTE Score</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            padding: 20px 0;
+        }
+        .login-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        .login-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+        .login-header i {
+            font-size: 4rem;
+            margin-bottom: 15px;
+        }
+        .login-header h2 {
+            margin: 0;
+            font-weight: bold;
+        }
+        .login-body {
+            padding: 40px 30px;
+        }
+        .form-control {
+            padding: 12px 15px;
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s;
+        }
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        .input-group-text {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-right: none;
+            color: #667eea;
+        }
+        .input-group .form-control {
+            border-left: none;
+        }
+        .input-group:focus-within .input-group-text,
+        .input-group:focus-within .form-control {
+            border-color: #667eea;
+        }
+        .btn-login {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 12px;
+            font-weight: bold;
+            transition: transform 0.2s;
+            border-radius: 8px;
+        }
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .btn-toggle-password {
+            border: 2px solid #e9ecef;
+            border-left: none;
+            background: white;
+            color: #667eea;
+            transition: all 0.3s;
+        }
+        .btn-toggle-password:hover {
+            background: #f8f9fa;
+        }
+        .alert {
+            border-radius: 10px;
+            border: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .alert i {
+            font-size: 1.2rem;
+        }
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 25px 0;
+        }
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .divider span {
+            padding: 0 15px;
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+        .footer-links {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .footer-links a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+        .footer-links a:hover {
+            color: #764ba2;
+        }
+        .demo-credentials {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }
+        .demo-credentials h6 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        .demo-credentials .credential-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            font-size: 0.9rem;
+        }
+        .demo-credentials .credential-item strong {
+            color: #495057;
+        }
+        .demo-credentials .credential-item code {
+            background: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            color: #667eea;
+        }
+    </style>
 </head>
-<body class="bg-light">
+<body>
 <div class="container">
     <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="card mt-5">
-                <div class="card-body">
-                    <h2 class="card-title text-center mb-4">Login</h2>
+        <div class="col-md-5 col-lg-4">
+            <div class="login-card">
+                <div class="login-header">
+                    <i class="fas fa-shield-alt"></i>
+                    <h2>Đăng Nhập</h2>
+                    <p class="mb-0">Chào mừng trở lại!</p>
+                </div>
 
-                    <div id="errorMessage" class="alert alert-danger d-none"></div>
-                    <div id="successMessage" class="alert alert-success d-none"></div>
+                <div class="login-body">
+                    <!-- Error Alert -->
+                    <div th:if="${param.error}" class="alert alert-danger" role="alert">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <div>
+                            <strong>Đăng nhập thất bại!</strong><br>
+                            <span th:if="${param.error[0] == 'access_denied'}">
+                                    Vui lòng đăng nhập để truy cập trang này.
+                                </span>
+                            <span th:unless="${param.error[0] == 'access_denied'}">
+                                    Tên đăng nhập hoặc mật khẩu không đúng.
+                                </span>
+                        </div>
+                    </div>
+
+                    <!-- Logout Success -->
+                    <div th:if="${param.logout}" class="alert alert-success" role="alert">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Đăng xuất thành công!</span>
+                    </div>
+
+                    <!-- Registration Success -->
+                    <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert">
+                        <i class="fas fa-check-circle"></i>
+                        <span th:text="${message}"></span>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+
+                    <!-- Demo Credentials (Remove in production) -->
+                    <div class="demo-credentials">
+                        <h6><i class="fas fa-info-circle me-2"></i>Tài khoản demo</h6>
+                        <div class="credential-item">
+                            <strong>Username:</strong>
+                            <code>user</code>
+                        </div>
+                        <div class="credential-item">
+                            <strong>Password:</strong>
+                            <code>User@123</code>
+                        </div>
+                    </div>
 
                     <form id="loginForm">
                         <div class="mb-3">
-                            <label for="usernameOrEmail" class="form-label">Username or Email</label>
-                            <input type="text" class="form-control" id="usernameOrEmail"
-                                   name="usernameOrEmail" required
-                                   th:value="'user'">
+                            <label for="usernameOrEmail" class="form-label">
+                                <i class="fas fa-user me-2"></i>Tên đăng nhập hoặc Email
+                            </label>
+                            <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-user"></i>
+                                    </span>
+                                <input type="text"
+                                       class="form-control"
+                                       id="usernameOrEmail"
+                                       name="usernameOrEmail"
+                                       placeholder="Nhập username hoặc email"
+                                       required
+                                       autocomplete="username">
+                            </div>
                         </div>
 
                         <div class="mb-3">
-                            <label for="password" class="form-label">Password</label>
-                            <input type="password" class="form-control" id="password"
-                                   name="password" required
-                                   th:value="'User@123'">
+                            <label for="password" class="form-label">
+                                <i class="fas fa-lock me-2"></i>Mật khẩu
+                            </label>
+                            <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-lock"></i>
+                                    </span>
+                                <input type="password"
+                                       class="form-control"
+                                       id="password"
+                                       name="password"
+                                       placeholder="Nhập mật khẩu"
+                                       required
+                                       autocomplete="current-password">
+                                <button class="btn btn-toggle-password"
+                                        type="button"
+                                        onclick="togglePassword()">
+                                    <i class="fas fa-eye" id="toggleIcon"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="rememberMe">
+                            <label class="form-check-label" for="rememberMe">
+                                Ghi nhớ đăng nhập
+                            </label>
                         </div>
 
                         <div class="d-grid">
-                            <button type="submit" class="btn btn-primary">Login</button>
+                            <button type="submit" class="btn btn-primary btn-login">
+                                <i class="fas fa-sign-in-alt me-2"></i>Đăng Nhập
+                            </button>
                         </div>
                     </form>
 
-                    <div class="text-center mt-3">
-                        <p>Don't have an account? <a th:href="@{/auth/register}">Register here</a></p>
+                    <div class="divider">
+                        <span>HOẶC</span>
+                    </div>
+
+                    <div class="footer-links">
+                        <p class="mb-2">
+                            Chưa có tài khoản?
+                            <a th:href="@{/auth/register}">
+                                <i class="fas fa-user-plus me-1"></i>Đăng ký ngay
+                            </a>
+                        </p>
+                        <p class="mb-0">
+                            <a href="#" class="text-muted" style="font-size: 0.9rem;">
+                                <i class="fas fa-key me-1"></i>Quên mật khẩu?
+                            </a>
+                        </p>
                     </div>
                 </div>
+            </div>
+
+            <!-- Copyright -->
+            <div class="text-center mt-4">
+                <p class="text-white" style="font-size: 0.9rem;">
+                    <i class="fas fa-copyright me-1"></i>2025 UTE Score. All rights reserved.
+                </p>
             </div>
         </div>
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+    // Toggle password visibility
+    function togglePassword() {
+        const passwordInput = document.getElementById('password');
+        const toggleIcon = document.getElementById('toggleIcon');
+
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            toggleIcon.classList.remove('fa-eye');
+            toggleIcon.classList.add('fa-eye-slash');
+        } else {
+            passwordInput.type = 'password';
+            toggleIcon.classList.remove('fa-eye-slash');
+            toggleIcon.classList.add('fa-eye');
+        }
+    }
+
+    // Handle form submission
     const form = document.getElementById('loginForm');
-    const errorDiv = document.getElementById('errorMessage');
-    const successDiv = document.getElementById('successMessage');
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        // Hide previous messages
-        errorDiv.classList.add('d-none');
-        successDiv.classList.add('d-none');
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalBtnText = submitBtn.innerHTML;
+
+        // Show loading state
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Đang đăng nhập...';
 
         const usernameOrEmail = document.getElementById('usernameOrEmail').value;
         const password = document.getElementById('password').value;
@@ -73,18 +335,63 @@
             const data = await response.json();
 
             if (response.ok) {
-                // Save JWT token to localStorage
+                // Save JWT token
                 localStorage.setItem('token', data.token);
-                // Redirect to home page
-                window.location.href = '/home';
+
+                // Show success message
+                submitBtn.innerHTML = '<i class="fas fa-check me-2"></i>Thành công!';
+                submitBtn.classList.remove('btn-primary');
+                submitBtn.classList.add('btn-success');
+
+                // Redirect after short delay
+                setTimeout(() => {
+                    window.location.href = '/home';
+                }, 500);
             } else {
-                errorDiv.textContent = data.error || 'Login failed';
-                errorDiv.classList.remove('d-none');
+                // Show error
+                showError(data.error || 'Đăng nhập thất bại. Vui lòng thử lại.');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnText;
             }
         } catch (err) {
-            errorDiv.textContent = 'An error occurred. Please try again.';
-            errorDiv.classList.remove('d-none');
+            showError('Có lỗi xảy ra. Vui lòng thử lại sau.');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnText;
         }
+    });
+
+    function showError(message) {
+        // Remove existing alerts
+        const existingAlerts = document.querySelectorAll('.alert-danger');
+        existingAlerts.forEach(alert => alert.remove());
+
+        // Create new alert
+        const alert = document.createElement('div');
+        alert.className = 'alert alert-danger alert-dismissible fade show';
+        alert.role = 'alert';
+        alert.innerHTML = `
+                <i class="fas fa-exclamation-circle"></i>
+                <div>
+                    <strong>Lỗi!</strong><br>
+                    ${message}
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+
+        // Insert at the top of login-body
+        const loginBody = document.querySelector('.login-body');
+        loginBody.insertBefore(alert, loginBody.firstChild);
+
+        // Auto dismiss after 5 seconds
+        setTimeout(() => {
+            alert.remove();
+        }, 5000);
+    }
+
+    // Quick fill demo credentials (Remove in production)
+    document.querySelector('.demo-credentials').addEventListener('click', function() {
+        document.getElementById('usernameOrEmail').value = 'user';
+        document.getElementById('password').value = 'User@123';
     });
 </script>
 </body>

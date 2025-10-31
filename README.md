@@ -264,7 +264,7 @@ http://localhost:8080
 |-----------|------|---------|-------|
 | **Trần Quang Minh** | 23110269 | Team Leader, Backend Developer | 23110269@student.ute.edu.vn |
 | **Huỳnh Duy Nguyên** | 23110270 | Backend Developer, Database Designer | 23110270@student.ute.edu.vn |
-| **Trần Trí Tình** | 23110341 | Frontend Developer, UI/UX Designer | 23110341.tt@student.ute.edu.vn |
+| **Trần Trí Tình** | 23110341 | Frontend Developer, UI/UX Designer | 23110341@student.ute.edu.vn |
 
 ## 📞 Liên Hệ
 

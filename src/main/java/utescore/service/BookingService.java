@@ -81,12 +81,25 @@ public class BookingService {
                 .collect(Collectors.toList());
     }
 
-    public List<BookingDTO> getMyBooking() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String username = authentication.getName();
-        return bookingRepo.findByCustomer_Account_UsernameOrderByCreatedAt(username).stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+    public List<Booking> getMyBooking() {
+        String username = SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getName();
+
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime endDate = now.plusDays(30); // Chỉ hiển thị booking trong 30 ngày tới
+
+        return bookingRepo.findUpcomingBookingsByUsername(username, now, endDate);
+    }
+
+    public List<Booking> getActiveBookings() {
+        String username = SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getName();
+
+        LocalDateTime now = LocalDateTime.now();
+
+        return bookingRepo.findActiveBookingsByUsername(username, now);
     }
 
     public List<BookingDTO> getBookingsByUsername(String username) {

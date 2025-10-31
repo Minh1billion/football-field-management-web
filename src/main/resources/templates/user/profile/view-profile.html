@@ -4,7 +4,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title th:text="${profile.firstName} + ' ' + ${profile.lastName} + ' - UTEScore'">User Profile</title>
+  <!-- FIX: Remove extra ${} from second variable -->
+  <title th:text="${profile.firstName + ' ' + profile.lastName + ' - UTEScore'}">User Profile</title>
 </head>
 <body>
 <content>
@@ -32,8 +33,9 @@
                width="150" height="150" style="object-fit: cover;" alt="Avatar">
         </div>
         <div class="col-md-6">
-          <h2 class="mb-2" th:text="${profile.firstName} + ' ' + ${profile.lastName}">User Name</h2>
-          <p class="mb-2"><i class="fas fa-user me-2"></i><span th:text="'@' + ${profile.username}">@username</span></p>
+          <!-- FIX: Same issue here -->
+          <h2 class="mb-2" th:text="${profile.firstName + ' ' + profile.lastName}">User Name</h2>
+          <p class="mb-2"><i class="fas fa-user me-2"></i><span th:text="${'@' + profile.username}">@username</span></p>
 
           <div class="row g-3 mt-3">
             <div class="col-6">
@@ -99,7 +101,8 @@
                 <strong class="text-muted">Full Name</strong>
               </div>
               <div class="col-7">
-                <span th:text="${profile.firstName} + ' ' + ${profile.lastName}">Full Name</span>
+                <!-- FIX: Same issue -->
+                <span th:text="${profile.firstName + ' ' + profile.lastName}">Full Name</span>
               </div>
             </div>
             <div class="row mb-3 pb-3 border-bottom">
@@ -107,7 +110,7 @@
                 <strong class="text-muted">Username</strong>
               </div>
               <div class="col-7">
-                <span th:text="'@' + ${profile.username}">@username</span>
+                <span th:text="${'@' + profile.username}">@username</span>
               </div>
             </div>
             <div class="row mb-3 pb-3 border-bottom">
@@ -127,7 +130,7 @@
                 <span th:if="${profile.membershipTier == 'GOLD'}" class="badge bg-warning text-dark">GOLD</span>
                 <span th:if="${profile.membershipTier == 'SILVER'}" class="badge bg-secondary">SILVER</span>
                 <span th:if="${profile.membershipTier == 'PLATINUM'}" class="badge bg-light text-dark">PLATINUM</span>
-                <span th:if="${profile.membershipTier == 'BRONZE' or !profile.membershipTier}" class="badge bg-danger">BRONZE</span>
+                <span th:if="${profile.membershipTier == 'BRONZE' or profile.membershipTier == null}" class="badge bg-danger">BRONZE</span>
               </div>
             </div>
           </div>
@@ -168,7 +171,7 @@
               <span th:if="${profile.membershipTier == 'GOLD'}" class="badge bg-warning text-dark ms-2">GOLD</span>
               <span th:if="${profile.membershipTier == 'SILVER'}" class="badge bg-secondary ms-2">SILVER</span>
               <span th:if="${profile.membershipTier == 'PLATINUM'}" class="badge bg-light text-dark ms-2">PLATINUM</span>
-              <span th:if="${profile.membershipTier == 'BRONZE' or !profile.membershipTier}" class="badge bg-danger ms-2">BRONZE</span>
+              <span th:if="${profile.membershipTier == 'BRONZE' or profile.membershipTier == null}" class="badge bg-danger ms-2">BRONZE</span>
             </div>
           </div>
         </div>

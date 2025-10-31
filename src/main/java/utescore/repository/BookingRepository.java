@@ -101,4 +101,29 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     long countBookedSlotsByManagerIdAndDateRange(@Param("managerId") Long managerId,
                                                  @Param("start") LocalDateTime start,
                                                  @Param("end") LocalDateTime end);
+    @Query("""
+        SELECT b FROM Booking b
+        WHERE b.customer.account.username = :username
+          AND b.status IN ('PENDING', 'CONFIRMED')
+          AND b.endTime > :now
+        ORDER BY b.startTime ASC
+    """)
+    List<Booking> findActiveBookingsByUsername(
+            @Param("username") String username,
+            @Param("now") LocalDateTime now
+    );
+
+    @Query("""
+        SELECT b FROM Booking b
+        WHERE b.customer.account.username = :username
+          AND b.status IN ('PENDING', 'CONFIRMED')
+          AND b.startTime >= :now
+          AND b.startTime <= :endDate
+        ORDER BY b.startTime ASC
+    """)
+    List<Booking> findUpcomingBookingsByUsername(
+            @Param("username") String username,
+            @Param("now") LocalDateTime now,
+            @Param("endDate") LocalDateTime endDate
+    );
 }

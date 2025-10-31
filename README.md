@@ -262,13 +262,13 @@ http://localhost:8080
 
 | Họ và Tên | MSSV | Vai Trò | Email |
 |-----------|------|---------|-------|
-| **Trần Quang Minh** | 23110269 | Team Leader, Backend Developer | minh.tq@student.ute.edu.vn |
-| **Huỳnh Duy Nguyên** | 23110270 | Backend Developer, Database Designer | nguyenhuynh.663459@gmail.com,23110270@student.ute.edu.vn |
-| **Trần Trí Tình** | 23110341 | Frontend Developer, UI/UX Designer | tinh.tt@student.ute.edu.vn |
+| **Trần Quang Minh** | 23110269 | Team Leader, Backend Developer | 23110269@student.ute.edu.vn |
+| **Huỳnh Duy Nguyên** | 23110270 | Backend Developer, Database Designer | 23110270@student.ute.edu.vn |
+| **Trần Trí Tình** | 23110341 | Frontend Developer, UI/UX Designer | 23110341.tt@student.ute.edu.vn |
 
 ## 📞 Liên Hệ
 
-- **Website:** [utescore.com](https://utescore.com)
+- **Website:** [http://ec2-13-212-162-49.ap-southeast-1.compute.amazonaws.com:8080/](http://ec2-13-212-162-49.ap-southeast-1.compute.amazonaws.com:8080/)     Deloy bằng AWS
 - **Email:** nhomweb11@gmail.com
 - **GitHub:** [Minh1billion](https://github.com/Minh1billion/football-field-management-web)
 

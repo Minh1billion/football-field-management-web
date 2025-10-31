@@ -44,8 +44,8 @@ public class ManagerDashboardController {
             // 4. Doanh thu tháng này
             LocalDate startOfMonth = today.withDayOfMonth(1);
             LocalDate endOfMonth = today.withDayOfMonth(today.lengthOfMonth());
-            BigDecimal monthlyRevenue = bookingService.calculateRevenueByManagerAndDateRange(
-                    currentUsername, startOfMonth, endOfMonth);
+            BigDecimal monthlyRevenue = bookingService.calculateCompletedRevenueByManagerAndDateRange(
+            	    currentUsername, startOfMonth, endOfMonth);
 
             // 5. Khách hàng hoạt động (đặt sân ít nhất 1 lần trong tháng)
             long activeCustomers = bookingService.countActiveCustomersByManagerAndMonth(

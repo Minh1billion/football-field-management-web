@@ -556,6 +556,28 @@ public class BookingService {
         return bookingRepo.sumTotalAmountByManagerAndDateRange(manager.getId(), startDate.atStartOfDay(), endDate.plusDays(1).atStartOfDay());
     }
 
+    public BigDecimal calculateCompletedRevenueByManagerAndDateRange(String username, LocalDate startDate, LocalDate endDate) {
+        Account manager = accountRepo.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Manager not found"));
+
+        LocalDateTime start = startDate.atStartOfDay();
+        LocalDateTime end = endDate.plusDays(1).atStartOfDay();
+
+       
+        List<Booking> bookings = bookingRepo.findAll().stream()
+                .filter(b -> b.getField().getManagerId().equals(manager.getId())
+                        && !b.getStartTime().isBefore(start)
+                        && b.getStartTime().isBefore(end)
+                        && b.getPayment() != null
+                        && b.getPayment().getStatus() == Payment.PaymentStatus.COMPLETED)
+                .toList();
+
+        // Tổng doanh thu từ các booking đã thanh toán
+        return bookings.stream()
+                .map(Booking::getTotalAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
     public long countActiveCustomersByManagerAndMonth(String username, int month, int year) {
         Account manager = accountRepo.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("Manager not found"));
